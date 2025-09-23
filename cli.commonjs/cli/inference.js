@@ -107,6 +107,7 @@ function inference(program) {
         .option('--port <port>', 'Port to run the router service on', '3000')
         .option('--host <host>', 'Host to bind the router service', '0.0.0.0')
         .option('--cache-duration <seconds>', 'Cache duration in seconds', '60')
+        .option('--request-timeout <seconds>', 'Request timeout in seconds for each provider', '30')
         .action(async (options) => {
         // Build providers list with priorities
         const providers = [];
@@ -144,7 +145,8 @@ function inference(program) {
             ...options,
             providers,
             directEndpoints: Object.keys(directEndpoints).length > 0 ? directEndpoints : undefined,
-            priorityConfig
+            priorityConfig,
+            requestTimeout: options.requestTimeout
         };
         const { runRouterServer } = await Promise.resolve().then(() => __importStar(require('../example/router-server')));
         await runRouterServer(routerOptions);

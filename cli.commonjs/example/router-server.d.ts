@@ -21,6 +21,7 @@ export interface RouterServerOptions {
     port?: string | number;
     host?: string;
     cacheDuration?: string | number;
+    requestTimeout?: string | number;
 }
 export declare function runRouterServer(options: RouterServerOptions): Promise<void>;
 //# sourceMappingURL=router-server.d.ts.map

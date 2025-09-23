@@ -15,6 +15,8 @@ async function runRouterServer(options) {
     const cache = new cache_1.Cache();
     // Parse cache duration from options, default to 60 seconds (1 minute)
     const cacheDurationMs = (Number(options.cacheDuration) || 60) * 1000;
+    // Parse request timeout from options, default to 30 seconds
+    const requestTimeoutMs = (Number(options.requestTimeout) || 30) * 1000;
     let broker;
     const providers = new Map();
     const ERROR_RECOVERY_TIME = 60000; // 1 minute
@@ -22,7 +24,9 @@ async function runRouterServer(options) {
         // Check if we have any on-chain providers that require broker initialization
         const hasOnChainProviders = options.providers && options.providers.length > 0;
         if (hasOnChainProviders) {
-            const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc || process.env.RPC_ENDPOINT || const_1.ZG_RPC_ENDPOINT_TESTNET);
+            const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc ||
+                process.env.RPC_ENDPOINT ||
+                const_1.ZG_RPC_ENDPOINT_TESTNET);
             const privateKey = options.key || process.env.ZG_PRIVATE_KEY;
             if (!privateKey) {
                 throw new Error('Missing wallet private key, please provide --key or set ZG_PRIVATE_KEY in environment variables');
@@ -44,7 +48,8 @@ async function runRouterServer(options) {
                     console.log(`Acknowledging provider: ${providerAddress}`);
                     await broker.inference.acknowledgeProviderSigner(providerAddress);
                     const meta = await broker.inference.getServiceMetadata(providerAddress);
-                    const priority = options.priorityConfig?.providers?.[providerAddress] ?? defaultProviderPriority;
+                    const priority = options.priorityConfig?.providers?.[providerAddress] ??
+                        defaultProviderPriority;
                     providers.set(providerAddress, {
                         id: providerAddress,
                         type: 'onchain',
@@ -58,7 +63,8 @@ async function runRouterServer(options) {
                 }
                 catch (error) {
                     console.error(`✗ Failed to initialize provider ${providerAddress}: ${error.message}`);
-                    const priority = options.priorityConfig?.providers?.[providerAddress] ?? defaultProviderPriority;
+                    const priority = options.priorityConfig?.providers?.[providerAddress] ??
+                        defaultProviderPriority;
                     providers.set(providerAddress, {
                         id: providerAddress,
                         type: 'onchain',
@@ -80,8 +86,9 @@ async function runRouterServer(options) {
             for (const [endpointId, config] of Object.entries(options.directEndpoints)) {
                 try {
                     // Validate endpoint URL
-                    let endpoint = config.endpoint;
-                    if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+                    const endpoint = config.endpoint;
+                    if (!endpoint.startsWith('http://') &&
+                        !endpoint.startsWith('https://')) {
                         throw new Error(`Invalid endpoint URL: ${endpoint}. Must start with http:// or https://`);
                     }
                     const priority = config.priority ?? defaultEndpointPriority;
@@ -114,7 +121,10 @@ async function runRouterServer(options) {
             }
         }
         const availableProviders = Array.from(providers.values()).filter((p) => p.available);
-        const totalProviders = options.providers.length + (options.directEndpoints ? Object.keys(options.directEndpoints).length : 0);
+        const totalProviders = options.providers.length +
+            (options.directEndpoints
+                ? Object.keys(options.directEndpoints).length
+                : 0);
         if (availableProviders.length === 0) {
             throw new Error('No available providers after initialization');
         }
@@ -157,6 +167,21 @@ async function runRouterServer(options) {
             console.error(`Provider ${providerId} marked as unavailable: ${error}`);
         }
     }
+    // Helper function to create a timeout promise
+    function createTimeoutPromise(ms, message) {
+        return new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error(message || `Operation timeout after ${ms}ms`));
+            }, ms);
+        });
+    }
+    // Helper function to run any async operation with timeout
+    async function withTimeout(operation, timeoutMs, operationName = 'Operation') {
+        return Promise.race([
+            operation,
+            createTimeoutPromise(timeoutMs, `${operationName} timeout after ${timeoutMs}ms`)
+        ]);
+    }
     async function chatProxyWithFallback(body, stream = false, attemptedProviders = new Set()) {
         const provider = getAvailableProvider();
         if (!provider) {
@@ -182,9 +207,10 @@ async function runRouterServer(options) {
                 if (!broker) {
                     throw new Error('Broker not initialized for on-chain provider');
                 }
-                const brokerHeaders = await broker.inference.getRequestHeaders(provider.address, Array.isArray(body.messages) && body.messages.length > 0
+                // Wrap getRequestHeaders in timeout protection
+                const brokerHeaders = await withTimeout(broker.inference.getRequestHeaders(provider.address, Array.isArray(body.messages) && body.messages.length > 0
                     ? body.messages.map((m) => m.content).join('\n')
-                    : '');
+                    : ''), requestTimeoutMs, 'Getting request headers');
                 Object.assign(requestHeaders, brokerHeaders);
             }
             else if (provider.type === 'direct' && provider.apiKey) {
@@ -200,12 +226,12 @@ async function runRouterServer(options) {
                 ? provider.endpoint.slice(0, -1)
                 : provider.endpoint;
             const fullUrl = `${baseUrl}/chat/completions`;
-            console.log(`Making request to: ${fullUrl}`);
-            const response = await fetch(fullUrl, {
+            console.log(`Making request to: ${fullUrl} (timeout: ${requestTimeoutMs}ms)`);
+            const response = await withTimeout(fetch(fullUrl, {
                 method: 'POST',
                 headers: requestHeaders,
                 body: JSON.stringify(body),
-            });
+            }), requestTimeoutMs, 'HTTP request');
             if (!response.ok) {
                 throw new Error(`Provider returned status ${response.status}`);
             }
@@ -345,9 +371,15 @@ async function runRouterServer(options) {
         try {
             console.log(`Verifying response with provider: ${usedProvider}`);
             // Only verify responses from on-chain providers
-            if (providerInfo.type === 'onchain' && providerInfo.address && broker) {
+            if (providerInfo.type === 'onchain' &&
+                providerInfo.address &&
+                broker) {
                 const isValid = await broker.inference.processResponse(providerInfo.address, completeContent, id);
-                res.json({ isValid, provider: usedProvider, type: providerInfo.type });
+                res.json({
+                    isValid,
+                    provider: usedProvider,
+                    type: providerInfo.type,
+                });
             }
             else {
                 // For direct endpoints, we cannot verify through the broker
@@ -355,7 +387,7 @@ async function runRouterServer(options) {
                     isValid: true, // Assume valid since we can't verify
                     provider: usedProvider,
                     type: providerInfo.type,
-                    note: 'Direct endpoint responses cannot be verified through the broker'
+                    note: 'Direct endpoint responses cannot be verified through the broker',
                 });
             }
         }
@@ -398,7 +430,9 @@ async function runRouterServer(options) {
         console.log(`  - POST /v1/chat/completions - Chat completions with automatic failover`);
         console.log(`  - POST /v1/verify          - Verify response with the same provider`);
         console.log(`  - GET  /v1/providers/status - Check status of all providers`);
-        const directEndpointCount = options.directEndpoints ? Object.keys(options.directEndpoints).length : 0;
+        const directEndpointCount = options.directEndpoints
+            ? Object.keys(options.directEndpoints).length
+            : 0;
         console.log(`\nConfigured providers:`);
         console.log(`  - On-chain providers: ${options.providers.length}`);
         console.log(`  - Direct endpoints: ${directEndpointCount}`);

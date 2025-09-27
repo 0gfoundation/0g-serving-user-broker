@@ -12609,8 +12609,8 @@ class ZGServingUserBrokerBase {
     metadata;
     cache;
     checkAccountThreshold = BigInt(100);
-    topUpTriggerThreshold = BigInt(10000);
-    topUpTargetThreshold = BigInt(20000);
+    topUpTriggerThreshold = BigInt(1000000);
+    topUpTargetThreshold = BigInt(2000000);
     ledger;
     constructor(contract, ledger, metadata, cache) {
         this.contract = contract;
@@ -12848,7 +12848,17 @@ class ZGServingUserBrokerBase {
             const acc = await this.contract.getAccount(provider);
             const lockedFund = acc.balance - acc.pendingRefund;
             if (lockedFund < triggerThreshold) {
-                await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+                try {
+                    await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+                }
+                catch (error) {
+                    // Check if it's an insufficient balance error
+                    const errorMessage = error?.message?.toLowerCase() || '';
+                    if (errorMessage.includes('insufficient')) {
+                        throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    }
+                    throw error;
+                }
             }
             await this.clearCacheFee(provider, newFee);
         }
@@ -12867,7 +12877,17 @@ class ZGServingUserBrokerBase {
             needTransfer = true;
         }
         if (needTransfer) {
-            await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+            try {
+                await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+            }
+            catch (error) {
+                // Check if it's an insufficient balance error
+                const errorMessage = error?.message?.toLowerCase() || '';
+                if (errorMessage.includes('insufficient')) {
+                    throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                }
+                throw error;
+            }
         }
         // Mark the first round as complete
         await this.cache.setItem(CACHE_KEYS.FIRST_ROUND, 'false', 10000000 * 60 * 1000, CacheValueTypeEnum.Other);
@@ -14059,7 +14079,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-e4c2d56b.js');
+    const { download } = await import('./index-0ed28134.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -19295,4 +19315,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x907a552804CECC
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, bigintToBytes as l, genKeyPair as m, Request$1 as n, pedersenHash as p, signData as s, upload as u };
-//# sourceMappingURL=index-a9fb5574.js.map
+//# sourceMappingURL=index-229510f4.js.map

@@ -11,8 +11,8 @@ class ZGServingUserBrokerBase {
     metadata;
     cache;
     checkAccountThreshold = BigInt(100);
-    topUpTriggerThreshold = BigInt(10000);
-    topUpTargetThreshold = BigInt(20000);
+    topUpTriggerThreshold = BigInt(1000000);
+    topUpTargetThreshold = BigInt(2000000);
     ledger;
     constructor(contract, ledger, metadata, cache) {
         this.contract = contract;
@@ -250,7 +250,17 @@ class ZGServingUserBrokerBase {
             const acc = await this.contract.getAccount(provider);
             const lockedFund = acc.balance - acc.pendingRefund;
             if (lockedFund < triggerThreshold) {
-                await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+                try {
+                    await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+                }
+                catch (error) {
+                    // Check if it's an insufficient balance error
+                    const errorMessage = error?.message?.toLowerCase() || '';
+                    if (errorMessage.includes('insufficient')) {
+                        throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    }
+                    throw error;
+                }
             }
             await this.clearCacheFee(provider, newFee);
         }
@@ -269,7 +279,17 @@ class ZGServingUserBrokerBase {
             needTransfer = true;
         }
         if (needTransfer) {
-            await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+            try {
+                await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+            }
+            catch (error) {
+                // Check if it's an insufficient balance error
+                const errorMessage = error?.message?.toLowerCase() || '';
+                if (errorMessage.includes('insufficient')) {
+                    throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                }
+                throw error;
+            }
         }
         // Mark the first round as complete
         await this.cache.setItem(storage_1.CACHE_KEYS.FIRST_ROUND, 'false', 10000000 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);

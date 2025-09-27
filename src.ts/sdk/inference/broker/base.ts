@@ -38,8 +38,8 @@ export abstract class ZGServingUserBrokerBase {
     protected cache: Cache
 
     private checkAccountThreshold = BigInt(100)
-    private topUpTriggerThreshold = BigInt(10000)
-    private topUpTargetThreshold = BigInt(20000)
+    private topUpTriggerThreshold = BigInt(1000000)
+    private topUpTargetThreshold = BigInt(2000000)
     protected ledger: LedgerBroker
 
     constructor(
@@ -388,12 +388,23 @@ export abstract class ZGServingUserBrokerBase {
             const acc = await this.contract.getAccount(provider)
             const lockedFund = acc.balance - acc.pendingRefund
             if (lockedFund < triggerThreshold) {
-                await this.ledger.transferFund(
-                    provider,
-                    'inference',
-                    targetThreshold,
-                    gasPrice
-                )
+                try {
+                    await this.ledger.transferFund(
+                        provider,
+                        'inference',
+                        targetThreshold,
+                        gasPrice
+                    )
+                } catch (error: any) {
+                    // Check if it's an insufficient balance error
+                    const errorMessage = error?.message?.toLowerCase() || ''
+                    if (errorMessage.includes('insufficient')) {
+                        throw new Error(
+                            `To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
+                        )
+                    }
+                    throw error
+                }
             }
 
             await this.clearCacheFee(provider, newFee)
@@ -419,12 +430,23 @@ export abstract class ZGServingUserBrokerBase {
         }
 
         if (needTransfer) {
-            await this.ledger.transferFund(
-                provider,
-                'inference',
-                targetThreshold,
-                gasPrice
-            )
+            try {
+                await this.ledger.transferFund(
+                    provider,
+                    'inference',
+                    targetThreshold,
+                    gasPrice
+                )
+            } catch (error: any) {
+                // Check if it's an insufficient balance error
+                const errorMessage = error?.message?.toLowerCase() || ''
+                if (errorMessage.includes('insufficient')) {
+                    throw new Error(
+                        `To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
+                    )
+                }
+                throw error
+            }
         }
 
         // Mark the first round as complete

@@ -257,12 +257,14 @@ export class FineTuningBroker {
 
     public acknowledgeModel = async (
         providerAddress: string,
+        taskId: string,
         dataPath: string,
         gasPrice?: number
     ): Promise<void> => {
         try {
             return await this.modelProcessor.acknowledgeModel(
                 providerAddress,
+                taskId,
                 dataPath,
                 gasPrice
             )
@@ -273,12 +275,14 @@ export class FineTuningBroker {
 
     public decryptModel = async (
         providerAddress: string,
+        taskId: string,
         encryptedModelPath: string,
         decryptedModelPath: string
     ): Promise<void> => {
         try {
             return await this.modelProcessor.decryptModel(
                 providerAddress,
+                taskId,
                 encryptedModelPath,
                 decryptedModelPath
             )

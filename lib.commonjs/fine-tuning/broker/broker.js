@@ -159,17 +159,17 @@ class FineTuningBroker {
             (0, utils_1.throwFormattedError)(error);
         }
     };
-    acknowledgeModel = async (providerAddress, dataPath, gasPrice) => {
+    acknowledgeModel = async (providerAddress, taskId, dataPath, gasPrice) => {
         try {
-            return await this.modelProcessor.acknowledgeModel(providerAddress, dataPath, gasPrice);
+            return await this.modelProcessor.acknowledgeModel(providerAddress, taskId, dataPath, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
         }
     };
-    decryptModel = async (providerAddress, encryptedModelPath, decryptedModelPath) => {
+    decryptModel = async (providerAddress, taskId, encryptedModelPath, decryptedModelPath) => {
         try {
-            return await this.modelProcessor.decryptModel(providerAddress, encryptedModelPath, decryptedModelPath);
+            return await this.modelProcessor.decryptModel(providerAddress, taskId, encryptedModelPath, decryptedModelPath);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

@@ -69,11 +69,16 @@ export default function inference(program: Command) {
                 const providers = previous || []
                 const [address, priority] = value.split(',')
                 if (!address) {
-                    throw new Error('Invalid provider format. Use: address,priority (comma-separated)')
+                    throw new Error(
+                        'Invalid provider format. Use: address,priority (comma-separated)'
+                    )
                 }
                 providers.push({
                     address: address.trim(),
-                    priority: priority && priority.trim() ? parseInt(priority.trim()) : 100
+                    priority:
+                        priority && priority.trim()
+                            ? parseInt(priority.trim())
+                            : 100,
                 })
                 return providers
             },
@@ -86,14 +91,20 @@ export default function inference(program: Command) {
                 const endpoints = previous || []
                 const [id, endpoint, apiKey, model, priority] = value.split(',')
                 if (!id || !endpoint) {
-                    throw new Error('Invalid endpoint format. Use: id,endpoint,apikey,model,priority (comma-separated)')
+                    throw new Error(
+                        'Invalid endpoint format. Use: id,endpoint,apikey,model,priority (comma-separated)'
+                    )
                 }
                 endpoints.push({
                     id: id.trim(),
                     endpoint: endpoint.trim(),
                     apiKey: apiKey && apiKey.trim() ? apiKey.trim() : undefined,
-                    model: model && model.trim() ? model.trim() : 'gpt-3.5-turbo',
-                    priority: priority && priority.trim() ? parseInt(priority.trim()) : 50
+                    model:
+                        model && model.trim() ? model.trim() : 'gpt-3.5-turbo',
+                    priority:
+                        priority && priority.trim()
+                            ? parseInt(priority.trim())
+                            : 50,
                 })
                 return endpoints
             },
@@ -121,52 +132,68 @@ export default function inference(program: Command) {
         .option('--port <port>', 'Port to run the router service on', '3000')
         .option('--host <host>', 'Host to bind the router service', '0.0.0.0')
         .option('--cache-duration <seconds>', 'Cache duration in seconds', '60')
-        .option('--request-timeout <seconds>', 'Request timeout in seconds for each provider', '30')
+        .option(
+            '--request-timeout <seconds>',
+            'Request timeout in seconds for each provider',
+            '30'
+        )
         .action(async (options) => {
             // Build providers list with priorities
             const providers: string[] = []
             const providerPriorities: Record<string, number> = {}
-            
+
             if (options.addProvider && options.addProvider.length > 0) {
                 for (const prov of options.addProvider) {
                     providers.push(prov.address)
                     providerPriorities[prov.address] = prov.priority
                 }
             }
-            
+
             // Build direct endpoints
             const directEndpoints: Record<string, any> = {}
-            
+
             if (options.addEndpoint && options.addEndpoint.length > 0) {
                 for (const ep of options.addEndpoint) {
                     directEndpoints[ep.id] = {
                         endpoint: ep.endpoint,
                         apiKey: ep.apiKey,
                         model: ep.model,
-                        priority: ep.priority
+                        priority: ep.priority,
                     }
                 }
             }
-            
+
             // Build priority config
             const priorityConfig: any = {
                 providers: providerPriorities,
-                defaultProviderPriority: parseInt(options.defaultProviderPriority),
-                defaultEndpointPriority: parseInt(options.defaultEndpointPriority)
+                defaultProviderPriority: parseInt(
+                    options.defaultProviderPriority
+                ),
+                defaultEndpointPriority: parseInt(
+                    options.defaultEndpointPriority
+                ),
             }
 
             // Ensure at least one provider type is specified
-            if (providers.length === 0 && Object.keys(directEndpoints).length === 0) {
-                console.error('Error: Must specify either --add-provider or --add-endpoint')
+            if (
+                providers.length === 0 &&
+                Object.keys(directEndpoints).length === 0
+            ) {
+                console.error(
+                    'Error: Must specify either --add-provider or --add-endpoint'
+                )
                 process.exit(1)
             }
 
             const routerOptions = {
                 ...options,
                 providers,
-                directEndpoints: Object.keys(directEndpoints).length > 0 ? directEndpoints : undefined,
+                directEndpoints:
+                    Object.keys(directEndpoints).length > 0
+                        ? directEndpoints
+                        : undefined,
                 priorityConfig,
-                requestTimeout: options.requestTimeout
+                requestTimeout: options.requestTimeout,
             }
 
             const { runRouterServer } = await import('../example/router-server')

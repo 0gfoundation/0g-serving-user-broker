@@ -78,7 +78,9 @@ function inference(program) {
         }
         providers.push({
             address: address.trim(),
-            priority: priority && priority.trim() ? parseInt(priority.trim()) : 100
+            priority: priority && priority.trim()
+                ? parseInt(priority.trim())
+                : 100,
         });
         return providers;
     }, [])
@@ -93,7 +95,9 @@ function inference(program) {
             endpoint: endpoint.trim(),
             apiKey: apiKey && apiKey.trim() ? apiKey.trim() : undefined,
             model: model && model.trim() ? model.trim() : 'gpt-3.5-turbo',
-            priority: priority && priority.trim() ? parseInt(priority.trim()) : 50
+            priority: priority && priority.trim()
+                ? parseInt(priority.trim())
+                : 50,
         });
         return endpoints;
     }, [])
@@ -126,7 +130,7 @@ function inference(program) {
                     endpoint: ep.endpoint,
                     apiKey: ep.apiKey,
                     model: ep.model,
-                    priority: ep.priority
+                    priority: ep.priority,
                 };
             }
         }
@@ -134,19 +138,22 @@ function inference(program) {
         const priorityConfig = {
             providers: providerPriorities,
             defaultProviderPriority: parseInt(options.defaultProviderPriority),
-            defaultEndpointPriority: parseInt(options.defaultEndpointPriority)
+            defaultEndpointPriority: parseInt(options.defaultEndpointPriority),
         };
         // Ensure at least one provider type is specified
-        if (providers.length === 0 && Object.keys(directEndpoints).length === 0) {
+        if (providers.length === 0 &&
+            Object.keys(directEndpoints).length === 0) {
             console.error('Error: Must specify either --add-provider or --add-endpoint');
             process.exit(1);
         }
         const routerOptions = {
             ...options,
             providers,
-            directEndpoints: Object.keys(directEndpoints).length > 0 ? directEndpoints : undefined,
+            directEndpoints: Object.keys(directEndpoints).length > 0
+                ? directEndpoints
+                : undefined,
             priorityConfig,
-            requestTimeout: options.requestTimeout
+            requestTimeout: options.requestTimeout,
         };
         const { runRouterServer } = await Promise.resolve().then(() => __importStar(require('../example/router-server')));
         await runRouterServer(routerOptions);

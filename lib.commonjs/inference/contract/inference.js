@@ -24,10 +24,10 @@ class InferenceServingContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async listAccount() {
+    async listAccount(offset = 0, limit = 50) {
         try {
-            const accounts = await this.serving.getAllAccounts();
-            return accounts;
+            const result = await this.serving.getAllAccounts(offset, limit);
+            return result.accounts;
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

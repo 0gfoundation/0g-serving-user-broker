@@ -93,10 +93,10 @@ class LedgerManagerContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async listLedger() {
+    async listLedger(offset = 0, limit = 50) {
         try {
-            const ledgers = await this.ledger.getAllLedgers();
-            return ledgers;
+            const result = await this.ledger.getAllLedgers(offset, limit);
+            return result.ledgers;
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

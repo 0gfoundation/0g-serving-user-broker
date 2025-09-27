@@ -8,7 +8,7 @@ export declare class InferenceServingContract {
     constructor(signer: JsonRpcSigner | Wallet, contractAddress: string, userAddress: string);
     lockTime(): Promise<bigint>;
     listService(): Promise<ServiceStructOutput[]>;
-    listAccount(): Promise<import(".").AccountStructOutput[]>;
+    listAccount(offset?: number, limit?: number): Promise<import(".").AccountStructOutput[]>;
     getAccount(provider: AddressLike): Promise<import(".").AccountStructOutput>;
     acknowledgeTEESigner(providerAddress: AddressLike, providerSigner: AddressLike): Promise<void>;
     getService(providerAddress: string): Promise<ServiceStructOutput>;

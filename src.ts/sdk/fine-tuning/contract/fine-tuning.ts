@@ -1,5 +1,4 @@
 import type {
-    BigNumberish,
     AddressLike,
     Wallet,
     ContractMethodArgs,
@@ -158,10 +157,10 @@ export class FineTuningServingContract {
         }
     }
 
-    async listAccount() {
+    async listAccount(offset: number = 0, limit: number = 50) {
         try {
-            const accounts = await this.serving.getAllAccounts()
-            return accounts
+            const result = await this.serving.getAllAccounts(offset, limit)
+            return result.accounts
         } catch (error) {
             throwFormattedError(error)
         }
@@ -199,7 +198,7 @@ export class FineTuningServingContract {
 
     async acknowledgeDeliverable(
         providerAddress: AddressLike,
-        index: BigNumberish,
+        id: string,
         gasPrice?: number
     ) {
         try {
@@ -209,7 +208,7 @@ export class FineTuningServingContract {
             }
             await this.sendTx(
                 'acknowledgeDeliverable',
-                [providerAddress, index],
+                [providerAddress, id],
                 txOptions
             )
         } catch (error) {
@@ -227,11 +226,11 @@ export class FineTuningServingContract {
 
     async getDeliverable(
         providerAddress: AddressLike,
-        index: BigNumberish
+        id: string
     ): Promise<DeliverableStructOutput> {
         try {
             const user = this.getUserAddress()
-            return this.serving.getDeliverable(user, providerAddress, index)
+            return this.serving.getDeliverable(user, providerAddress, id)
         } catch (error) {
             throwFormattedError(error)
         }

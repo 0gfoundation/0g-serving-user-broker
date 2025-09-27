@@ -179,7 +179,7 @@ async function runRouterServer(options) {
     async function withTimeout(operation, timeoutMs, operationName = 'Operation') {
         return Promise.race([
             operation,
-            createTimeoutPromise(timeoutMs, `${operationName} timeout after ${timeoutMs}ms`)
+            createTimeoutPromise(timeoutMs, `${operationName} timeout after ${timeoutMs}ms`),
         ]);
     }
     async function chatProxyWithFallback(body, stream = false, attemptedProviders = new Set()) {
@@ -209,7 +209,9 @@ async function runRouterServer(options) {
                 }
                 // Wrap getRequestHeaders in timeout protection
                 const brokerHeaders = await withTimeout(broker.inference.getRequestHeaders(provider.address, Array.isArray(body.messages) && body.messages.length > 0
-                    ? body.messages.map((m) => m.content).join('\n')
+                    ? body.messages
+                        .map((m) => m.content)
+                        .join('\n')
                     : ''), requestTimeoutMs, 'Getting request headers');
                 Object.assign(requestHeaders, brokerHeaders);
             }

@@ -238,6 +238,7 @@ function fineTuning(program) {
         .command('acknowledge-model')
         .description('Acknowledge the availability of a model')
         .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--task-id <id>', 'Task ID')
         .requiredOption('--data-path <path>', 'Path to store the model')
         .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
@@ -248,7 +249,7 @@ function fineTuning(program) {
         .option('--step <step>', 'Step for gas price adjustment')
         .action((options) => {
         (0, util_1.withFineTuningBroker)(options, async (broker) => {
-            await broker.fineTuning.acknowledgeModel(options.provider, options.dataPath, options.gasPrice);
+            await broker.fineTuning.acknowledgeModel(options.provider, options.taskId, options.dataPath, options.gasPrice);
             console.log('Acknowledged model');
         });
     });
@@ -256,6 +257,7 @@ function fineTuning(program) {
         .command('decrypt-model')
         .description('Decrypt a model')
         .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--task-id <id>', 'Task ID')
         .requiredOption('--encrypted-model <path>', 'Path to the encrypted model')
         .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .requiredOption('--output <path>', 'Path to the decrypted model')
@@ -264,7 +266,7 @@ function fineTuning(program) {
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
         .action((options) => {
         (0, util_1.withFineTuningBroker)(options, async (broker) => {
-            await broker.fineTuning.decryptModel(options.provider, options.encryptedModel, options.output);
+            await broker.fineTuning.decryptModel(options.provider, options.taskId, options.encryptedModel, options.output);
             console.log('Decrypted model');
         });
     });

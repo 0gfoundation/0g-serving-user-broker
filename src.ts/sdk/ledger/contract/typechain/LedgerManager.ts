@@ -54,6 +54,7 @@ export type LedgerStructOutput = [
 export interface LedgerManagerInterface extends Interface {
     getFunction(
         nameOrSignature:
+            | 'MAX_PROVIDERS_PER_BATCH'
             | 'addLedger'
             | 'deleteLedger'
             | 'depositFund'
@@ -75,6 +76,10 @@ export interface LedgerManagerInterface extends Interface {
     getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment
 
     encodeFunctionData(
+        functionFragment: 'MAX_PROVIDERS_PER_BATCH',
+        values?: undefined
+    ): string
+    encodeFunctionData(
         functionFragment: 'addLedger',
         values: [[BigNumberish, BigNumberish], string]
     ): string
@@ -92,7 +97,7 @@ export interface LedgerManagerInterface extends Interface {
     ): string
     encodeFunctionData(
         functionFragment: 'getAllLedgers',
-        values?: undefined
+        values: [BigNumberish, BigNumberish]
     ): string
     encodeFunctionData(
         functionFragment: 'getLedger',
@@ -136,6 +141,10 @@ export interface LedgerManagerInterface extends Interface {
         values: [AddressLike]
     ): string
 
+    decodeFunctionResult(
+        functionFragment: 'MAX_PROVIDERS_PER_BATCH',
+        data: BytesLike
+    ): Result
     decodeFunctionResult(functionFragment: 'addLedger', data: BytesLike): Result
     decodeFunctionResult(
         functionFragment: 'deleteLedger',
@@ -247,6 +256,8 @@ export interface LedgerManager extends BaseContract {
         event?: TCEvent
     ): Promise<this>
 
+    MAX_PROVIDERS_PER_BATCH: TypedContractMethod<[], [bigint], 'view'>
+
     addLedger: TypedContractMethod<
         [inferenceSigner: [BigNumberish, BigNumberish], additionalInfo: string],
         [[bigint, bigint]],
@@ -259,7 +270,16 @@ export interface LedgerManager extends BaseContract {
 
     fineTuningAddress: TypedContractMethod<[], [string], 'view'>
 
-    getAllLedgers: TypedContractMethod<[], [LedgerStructOutput[]], 'view'>
+    getAllLedgers: TypedContractMethod<
+        [offset: BigNumberish, limit: BigNumberish],
+        [
+            [LedgerStructOutput[], bigint] & {
+                ledgers: LedgerStructOutput[]
+                total: bigint
+            }
+        ],
+        'view'
+    >
 
     getLedger: TypedContractMethod<
         [user: AddressLike],
@@ -316,6 +336,9 @@ export interface LedgerManager extends BaseContract {
     ): T
 
     getFunction(
+        nameOrSignature: 'MAX_PROVIDERS_PER_BATCH'
+    ): TypedContractMethod<[], [bigint], 'view'>
+    getFunction(
         nameOrSignature: 'addLedger'
     ): TypedContractMethod<
         [inferenceSigner: [BigNumberish, BigNumberish], additionalInfo: string],
@@ -331,9 +354,16 @@ export interface LedgerManager extends BaseContract {
     getFunction(
         nameOrSignature: 'fineTuningAddress'
     ): TypedContractMethod<[], [string], 'view'>
-    getFunction(
-        nameOrSignature: 'getAllLedgers'
-    ): TypedContractMethod<[], [LedgerStructOutput[]], 'view'>
+    getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod<
+        [offset: BigNumberish, limit: BigNumberish],
+        [
+            [LedgerStructOutput[], bigint] & {
+                ledgers: LedgerStructOutput[]
+                total: bigint
+            }
+        ],
+        'view'
+    >
     getFunction(
         nameOrSignature: 'getLedger'
     ): TypedContractMethod<[user: AddressLike], [LedgerStructOutput], 'view'>

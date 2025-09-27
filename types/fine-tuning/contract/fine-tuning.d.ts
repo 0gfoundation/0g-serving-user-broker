@@ -1,4 +1,4 @@
-import type { BigNumberish, AddressLike, Wallet, ContractMethodArgs, ContractTransactionReceipt } from 'ethers';
+import type { AddressLike, Wallet, ContractMethodArgs, ContractTransactionReceipt } from 'ethers';
 import type { DeliverableStructOutput, ServiceStructOutput, FineTuningServing } from './typechain/FineTuningServing';
 export declare class FineTuningServingContract {
     serving: FineTuningServing;
@@ -11,12 +11,12 @@ export declare class FineTuningServingContract {
     lockTime(): Promise<bigint>;
     sendTx(name: string, txArgs: ContractMethodArgs<any[]>, txOptions: any): Promise<void>;
     listService(): Promise<ServiceStructOutput[]>;
-    listAccount(): Promise<import("./typechain/FineTuningServing").AccountStructOutput[]>;
-    getAccount(provider: AddressLike): Promise<import("./typechain/FineTuningServing").AccountStructOutput>;
+    listAccount(offset?: number, limit?: number): Promise<import("./typechain/FineTuningServing").AccountSummaryStructOutput[]>;
+    getAccount(provider: AddressLike): Promise<import("./typechain/FineTuningServing").AccountDetailsStructOutput>;
     acknowledgeProviderSigner(providerAddress: AddressLike, providerSigner: AddressLike, gasPrice?: number): Promise<void>;
-    acknowledgeDeliverable(providerAddress: AddressLike, index: BigNumberish, gasPrice?: number): Promise<void>;
+    acknowledgeDeliverable(providerAddress: AddressLike, id: string, gasPrice?: number): Promise<void>;
     getService(providerAddress: string): Promise<ServiceStructOutput>;
-    getDeliverable(providerAddress: AddressLike, index: BigNumberish): Promise<DeliverableStructOutput>;
+    getDeliverable(providerAddress: AddressLike, id: string): Promise<DeliverableStructOutput>;
     getUserAddress(): string;
     checkReceipt(receipt: ContractTransactionReceipt | null): void;
 }

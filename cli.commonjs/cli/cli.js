@@ -13,7 +13,7 @@ exports.program = new commander_1.Command();
 exports.program
     .name('0g-compute-cli')
     .description('CLI for interacting with ZG Compute Network')
-    .version('0.4.2');
+    .version('0.4.3');
 (0, fine_tuning_1.default)(exports.program);
 (0, inference_1.default)(exports.program);
 (0, ledger_1.default)(exports.program);

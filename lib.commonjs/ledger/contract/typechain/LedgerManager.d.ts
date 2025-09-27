@@ -27,13 +27,14 @@ export type LedgerStructOutput = [
     fineTuningProviders: string[];
 };
 export interface LedgerManagerInterface extends Interface {
-    getFunction(nameOrSignature: 'addLedger' | 'deleteLedger' | 'depositFund' | 'fineTuningAddress' | 'getAllLedgers' | 'getLedger' | 'inferenceAddress' | 'initialize' | 'initialized' | 'owner' | 'refund' | 'renounceOwnership' | 'retrieveFund' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
+    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH' | 'addLedger' | 'deleteLedger' | 'depositFund' | 'fineTuningAddress' | 'getAllLedgers' | 'getLedger' | 'inferenceAddress' | 'initialize' | 'initialized' | 'owner' | 'refund' | 'renounceOwnership' | 'retrieveFund' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+    encodeFunctionData(functionFragment: 'MAX_PROVIDERS_PER_BATCH', values?: undefined): string;
     encodeFunctionData(functionFragment: 'addLedger', values: [[BigNumberish, BigNumberish], string]): string;
     encodeFunctionData(functionFragment: 'deleteLedger', values?: undefined): string;
     encodeFunctionData(functionFragment: 'depositFund', values?: undefined): string;
     encodeFunctionData(functionFragment: 'fineTuningAddress', values?: undefined): string;
-    encodeFunctionData(functionFragment: 'getAllLedgers', values?: undefined): string;
+    encodeFunctionData(functionFragment: 'getAllLedgers', values: [BigNumberish, BigNumberish]): string;
     encodeFunctionData(functionFragment: 'getLedger', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'inferenceAddress', values?: undefined): string;
     encodeFunctionData(functionFragment: 'initialize', values: [AddressLike, AddressLike, AddressLike]): string;
@@ -45,6 +46,7 @@ export interface LedgerManagerInterface extends Interface {
     encodeFunctionData(functionFragment: 'spendFund', values: [AddressLike, BigNumberish]): string;
     encodeFunctionData(functionFragment: 'transferFund', values: [AddressLike, string, BigNumberish]): string;
     encodeFunctionData(functionFragment: 'transferOwnership', values: [AddressLike]): string;
+    decodeFunctionResult(functionFragment: 'MAX_PROVIDERS_PER_BATCH', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'deleteLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'depositFund', data: BytesLike): Result;
@@ -87,6 +89,7 @@ export interface LedgerManager extends BaseContract {
     listeners<TCEvent extends TypedContractEvent>(event: TCEvent): Promise<Array<TypedListener<TCEvent>>>;
     listeners(eventName?: string): Promise<Array<Listener>>;
     removeAllListeners<TCEvent extends TypedContractEvent>(event?: TCEvent): Promise<this>;
+    MAX_PROVIDERS_PER_BATCH: TypedContractMethod<[], [bigint], 'view'>;
     addLedger: TypedContractMethod<[
         inferenceSigner: [BigNumberish, BigNumberish],
         additionalInfo: string
@@ -96,7 +99,18 @@ export interface LedgerManager extends BaseContract {
     deleteLedger: TypedContractMethod<[], [void], 'nonpayable'>;
     depositFund: TypedContractMethod<[], [void], 'payable'>;
     fineTuningAddress: TypedContractMethod<[], [string], 'view'>;
-    getAllLedgers: TypedContractMethod<[], [LedgerStructOutput[]], 'view'>;
+    getAllLedgers: TypedContractMethod<[
+        offset: BigNumberish,
+        limit: BigNumberish
+    ], [
+        [
+            LedgerStructOutput[],
+            bigint
+        ] & {
+            ledgers: LedgerStructOutput[];
+            total: bigint;
+        }
+    ], 'view'>;
     getLedger: TypedContractMethod<[
         user: AddressLike
     ], [
@@ -139,6 +153,7 @@ export interface LedgerManager extends BaseContract {
         void
     ], 'nonpayable'>;
     getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
+    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH'): TypedContractMethod<[], [bigint], 'view'>;
     getFunction(nameOrSignature: 'addLedger'): TypedContractMethod<[
         inferenceSigner: [BigNumberish, BigNumberish],
         additionalInfo: string
@@ -148,7 +163,18 @@ export interface LedgerManager extends BaseContract {
     getFunction(nameOrSignature: 'deleteLedger'): TypedContractMethod<[], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'depositFund'): TypedContractMethod<[], [void], 'payable'>;
     getFunction(nameOrSignature: 'fineTuningAddress'): TypedContractMethod<[], [string], 'view'>;
-    getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod<[], [LedgerStructOutput[]], 'view'>;
+    getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod<[
+        offset: BigNumberish,
+        limit: BigNumberish
+    ], [
+        [
+            LedgerStructOutput[],
+            bigint
+        ] & {
+            ledgers: LedgerStructOutput[];
+            total: bigint;
+        }
+    ], 'view'>;
     getFunction(nameOrSignature: 'getLedger'): TypedContractMethod<[user: AddressLike], [LedgerStructOutput], 'view'>;
     getFunction(nameOrSignature: 'inferenceAddress'): TypedContractMethod<[], [string], 'view'>;
     getFunction(nameOrSignature: 'initialize'): TypedContractMethod<[

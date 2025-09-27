@@ -16,7 +16,7 @@ export declare class FineTuningBroker {
     initialize(): Promise<void>;
     listService: () => Promise<import("../contract").ServiceStructOutput[]>;
     getLockedTime: () => Promise<bigint>;
-    getAccount: (providerAddress: string) => Promise<import("../contract").AccountStructOutput>;
+    getAccount: (providerAddress: string) => Promise<import("../contract").AccountDetailsStructOutput>;
     getAccountWithDetail: (providerAddress: string) => Promise<FineTuningAccountDetail>;
     acknowledgeProviderSigner: (providerAddress: string, gasPrice?: number) => Promise<void>;
     listModel: () => Promise<[string, {
@@ -31,8 +31,8 @@ export declare class FineTuningBroker {
     listTask: (providerAddress: string) => Promise<Task[]>;
     getTask: (providerAddress: string, taskID?: string) => Promise<Task>;
     getLog: (providerAddress: string, taskID?: string) => Promise<string>;
-    acknowledgeModel: (providerAddress: string, dataPath: string, gasPrice?: number) => Promise<void>;
-    decryptModel: (providerAddress: string, encryptedModelPath: string, decryptedModelPath: string) => Promise<void>;
+    acknowledgeModel: (providerAddress: string, taskId: string, dataPath: string, gasPrice?: number) => Promise<void>;
+    decryptModel: (providerAddress: string, taskId: string, encryptedModelPath: string, decryptedModelPath: string) => Promise<void>;
 }
 /**
  * createFineTuningBroker is used to initialize ZGServingUserBroker

@@ -1,6 +1,6 @@
 {
     "name": "@0glabs/0g-serving-broker",
-    "version": "0.4.2",
+    "version": "0.4.3",
     "description": "TS SDK for 0G Compute Network",
     "main": "./lib.commonjs/index.js",
     "bin": {

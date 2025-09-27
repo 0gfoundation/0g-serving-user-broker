@@ -101,27 +101,25 @@ export class ModelProcessor extends BrokerBase {
 
     async acknowledgeModel(
         providerAddress: string,
+        taskId: string,
         dataPath: string,
         gasPrice?: number
     ): Promise<void> {
         try {
-            const account = await this.contract.getAccount(providerAddress)
+            const deliverable = await this.contract.getDeliverable(
+                providerAddress,
+                taskId
+            )
 
-            const latestDeliverable =
-                account.deliverables[account.deliverables.length - 1]
-
-            if (!latestDeliverable) {
+            if (!deliverable) {
                 throw new Error('No deliverable found')
             }
 
-            await download(
-                dataPath,
-                hexToRoots(latestDeliverable.modelRootHash)
-            )
+            await download(dataPath, hexToRoots(deliverable.modelRootHash))
 
             await this.contract.acknowledgeDeliverable(
                 providerAddress,
-                account.deliverables.length - 1,
+                taskId,
                 gasPrice
             )
         } catch (error) {
@@ -131,30 +129,31 @@ export class ModelProcessor extends BrokerBase {
 
     async decryptModel(
         providerAddress: string,
+        taskId: string,
         encryptedModelPath: string,
         decryptedModelPath: string
     ): Promise<void> {
         try {
-            const account = await this.contract.getAccount(providerAddress)
+            const [account, deliverable] = await Promise.all([
+                this.contract.getAccount(providerAddress),
+                this.contract.getDeliverable(providerAddress, taskId),
+            ])
 
-            const latestDeliverable =
-                account.deliverables[account.deliverables.length - 1]
-
-            if (!latestDeliverable) {
+            if (!deliverable) {
                 throw new Error('No deliverable found')
             }
 
-            if (!latestDeliverable.acknowledged) {
+            if (!deliverable.acknowledged) {
                 throw new Error('Deliverable not acknowledged yet')
             }
 
-            if (!latestDeliverable.encryptedSecret) {
+            if (!deliverable.encryptedSecret) {
                 throw new Error('EncryptedSecret not found')
             }
 
             const secret = await eciesDecrypt(
                 this.contract.signer,
-                latestDeliverable.encryptedSecret
+                deliverable.encryptedSecret
             )
 
             await aesGCMDecryptToFile(

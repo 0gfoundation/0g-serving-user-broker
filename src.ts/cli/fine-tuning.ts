@@ -365,6 +365,7 @@ export default function fineTuning(program: Command) {
         .command('acknowledge-model')
         .description('Acknowledge the availability of a model')
         .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--task-id <id>', 'Task ID')
         .requiredOption('--data-path <path>', 'Path to store the model')
         .option(
             '--key <key>',
@@ -381,6 +382,7 @@ export default function fineTuning(program: Command) {
             withFineTuningBroker(options, async (broker) => {
                 await broker.fineTuning!.acknowledgeModel(
                     options.provider,
+                    options.taskId,
                     options.dataPath,
                     options.gasPrice
                 )
@@ -392,6 +394,7 @@ export default function fineTuning(program: Command) {
         .command('decrypt-model')
         .description('Decrypt a model')
         .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--task-id <id>', 'Task ID')
         .requiredOption(
             '--encrypted-model <path>',
             'Path to the encrypted model'
@@ -409,6 +412,7 @@ export default function fineTuning(program: Command) {
             withFineTuningBroker(options, async (broker) => {
                 await broker.fineTuning!.decryptModel(
                     options.provider,
+                    options.taskId,
                     options.encryptedModel,
                     options.output
                 )

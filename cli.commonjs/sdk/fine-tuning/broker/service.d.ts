@@ -1,12 +1,12 @@
 import type { AddressLike } from 'ethers';
-import type { AccountStructOutput, FineTuningServingContract } from '../contract';
+import type { AccountDetailsStructOutput, FineTuningServingContract } from '../contract';
 import type { ServiceStructOutput } from '../contract';
 import type { Provider, Task } from '../provider/provider';
 import { BrokerBase } from './base';
 import type { LedgerBroker } from '../../ledger';
 import { Automata } from '../../common/automata ';
 export interface FineTuningAccountDetail {
-    account: AccountStructOutput;
+    account: AccountDetailsStructOutput;
     refunds: {
         amount: bigint;
         remainTime: bigint;
@@ -16,7 +16,7 @@ export declare class ServiceProcessor extends BrokerBase {
     protected automata: Automata;
     constructor(contract: FineTuningServingContract, ledger: LedgerBroker, servingProvider: Provider);
     getLockTime(): Promise<bigint>;
-    getAccount(provider: AddressLike): Promise<AccountStructOutput>;
+    getAccount(provider: AddressLike): Promise<AccountDetailsStructOutput>;
     getAccountWithDetail(provider: AddressLike): Promise<FineTuningAccountDetail>;
     listService(): Promise<ServiceStructOutput[]>;
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;

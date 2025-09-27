@@ -57,34 +57,35 @@ class ModelProcessor extends base_1.BrokerBase {
     async downloadDataset(dataPath, dataRoot) {
         (0, zg_storage_1.download)(dataPath, dataRoot);
     }
-    async acknowledgeModel(providerAddress, dataPath, gasPrice) {
+    async acknowledgeModel(providerAddress, taskId, dataPath, gasPrice) {
         try {
-            const account = await this.contract.getAccount(providerAddress);
-            const latestDeliverable = account.deliverables[account.deliverables.length - 1];
-            if (!latestDeliverable) {
+            const deliverable = await this.contract.getDeliverable(providerAddress, taskId);
+            if (!deliverable) {
                 throw new Error('No deliverable found');
             }
-            await (0, zg_storage_1.download)(dataPath, (0, utils_1.hexToRoots)(latestDeliverable.modelRootHash));
-            await this.contract.acknowledgeDeliverable(providerAddress, account.deliverables.length - 1, gasPrice);
+            await (0, zg_storage_1.download)(dataPath, (0, utils_1.hexToRoots)(deliverable.modelRootHash));
+            await this.contract.acknowledgeDeliverable(providerAddress, taskId, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async decryptModel(providerAddress, encryptedModelPath, decryptedModelPath) {
+    async decryptModel(providerAddress, taskId, encryptedModelPath, decryptedModelPath) {
         try {
-            const account = await this.contract.getAccount(providerAddress);
-            const latestDeliverable = account.deliverables[account.deliverables.length - 1];
-            if (!latestDeliverable) {
+            const [account, deliverable] = await Promise.all([
+                this.contract.getAccount(providerAddress),
+                this.contract.getDeliverable(providerAddress, taskId),
+            ]);
+            if (!deliverable) {
                 throw new Error('No deliverable found');
             }
-            if (!latestDeliverable.acknowledged) {
+            if (!deliverable.acknowledged) {
                 throw new Error('Deliverable not acknowledged yet');
             }
-            if (!latestDeliverable.encryptedSecret) {
+            if (!deliverable.encryptedSecret) {
                 throw new Error('EncryptedSecret not found');
             }
-            const secret = await (0, utils_1.eciesDecrypt)(this.contract.signer, latestDeliverable.encryptedSecret);
+            const secret = await (0, utils_1.eciesDecrypt)(this.contract.signer, deliverable.encryptedSecret);
             await (0, utils_1.aesGCMDecryptToFile)(secret, encryptedModelPath, decryptedModelPath, account.providerSigner);
         }
         catch (error) {

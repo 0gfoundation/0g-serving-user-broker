@@ -95,10 +95,10 @@ class FineTuningServingContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async listAccount() {
+    async listAccount(offset = 0, limit = 50) {
         try {
-            const accounts = await this.serving.getAllAccounts();
-            return accounts;
+            const result = await this.serving.getAllAccounts(offset, limit);
+            return result.accounts;
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -126,13 +126,13 @@ class FineTuningServingContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async acknowledgeDeliverable(providerAddress, index, gasPrice) {
+    async acknowledgeDeliverable(providerAddress, id, gasPrice) {
         try {
             const txOptions = {};
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('acknowledgeDeliverable', [providerAddress, index], txOptions);
+            await this.sendTx('acknowledgeDeliverable', [providerAddress, id], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -146,10 +146,10 @@ class FineTuningServingContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async getDeliverable(providerAddress, index) {
+    async getDeliverable(providerAddress, id) {
         try {
             const user = this.getUserAddress();
-            return this.serving.getDeliverable(user, providerAddress, index);
+            return this.serving.getDeliverable(user, providerAddress, id);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

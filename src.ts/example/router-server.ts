@@ -277,7 +277,10 @@ export async function runRouterServer(options: RouterServerOptions) {
     }
 
     // Helper function to create a timeout promise
-    function createTimeoutPromise(ms: number, message?: string): Promise<never> {
+    function createTimeoutPromise(
+        ms: number,
+        message?: string
+    ): Promise<never> {
         return new Promise((_, reject) => {
             setTimeout(() => {
                 reject(new Error(message || `Operation timeout after ${ms}ms`))
@@ -293,7 +296,10 @@ export async function runRouterServer(options: RouterServerOptions) {
     ): Promise<T> {
         return Promise.race([
             operation,
-            createTimeoutPromise(timeoutMs, `${operationName} timeout after ${timeoutMs}ms`)
+            createTimeoutPromise(
+                timeoutMs,
+                `${operationName} timeout after ${timeoutMs}ms`
+            ),
         ])
     }
 
@@ -341,7 +347,9 @@ export async function runRouterServer(options: RouterServerOptions) {
                     broker.inference.getRequestHeaders(
                         provider.address!,
                         Array.isArray(body.messages) && body.messages.length > 0
-                            ? body.messages.map((m: any) => m.content).join('\n')
+                            ? body.messages
+                                  .map((m: any) => m.content)
+                                  .join('\n')
                             : ''
                     ),
                     requestTimeoutMs,

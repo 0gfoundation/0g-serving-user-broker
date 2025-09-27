@@ -76,6 +76,7 @@ export type AccountStruct = {
     additionalInfo: string
     providerPubKey: [BigNumberish, BigNumberish]
     teeSignerAddress: AddressLike
+    validRefundsLength: BigNumberish
 }
 
 export type AccountStructOutput = [
@@ -88,7 +89,8 @@ export type AccountStructOutput = [
     refunds: RefundStructOutput[],
     additionalInfo: string,
     providerPubKey: [bigint, bigint],
-    teeSignerAddress: string
+    teeSignerAddress: string,
+    validRefundsLength: bigint
 ] & {
     user: string
     provider: string
@@ -100,6 +102,7 @@ export type AccountStructOutput = [
     additionalInfo: string
     providerPubKey: [bigint, bigint]
     teeSignerAddress: string
+    validRefundsLength: bigint
 }
 
 export type ServiceStruct = {
@@ -136,25 +139,6 @@ export type ServiceStructOutput = [
     additionalInfo: string
 }
 
-export type VerifierInputStruct = {
-    inProof: BigNumberish[]
-    proofInputs: BigNumberish[]
-    numChunks: BigNumberish
-    segmentSize: BigNumberish[]
-}
-
-export type VerifierInputStructOutput = [
-    inProof: bigint[],
-    proofInputs: bigint[],
-    numChunks: bigint,
-    segmentSize: bigint[]
-] & {
-    inProof: bigint[]
-    proofInputs: bigint[]
-    numChunks: bigint
-    segmentSize: bigint[]
-}
-
 export type TEESettlementDataStruct = {
     user: AddressLike
     provider: AddressLike
@@ -188,7 +172,6 @@ export interface InferenceServingInterface extends Interface {
             | 'acknowledgeTEESigner'
             | 'addAccount'
             | 'addOrUpdateService'
-            | 'batchVerifierAddress'
             | 'deleteAccount'
             | 'depositFund'
             | 'getAccount'
@@ -208,10 +191,8 @@ export interface InferenceServingInterface extends Interface {
             | 'removeService'
             | 'renounceOwnership'
             | 'requestRefundAll'
-            | 'settleFees'
             | 'settleFeesWithTEE'
             | 'transferOwnership'
-            | 'updateBatchVerifierAddress'
             | 'updateLockTime'
     ): FunctionFragment
 
@@ -247,10 +228,6 @@ export interface InferenceServingInterface extends Interface {
         values: [ServiceParamsStruct]
     ): string
     encodeFunctionData(
-        functionFragment: 'batchVerifierAddress',
-        values?: undefined
-    ): string
-    encodeFunctionData(
         functionFragment: 'deleteAccount',
         values: [AddressLike, AddressLike]
     ): string
@@ -272,7 +249,7 @@ export interface InferenceServingInterface extends Interface {
     ): string
     encodeFunctionData(
         functionFragment: 'getAllAccounts',
-        values?: undefined
+        values: [BigNumberish, BigNumberish]
     ): string
     encodeFunctionData(
         functionFragment: 'getAllServices',
@@ -292,7 +269,7 @@ export interface InferenceServingInterface extends Interface {
     ): string
     encodeFunctionData(
         functionFragment: 'initialize',
-        values: [BigNumberish, AddressLike, AddressLike, AddressLike]
+        values: [BigNumberish, AddressLike, AddressLike]
     ): string
     encodeFunctionData(
         functionFragment: 'initialized',
@@ -321,19 +298,11 @@ export interface InferenceServingInterface extends Interface {
         values: [AddressLike, AddressLike]
     ): string
     encodeFunctionData(
-        functionFragment: 'settleFees',
-        values: [VerifierInputStruct]
-    ): string
-    encodeFunctionData(
         functionFragment: 'settleFeesWithTEE',
         values: [TEESettlementDataStruct[]]
     ): string
     encodeFunctionData(
         functionFragment: 'transferOwnership',
-        values: [AddressLike]
-    ): string
-    encodeFunctionData(
-        functionFragment: 'updateBatchVerifierAddress',
         values: [AddressLike]
     ): string
     encodeFunctionData(
@@ -359,10 +328,6 @@ export interface InferenceServingInterface extends Interface {
     ): Result
     decodeFunctionResult(
         functionFragment: 'addOrUpdateService',
-        data: BytesLike
-    ): Result
-    decodeFunctionResult(
-        functionFragment: 'batchVerifierAddress',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -436,19 +401,11 @@ export interface InferenceServingInterface extends Interface {
         data: BytesLike
     ): Result
     decodeFunctionResult(
-        functionFragment: 'settleFees',
-        data: BytesLike
-    ): Result
-    decodeFunctionResult(
         functionFragment: 'settleFeesWithTEE',
         data: BytesLike
     ): Result
     decodeFunctionResult(
         functionFragment: 'transferOwnership',
-        data: BytesLike
-    ): Result
-    decodeFunctionResult(
-        functionFragment: 'updateBatchVerifierAddress',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -715,8 +672,6 @@ export interface InferenceServing extends BaseContract {
         'nonpayable'
     >
 
-    batchVerifierAddress: TypedContractMethod<[], [string], 'view'>
-
     deleteAccount: TypedContractMethod<
         [user: AddressLike, provider: AddressLike],
         [void],
@@ -761,7 +716,16 @@ export interface InferenceServing extends BaseContract {
         'view'
     >
 
-    getAllAccounts: TypedContractMethod<[], [AccountStructOutput[]], 'view'>
+    getAllAccounts: TypedContractMethod<
+        [offset: BigNumberish, limit: BigNumberish],
+        [
+            [AccountStructOutput[], bigint] & {
+                accounts: AccountStructOutput[]
+                total: bigint
+            }
+        ],
+        'view'
+    >
 
     getAllServices: TypedContractMethod<[], [ServiceStructOutput[]], 'view'>
 
@@ -786,7 +750,6 @@ export interface InferenceServing extends BaseContract {
     initialize: TypedContractMethod<
         [
             _locktime: BigNumberish,
-            _batchVerifierAddress: AddressLike,
             _ledgerAddress: AddressLike,
             owner: AddressLike
         ],
@@ -824,8 +787,6 @@ export interface InferenceServing extends BaseContract {
         'nonpayable'
     >
 
-    settleFees: TypedContractMethod<[arg0: VerifierInputStruct], [void], 'view'>
-
     settleFeesWithTEE: TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
         [string[]],
@@ -834,12 +795,6 @@ export interface InferenceServing extends BaseContract {
 
     transferOwnership: TypedContractMethod<
         [newOwner: AddressLike],
-        [void],
-        'nonpayable'
-    >
-
-    updateBatchVerifierAddress: TypedContractMethod<
-        [_batchVerifierAddress: AddressLike],
         [void],
         'nonpayable'
     >
@@ -891,9 +846,6 @@ export interface InferenceServing extends BaseContract {
         nameOrSignature: 'addOrUpdateService'
     ): TypedContractMethod<[params: ServiceParamsStruct], [void], 'nonpayable'>
     getFunction(
-        nameOrSignature: 'batchVerifierAddress'
-    ): TypedContractMethod<[], [string], 'view'>
-    getFunction(
         nameOrSignature: 'deleteAccount'
     ): TypedContractMethod<
         [user: AddressLike, provider: AddressLike],
@@ -938,9 +890,16 @@ export interface InferenceServing extends BaseContract {
         ],
         'view'
     >
-    getFunction(
-        nameOrSignature: 'getAllAccounts'
-    ): TypedContractMethod<[], [AccountStructOutput[]], 'view'>
+    getFunction(nameOrSignature: 'getAllAccounts'): TypedContractMethod<
+        [offset: BigNumberish, limit: BigNumberish],
+        [
+            [AccountStructOutput[], bigint] & {
+                accounts: AccountStructOutput[]
+                total: bigint
+            }
+        ],
+        'view'
+    >
     getFunction(
         nameOrSignature: 'getAllServices'
     ): TypedContractMethod<[], [ServiceStructOutput[]], 'view'>
@@ -970,7 +929,6 @@ export interface InferenceServing extends BaseContract {
     ): TypedContractMethod<
         [
             _locktime: BigNumberish,
-            _batchVerifierAddress: AddressLike,
             _ledgerAddress: AddressLike,
             owner: AddressLike
         ],
@@ -1014,9 +972,6 @@ export interface InferenceServing extends BaseContract {
         'nonpayable'
     >
     getFunction(
-        nameOrSignature: 'settleFees'
-    ): TypedContractMethod<[arg0: VerifierInputStruct], [void], 'view'>
-    getFunction(
         nameOrSignature: 'settleFeesWithTEE'
     ): TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
@@ -1026,13 +981,6 @@ export interface InferenceServing extends BaseContract {
     getFunction(
         nameOrSignature: 'transferOwnership'
     ): TypedContractMethod<[newOwner: AddressLike], [void], 'nonpayable'>
-    getFunction(
-        nameOrSignature: 'updateBatchVerifierAddress'
-    ): TypedContractMethod<
-        [_batchVerifierAddress: AddressLike],
-        [void],
-        'nonpayable'
-    >
     getFunction(
         nameOrSignature: 'updateLockTime'
     ): TypedContractMethod<[_locktime: BigNumberish], [void], 'nonpayable'>

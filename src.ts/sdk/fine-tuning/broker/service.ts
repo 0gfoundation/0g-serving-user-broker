@@ -7,7 +7,7 @@ import {
 } from '../../common/utils'
 import { MODEL_HASH_MAP } from '../const'
 import type {
-    AccountStructOutput,
+    AccountDetailsStructOutput,
     FineTuningServingContract,
 } from '../contract'
 import type { ServiceStructOutput } from '../contract'
@@ -65,7 +65,7 @@ async function readFileContent(filePath: string): Promise<string> {
 }
 
 export interface FineTuningAccountDetail {
-    account: AccountStructOutput
+    account: AccountDetailsStructOutput
     refunds: { amount: bigint; remainTime: bigint }[]
 }
 export class ServiceProcessor extends BrokerBase {

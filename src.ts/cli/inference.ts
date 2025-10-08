@@ -135,7 +135,7 @@ export default function inference(program: Command) {
         .option(
             '--request-timeout <seconds>',
             'Request timeout in seconds for each provider',
-            '30'
+            '60'
         )
         .action(async (options) => {
             // Build providers list with priorities

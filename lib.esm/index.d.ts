@@ -119,8 +119,8 @@ type TEESettlementDataStruct = {
     signature: BytesLike;
 };
 interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
-    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementCompleted' | 'TEESettlementFailed'): EventFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'acknowledgeProviderSigner', values: [AddressLike, [BigNumberish, BigNumberish]]): string;
     encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, AddressLike]): string;
@@ -141,6 +141,7 @@ interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'ledgerAddress', values?: undefined): string;
     encodeFunctionData(functionFragment: 'lockTime', values?: undefined): string;
     encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
+    encodeFunctionData(functionFragment: 'previewSettlementResults', values: [TEESettlementDataStruct[]]): string;
     encodeFunctionData(functionFragment: 'processRefund', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'removeService', values?: undefined): string;
     encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
@@ -168,6 +169,7 @@ interface InferenceServingInterface extends Interface {
     decodeFunctionResult(functionFragment: 'ledgerAddress', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'lockTime', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'previewSettlementResults', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'processRefund', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'removeService', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
@@ -194,6 +196,27 @@ declare namespace BalanceUpdatedEvent$1 {
         provider: string;
         amount: bigint;
         pendingRefund: bigint;
+    }
+    type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
+    type Filter = TypedDeferredTopicFilter$2<Event>;
+    type Log = TypedEventLog$2<Event>;
+    type LogDescription = TypedLogDescription$2<Event>;
+}
+declare namespace BatchBalanceUpdatedEvent {
+    type InputTuple = [
+        users: AddressLike[],
+        balances: BigNumberish[],
+        pendingRefunds: BigNumberish[]
+    ];
+    type OutputTuple = [
+        users: string[],
+        balances: bigint[],
+        pendingRefunds: bigint[]
+    ];
+    interface OutputObject {
+        users: string[];
+        balances: bigint[];
+        pendingRefunds: bigint[];
     }
     type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
     type Filter = TypedDeferredTopicFilter$2<Event>;
@@ -283,38 +306,21 @@ declare namespace ServiceUpdatedEvent$1 {
     type Log = TypedEventLog$2<Event>;
     type LogDescription = TypedLogDescription$2<Event>;
 }
-declare namespace TEESettlementCompletedEvent {
+declare namespace TEESettlementResultEvent {
     type InputTuple = [
-        provider: AddressLike,
-        successCount: BigNumberish,
-        failedCount: BigNumberish
+        user: AddressLike,
+        status: BigNumberish,
+        unsettledAmount: BigNumberish
     ];
     type OutputTuple = [
-        provider: string,
-        successCount: bigint,
-        failedCount: bigint
+        user: string,
+        status: bigint,
+        unsettledAmount: bigint
     ];
     interface OutputObject {
-        provider: string;
-        successCount: bigint;
-        failedCount: bigint;
-    }
-    type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
-    type Filter = TypedDeferredTopicFilter$2<Event>;
-    type Log = TypedEventLog$2<Event>;
-    type LogDescription = TypedLogDescription$2<Event>;
-}
-declare namespace TEESettlementFailedEvent {
-    type InputTuple = [
-        provider: AddressLike,
-        user: AddressLike,
-        reason: string
-    ];
-    type OutputTuple = [provider: string, user: string, reason: string];
-    interface OutputObject {
-        provider: string;
         user: string;
-        reason: string;
+        status: bigint;
+        unsettledAmount: bigint;
     }
     type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
     type Filter = TypedDeferredTopicFilter$2<Event>;
@@ -450,6 +456,21 @@ interface InferenceServing extends BaseContract {
     ledgerAddress: TypedContractMethod$2<[], [string], 'view'>;
     lockTime: TypedContractMethod$2<[], [bigint], 'view'>;
     owner: TypedContractMethod$2<[], [string], 'view'>;
+    previewSettlementResults: TypedContractMethod$2<[
+        settlements: TEESettlementDataStruct[]
+    ], [
+        [
+            string[],
+            bigint[],
+            string[],
+            bigint[]
+        ] & {
+            failedUsers: string[];
+            failureReasons: bigint[];
+            partialUsers: string[];
+            partialAmounts: bigint[];
+        }
+    ], 'view'>;
     processRefund: TypedContractMethod$2<[
         user: AddressLike,
         provider: AddressLike
@@ -475,7 +496,17 @@ interface InferenceServing extends BaseContract {
     settleFeesWithTEE: TypedContractMethod$2<[
         settlements: TEESettlementDataStruct[]
     ], [
-        string[]
+        [
+            string[],
+            bigint[],
+            string[],
+            bigint[]
+        ] & {
+            failedUsers: string[];
+            failureReasons: bigint[];
+            partialUsers: string[];
+            partialAmounts: bigint[];
+        }
     ], 'nonpayable'>;
     transferOwnership: TypedContractMethod$2<[
         newOwner: AddressLike
@@ -600,6 +631,21 @@ interface InferenceServing extends BaseContract {
     getFunction(nameOrSignature: 'ledgerAddress'): TypedContractMethod$2<[], [string], 'view'>;
     getFunction(nameOrSignature: 'lockTime'): TypedContractMethod$2<[], [bigint], 'view'>;
     getFunction(nameOrSignature: 'owner'): TypedContractMethod$2<[], [string], 'view'>;
+    getFunction(nameOrSignature: 'previewSettlementResults'): TypedContractMethod$2<[
+        settlements: TEESettlementDataStruct[]
+    ], [
+        [
+            string[],
+            bigint[],
+            string[],
+            bigint[]
+        ] & {
+            failedUsers: string[];
+            failureReasons: bigint[];
+            partialUsers: string[];
+            partialAmounts: bigint[];
+        }
+    ], 'view'>;
     getFunction(nameOrSignature: 'processRefund'): TypedContractMethod$2<[
         user: AddressLike,
         provider: AddressLike
@@ -625,20 +671,32 @@ interface InferenceServing extends BaseContract {
     getFunction(nameOrSignature: 'settleFeesWithTEE'): TypedContractMethod$2<[
         settlements: TEESettlementDataStruct[]
     ], [
-        string[]
+        [
+            string[],
+            bigint[],
+            string[],
+            bigint[]
+        ] & {
+            failedUsers: string[];
+            failureReasons: bigint[];
+            partialUsers: string[];
+            partialAmounts: bigint[];
+        }
     ], 'nonpayable'>;
     getFunction(nameOrSignature: 'transferOwnership'): TypedContractMethod$2<[newOwner: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'updateLockTime'): TypedContractMethod$2<[_locktime: BigNumberish], [void], 'nonpayable'>;
     getEvent(key: 'BalanceUpdated'): TypedContractEvent$2<BalanceUpdatedEvent$1.InputTuple, BalanceUpdatedEvent$1.OutputTuple, BalanceUpdatedEvent$1.OutputObject>;
+    getEvent(key: 'BatchBalanceUpdated'): TypedContractEvent$2<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
     getEvent(key: 'OwnershipTransferred'): TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
     getEvent(key: 'RefundRequested'): TypedContractEvent$2<RefundRequestedEvent$1.InputTuple, RefundRequestedEvent$1.OutputTuple, RefundRequestedEvent$1.OutputObject>;
     getEvent(key: 'ServiceRemoved'): TypedContractEvent$2<ServiceRemovedEvent$1.InputTuple, ServiceRemovedEvent$1.OutputTuple, ServiceRemovedEvent$1.OutputObject>;
     getEvent(key: 'ServiceUpdated'): TypedContractEvent$2<ServiceUpdatedEvent$1.InputTuple, ServiceUpdatedEvent$1.OutputTuple, ServiceUpdatedEvent$1.OutputObject>;
-    getEvent(key: 'TEESettlementCompleted'): TypedContractEvent$2<TEESettlementCompletedEvent.InputTuple, TEESettlementCompletedEvent.OutputTuple, TEESettlementCompletedEvent.OutputObject>;
-    getEvent(key: 'TEESettlementFailed'): TypedContractEvent$2<TEESettlementFailedEvent.InputTuple, TEESettlementFailedEvent.OutputTuple, TEESettlementFailedEvent.OutputObject>;
+    getEvent(key: 'TEESettlementResult'): TypedContractEvent$2<TEESettlementResultEvent.InputTuple, TEESettlementResultEvent.OutputTuple, TEESettlementResultEvent.OutputObject>;
     filters: {
         'BalanceUpdated(address,address,uint256,uint256)': TypedContractEvent$2<BalanceUpdatedEvent$1.InputTuple, BalanceUpdatedEvent$1.OutputTuple, BalanceUpdatedEvent$1.OutputObject>;
         BalanceUpdated: TypedContractEvent$2<BalanceUpdatedEvent$1.InputTuple, BalanceUpdatedEvent$1.OutputTuple, BalanceUpdatedEvent$1.OutputObject>;
+        'BatchBalanceUpdated(address[],uint256[],uint256[])': TypedContractEvent$2<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
+        BatchBalanceUpdated: TypedContractEvent$2<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
         'OwnershipTransferred(address,address)': TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
         OwnershipTransferred: TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
         'RefundRequested(address,address,uint256,uint256)': TypedContractEvent$2<RefundRequestedEvent$1.InputTuple, RefundRequestedEvent$1.OutputTuple, RefundRequestedEvent$1.OutputObject>;
@@ -647,10 +705,8 @@ interface InferenceServing extends BaseContract {
         ServiceRemoved: TypedContractEvent$2<ServiceRemovedEvent$1.InputTuple, ServiceRemovedEvent$1.OutputTuple, ServiceRemovedEvent$1.OutputObject>;
         'ServiceUpdated(address,string,string,uint256,uint256,uint256,string,string)': TypedContractEvent$2<ServiceUpdatedEvent$1.InputTuple, ServiceUpdatedEvent$1.OutputTuple, ServiceUpdatedEvent$1.OutputObject>;
         ServiceUpdated: TypedContractEvent$2<ServiceUpdatedEvent$1.InputTuple, ServiceUpdatedEvent$1.OutputTuple, ServiceUpdatedEvent$1.OutputObject>;
-        'TEESettlementCompleted(address,uint256,uint256)': TypedContractEvent$2<TEESettlementCompletedEvent.InputTuple, TEESettlementCompletedEvent.OutputTuple, TEESettlementCompletedEvent.OutputObject>;
-        TEESettlementCompleted: TypedContractEvent$2<TEESettlementCompletedEvent.InputTuple, TEESettlementCompletedEvent.OutputTuple, TEESettlementCompletedEvent.OutputObject>;
-        'TEESettlementFailed(address,address,string)': TypedContractEvent$2<TEESettlementFailedEvent.InputTuple, TEESettlementFailedEvent.OutputTuple, TEESettlementFailedEvent.OutputObject>;
-        TEESettlementFailed: TypedContractEvent$2<TEESettlementFailedEvent.InputTuple, TEESettlementFailedEvent.OutputTuple, TEESettlementFailedEvent.OutputObject>;
+        'TEESettlementResult(address,uint8,uint256)': TypedContractEvent$2<TEESettlementResultEvent.InputTuple, TEESettlementResultEvent.OutputTuple, TEESettlementResultEvent.OutputObject>;
+        TEESettlementResult: TypedContractEvent$2<TEESettlementResultEvent.InputTuple, TEESettlementResultEvent.OutputTuple, TEESettlementResultEvent.OutputObject>;
     };
 }
 

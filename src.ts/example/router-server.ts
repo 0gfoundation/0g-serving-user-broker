@@ -61,7 +61,7 @@ export async function runRouterServer(options: RouterServerOptions) {
     const cacheDurationMs = (Number(options.cacheDuration) || 60) * 1000
 
     // Parse request timeout from options, default to 30 seconds
-    const requestTimeoutMs = (Number(options.requestTimeout) || 30) * 1000
+    const requestTimeoutMs = (Number(options.requestTimeout) || 60) * 1000
 
     let broker: any
     const providers: Map<string, ProviderInfo> = new Map()

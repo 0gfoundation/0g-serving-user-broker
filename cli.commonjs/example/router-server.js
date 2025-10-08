@@ -16,7 +16,7 @@ async function runRouterServer(options) {
     // Parse cache duration from options, default to 60 seconds (1 minute)
     const cacheDurationMs = (Number(options.cacheDuration) || 60) * 1000;
     // Parse request timeout from options, default to 30 seconds
-    const requestTimeoutMs = (Number(options.requestTimeout) || 30) * 1000;
+    const requestTimeoutMs = (Number(options.requestTimeout) || 60) * 1000;
     let broker;
     const providers = new Map();
     const ERROR_RECOVERY_TIME = 60000; // 1 minute

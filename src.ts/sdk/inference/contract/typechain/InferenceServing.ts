@@ -187,6 +187,7 @@ export interface InferenceServingInterface extends Interface {
             | 'ledgerAddress'
             | 'lockTime'
             | 'owner'
+            | 'previewSettlementResults'
             | 'processRefund'
             | 'removeService'
             | 'renounceOwnership'
@@ -199,12 +200,12 @@ export interface InferenceServingInterface extends Interface {
     getEvent(
         nameOrSignatureOrTopic:
             | 'BalanceUpdated'
+            | 'BatchBalanceUpdated'
             | 'OwnershipTransferred'
             | 'RefundRequested'
             | 'ServiceRemoved'
             | 'ServiceUpdated'
-            | 'TEESettlementCompleted'
-            | 'TEESettlementFailed'
+            | 'TEESettlementResult'
     ): EventFragment
 
     encodeFunctionData(
@@ -281,6 +282,10 @@ export interface InferenceServingInterface extends Interface {
     ): string
     encodeFunctionData(functionFragment: 'lockTime', values?: undefined): string
     encodeFunctionData(functionFragment: 'owner', values?: undefined): string
+    encodeFunctionData(
+        functionFragment: 'previewSettlementResults',
+        values: [TEESettlementDataStruct[]]
+    ): string
     encodeFunctionData(
         functionFragment: 'processRefund',
         values: [AddressLike, AddressLike]
@@ -385,6 +390,10 @@ export interface InferenceServingInterface extends Interface {
     decodeFunctionResult(functionFragment: 'lockTime', data: BytesLike): Result
     decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result
     decodeFunctionResult(
+        functionFragment: 'previewSettlementResults',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
         functionFragment: 'processRefund',
         data: BytesLike
     ): Result
@@ -432,6 +441,32 @@ export namespace BalanceUpdatedEvent {
         provider: string
         amount: bigint
         pendingRefund: bigint
+    }
+    export type Event = TypedContractEvent<
+        InputTuple,
+        OutputTuple,
+        OutputObject
+    >
+    export type Filter = TypedDeferredTopicFilter<Event>
+    export type Log = TypedEventLog<Event>
+    export type LogDescription = TypedLogDescription<Event>
+}
+
+export namespace BatchBalanceUpdatedEvent {
+    export type InputTuple = [
+        users: AddressLike[],
+        balances: BigNumberish[],
+        pendingRefunds: BigNumberish[]
+    ]
+    export type OutputTuple = [
+        users: string[],
+        balances: bigint[],
+        pendingRefunds: bigint[]
+    ]
+    export interface OutputObject {
+        users: string[]
+        balances: bigint[]
+        pendingRefunds: bigint[]
     }
     export type Event = TypedContractEvent<
         InputTuple,
@@ -546,43 +581,21 @@ export namespace ServiceUpdatedEvent {
     export type LogDescription = TypedLogDescription<Event>
 }
 
-export namespace TEESettlementCompletedEvent {
+export namespace TEESettlementResultEvent {
     export type InputTuple = [
-        provider: AddressLike,
-        successCount: BigNumberish,
-        failedCount: BigNumberish
+        user: AddressLike,
+        status: BigNumberish,
+        unsettledAmount: BigNumberish
     ]
     export type OutputTuple = [
-        provider: string,
-        successCount: bigint,
-        failedCount: bigint
+        user: string,
+        status: bigint,
+        unsettledAmount: bigint
     ]
     export interface OutputObject {
-        provider: string
-        successCount: bigint
-        failedCount: bigint
-    }
-    export type Event = TypedContractEvent<
-        InputTuple,
-        OutputTuple,
-        OutputObject
-    >
-    export type Filter = TypedDeferredTopicFilter<Event>
-    export type Log = TypedEventLog<Event>
-    export type LogDescription = TypedLogDescription<Event>
-}
-
-export namespace TEESettlementFailedEvent {
-    export type InputTuple = [
-        provider: AddressLike,
-        user: AddressLike,
-        reason: string
-    ]
-    export type OutputTuple = [provider: string, user: string, reason: string]
-    export interface OutputObject {
-        provider: string
         user: string
-        reason: string
+        status: bigint
+        unsettledAmount: bigint
     }
     export type Event = TypedContractEvent<
         InputTuple,
@@ -765,6 +778,19 @@ export interface InferenceServing extends BaseContract {
 
     owner: TypedContractMethod<[], [string], 'view'>
 
+    previewSettlementResults: TypedContractMethod<
+        [settlements: TEESettlementDataStruct[]],
+        [
+            [string[], bigint[], string[], bigint[]] & {
+                failedUsers: string[]
+                failureReasons: bigint[]
+                partialUsers: string[]
+                partialAmounts: bigint[]
+            }
+        ],
+        'view'
+    >
+
     processRefund: TypedContractMethod<
         [user: AddressLike, provider: AddressLike],
         [
@@ -789,7 +815,14 @@ export interface InferenceServing extends BaseContract {
 
     settleFeesWithTEE: TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
-        [string[]],
+        [
+            [string[], bigint[], string[], bigint[]] & {
+                failedUsers: string[]
+                failureReasons: bigint[]
+                partialUsers: string[]
+                partialAmounts: bigint[]
+            }
+        ],
         'nonpayable'
     >
 
@@ -947,6 +980,20 @@ export interface InferenceServing extends BaseContract {
     getFunction(
         nameOrSignature: 'owner'
     ): TypedContractMethod<[], [string], 'view'>
+    getFunction(
+        nameOrSignature: 'previewSettlementResults'
+    ): TypedContractMethod<
+        [settlements: TEESettlementDataStruct[]],
+        [
+            [string[], bigint[], string[], bigint[]] & {
+                failedUsers: string[]
+                failureReasons: bigint[]
+                partialUsers: string[]
+                partialAmounts: bigint[]
+            }
+        ],
+        'view'
+    >
     getFunction(nameOrSignature: 'processRefund'): TypedContractMethod<
         [user: AddressLike, provider: AddressLike],
         [
@@ -971,11 +1018,16 @@ export interface InferenceServing extends BaseContract {
         [void],
         'nonpayable'
     >
-    getFunction(
-        nameOrSignature: 'settleFeesWithTEE'
-    ): TypedContractMethod<
+    getFunction(nameOrSignature: 'settleFeesWithTEE'): TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
-        [string[]],
+        [
+            [string[], bigint[], string[], bigint[]] & {
+                failedUsers: string[]
+                failureReasons: bigint[]
+                partialUsers: string[]
+                partialAmounts: bigint[]
+            }
+        ],
         'nonpayable'
     >
     getFunction(
@@ -991,6 +1043,13 @@ export interface InferenceServing extends BaseContract {
         BalanceUpdatedEvent.InputTuple,
         BalanceUpdatedEvent.OutputTuple,
         BalanceUpdatedEvent.OutputObject
+    >
+    getEvent(
+        key: 'BatchBalanceUpdated'
+    ): TypedContractEvent<
+        BatchBalanceUpdatedEvent.InputTuple,
+        BatchBalanceUpdatedEvent.OutputTuple,
+        BatchBalanceUpdatedEvent.OutputObject
     >
     getEvent(
         key: 'OwnershipTransferred'
@@ -1021,18 +1080,11 @@ export interface InferenceServing extends BaseContract {
         ServiceUpdatedEvent.OutputObject
     >
     getEvent(
-        key: 'TEESettlementCompleted'
+        key: 'TEESettlementResult'
     ): TypedContractEvent<
-        TEESettlementCompletedEvent.InputTuple,
-        TEESettlementCompletedEvent.OutputTuple,
-        TEESettlementCompletedEvent.OutputObject
-    >
-    getEvent(
-        key: 'TEESettlementFailed'
-    ): TypedContractEvent<
-        TEESettlementFailedEvent.InputTuple,
-        TEESettlementFailedEvent.OutputTuple,
-        TEESettlementFailedEvent.OutputObject
+        TEESettlementResultEvent.InputTuple,
+        TEESettlementResultEvent.OutputTuple,
+        TEESettlementResultEvent.OutputObject
     >
 
     filters: {
@@ -1045,6 +1097,17 @@ export interface InferenceServing extends BaseContract {
             BalanceUpdatedEvent.InputTuple,
             BalanceUpdatedEvent.OutputTuple,
             BalanceUpdatedEvent.OutputObject
+        >
+
+        'BatchBalanceUpdated(address[],uint256[],uint256[])': TypedContractEvent<
+            BatchBalanceUpdatedEvent.InputTuple,
+            BatchBalanceUpdatedEvent.OutputTuple,
+            BatchBalanceUpdatedEvent.OutputObject
+        >
+        BatchBalanceUpdated: TypedContractEvent<
+            BatchBalanceUpdatedEvent.InputTuple,
+            BatchBalanceUpdatedEvent.OutputTuple,
+            BatchBalanceUpdatedEvent.OutputObject
         >
 
         'OwnershipTransferred(address,address)': TypedContractEvent<
@@ -1091,26 +1154,15 @@ export interface InferenceServing extends BaseContract {
             ServiceUpdatedEvent.OutputObject
         >
 
-        'TEESettlementCompleted(address,uint256,uint256)': TypedContractEvent<
-            TEESettlementCompletedEvent.InputTuple,
-            TEESettlementCompletedEvent.OutputTuple,
-            TEESettlementCompletedEvent.OutputObject
+        'TEESettlementResult(address,uint8,uint256)': TypedContractEvent<
+            TEESettlementResultEvent.InputTuple,
+            TEESettlementResultEvent.OutputTuple,
+            TEESettlementResultEvent.OutputObject
         >
-        TEESettlementCompleted: TypedContractEvent<
-            TEESettlementCompletedEvent.InputTuple,
-            TEESettlementCompletedEvent.OutputTuple,
-            TEESettlementCompletedEvent.OutputObject
-        >
-
-        'TEESettlementFailed(address,address,string)': TypedContractEvent<
-            TEESettlementFailedEvent.InputTuple,
-            TEESettlementFailedEvent.OutputTuple,
-            TEESettlementFailedEvent.OutputObject
-        >
-        TEESettlementFailed: TypedContractEvent<
-            TEESettlementFailedEvent.InputTuple,
-            TEESettlementFailedEvent.OutputTuple,
-            TEESettlementFailedEvent.OutputObject
+        TEESettlementResult: TypedContractEvent<
+            TEESettlementResultEvent.InputTuple,
+            TEESettlementResultEvent.OutputTuple,
+            TEESettlementResultEvent.OutputObject
         >
     }
 }

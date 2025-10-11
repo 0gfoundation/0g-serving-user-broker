@@ -7,6 +7,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { use0GBroker } from "../../../../hooks/use0GBroker";
 import { useChatHistory } from "../../../../hooks/useChatHistory";
 import { a0giToNeuron, neuronToA0gi } from "../../../../utils/currency";
+import type { Provider } from "../../../../types/broker";
+import { OFFICIAL_PROVIDERS } from "../../../../constants/providers";
 
 
 import ReactMarkdown from "react-markdown";
@@ -20,40 +22,6 @@ interface Message {
   isVerifying?: boolean;
 }
 
-interface Provider {
-  address: string;
-  model: string;
-  name: string;
-  verifiability: string;
-  url?: string;
-  endpoint?: string;
-  inputPrice?: number;
-  outputPrice?: number;
-  inputPriceNeuron?: bigint;
-  outputPriceNeuron?: bigint;
-}
-
-// Official providers based on the documentation
-const OFFICIAL_PROVIDERS: Provider[] = [
-  {
-    address: "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
-    model: "gpt-oss-120b",
-    name: "GPT OSS 120B",
-    verifiability: "TEE (TeeML)",
-  },
-  {
-    address: "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3",
-    model: "deepseek-chat-v3-0324",
-    name: "DeepSeek R1 V3 0324",
-    verifiability: "TEE (TeeML)",
-  },
-  {
-    address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    model: "qwen2.5-vl-72b-instruct",
-    name: "QWEN2.5 VL 72B Instruct",
-    verifiability: "TEE (TeeML)",
-  },
-];
 
 export function OptimizedChatPage() {
   const { isConnected, address } = useAccount();
@@ -252,25 +220,10 @@ export function OptimizedChatPage() {
             setSelectedProvider(transformedProviders[0]);
           }
         } catch (err: unknown) {
-          console.log('Failed to fetch providers from broker, using official list.', err);
-          
-          // Check for provider parameter from URL
-          const providerParam = searchParams.get('provider');
-          
-          if (providerParam && !selectedProvider) {
-            // Try to find the provider by address
-            const targetProvider = OFFICIAL_PROVIDERS.find(
-              p => p.address.toLowerCase() === providerParam.toLowerCase()
-            );
-            if (targetProvider) {
-              setSelectedProvider(targetProvider);
-            } else if (OFFICIAL_PROVIDERS.length > 0) {
-              // Fallback to first provider if specified provider not found
-              setSelectedProvider(OFFICIAL_PROVIDERS[0]);
-            }
-          } else if (!selectedProvider && OFFICIAL_PROVIDERS.length > 0) {
-            setSelectedProvider(OFFICIAL_PROVIDERS[0]);
-          }
+          console.log('Failed to fetch providers from broker:', err);
+          // Keep the providers list empty on error
+          setProviders([]);
+          setSelectedProvider(null);
         }
       }
     };

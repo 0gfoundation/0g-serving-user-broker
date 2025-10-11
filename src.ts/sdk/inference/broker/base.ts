@@ -137,10 +137,7 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    private async fetchText(
-        endpoint: string,
-        options: RequestInit
-    ): Promise<string> {
+    async fetchText(endpoint: string, options: RequestInit): Promise<string> {
         try {
             const response = await fetch(endpoint, options)
             if (!response.ok) {
@@ -304,7 +301,7 @@ export abstract class ZGServingUserBrokerBase {
     async calculateInputFees(extractor: Extractor, content: string) {
         const svc = await extractor.getSvcInfo()
         const inputCount = await extractor.getInputCount(content)
-        const inputFee = BigInt(inputCount) * svc.inputPrice
+        const inputFee = BigInt(inputCount) * BigInt(svc.inputPrice)
         return inputFee
     }
 
@@ -360,9 +357,9 @@ export abstract class ZGServingUserBrokerBase {
 
             // Calculate target and trigger thresholds
             const targetThreshold =
-                this.topUpTargetThreshold * (svc.inputPrice + svc.outputPrice)
+                this.topUpTargetThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
             const triggerThreshold =
-                this.topUpTriggerThreshold * (svc.inputPrice + svc.outputPrice)
+                this.topUpTriggerThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
 
             // Check if it's the first round
             const isFirstRound =

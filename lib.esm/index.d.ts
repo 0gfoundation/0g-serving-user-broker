@@ -2033,7 +2033,7 @@ declare abstract class ZGServingUserBrokerBase {
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
     getQuote(providerAddress: string): Promise<QuoteResponse>;
     userAcknowledged(providerAddress: string): Promise<boolean>;
-    private fetchText;
+    fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput$1): Extractor;
     protected a0giToNeuron(value: number): bigint;
@@ -2086,11 +2086,6 @@ interface ResponseSignature {
     text: string;
     signature: string;
 }
-interface SignerRA {
-    signing_address: string;
-    nvidia_payload: string;
-    intel_quote: string;
-}
 interface SingerRAVerificationResult {
     /**
      * Whether the signer RA is valid
@@ -2106,6 +2101,8 @@ interface SingerRAVerificationResult {
  * The Verifier class contains methods for verifying service reliability.
  */
 declare class Verifier extends ZGServingUserBrokerBase {
+    protected automata: Automata;
+    constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     verifyService(providerAddress: string): Promise<boolean | null>;
     /**
      * getSigningAddress verifies whether the signing address
@@ -2123,7 +2120,7 @@ declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
+    fetSignerRA(providerBrokerURL: string, model: string): Promise<string>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }

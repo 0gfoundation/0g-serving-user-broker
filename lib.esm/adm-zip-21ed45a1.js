@@ -1,6 +1,6 @@
-import require$$0$1 from 'fs';
+import fs__default from 'fs';
 import path__default from 'path';
-import require$$0$2 from 'crypto';
+import require$$0$1 from 'crypto';
 
 function getDefaultExportFromCjs (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -265,7 +265,7 @@ var hasRequiredUtils;
 function requireUtils () {
 	if (hasRequiredUtils) return utils;
 	hasRequiredUtils = 1;
-	const fsystem = require$$0$1;
+	const fsystem = fs__default;
 	const pth = path__default;
 	const Constants = requireConstants();
 	const Errors = requireErrors();
@@ -12805,7 +12805,7 @@ function requireZipcrypto () {
 
 	// node crypt, we use it for generate salt
 	// eslint-disable-next-line node/no-unsupported-features/node-builtins
-	const { randomFillSync } = require$$0$2;
+	const { randomFillSync } = require$$0$1;
 	const Errors = requireErrors();
 
 	// generate CRC32 lookup table
@@ -14825,4 +14825,4 @@ var admZip$1 = /*#__PURE__*/Object.freeze({
 });
 
 export { admZip$1 as a };
-//# sourceMappingURL=adm-zip-86f30d47.js.map
+//# sourceMappingURL=adm-zip-21ed45a1.js.map

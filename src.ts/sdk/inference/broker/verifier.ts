@@ -1,6 +1,11 @@
 import { ZGServingUserBrokerBase } from './base'
 import { ethers } from 'ethers'
 import { throwFormattedError } from '../../common/utils'
+import { Automata } from '../../common/automata '
+import * as fs from 'fs'
+import type { InferenceServingContract } from '../contract'
+import type { LedgerBroker } from '../../ledger'
+import type { Cache, Metadata } from '../../common/storage'
 
 export interface ResponseSignature {
     text: string
@@ -29,6 +34,18 @@ export interface SingerRAVerificationResult {
  * The Verifier class contains methods for verifying service reliability.
  */
 export class Verifier extends ZGServingUserBrokerBase {
+    protected automata: Automata
+
+    constructor(
+        contract: InferenceServingContract,
+        ledger: LedgerBroker,
+        metadata: Metadata,
+        cache: Cache
+    ) {
+        super(contract, ledger, metadata, cache)
+        this.automata = new Automata()
+    }
+
     async verifyService(providerAddress: string): Promise<boolean | null> {
         try {
             const { valid } = await this.getSigningAddress(
@@ -76,19 +93,22 @@ export class Verifier extends ZGServingUserBrokerBase {
                 nvidia_payload: '',
                 intel_quote: '',
             }
+            let quoteString: string
             if (vllmProxy) {
-                signerRA = await Verifier.fetSignerRA(svc.url, svc.model)
+                quoteString = await this.fetSignerRA(svc.url, svc.model)
+                // Write quoteString to /tmp/del
+                // quoteString = JSON.stringify(signerRA)
+                await fs.promises.writeFile('/tmp/del2.json', quoteString)
+                signerRA = JSON.parse(quoteString)
                 if (!signerRA?.signing_address) {
                     throw new Error('signing address does not exist')
                 }
             } else {
-                const { quote, provider_signer, nvidia_payload } =
-                    await this.getQuote(providerAddress)
-                signerRA = {
-                    signing_address: provider_signer,
-                    nvidia_payload: nvidia_payload,
-                    intel_quote: quote,
-                }
+                const { quote } = await this.getQuote(providerAddress)
+                quoteString = quote
+                // Write quoteString to /tmp/del
+                await fs.promises.writeFile('/tmp/del', quoteString)
+                signerRA = JSON.parse(quoteString)
             }
 
             signingKey = `${this.contract.getUserAddress()}_${providerAddress}`
@@ -97,11 +117,40 @@ export class Verifier extends ZGServingUserBrokerBase {
                 signerRA.signing_address
             )
 
-            // TODO: use intel_quote to verify signing address
-            const valid = await Verifier.verifyRA(
-                svc.url,
-                signerRA.nvidia_payload
-            )
+            let valid = false
+            const rpc = process.env.RPC_ENDPOINT
+
+            console.log("signerRA.intel_quote", signerRA.intel_quote)
+
+            // bypass quote verification if testing on localhost
+            if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
+                valid =
+                    (await this.automata.verifyQuote(signerRA.intel_quote)) ||
+                    false
+                console.log(
+                    'Quote verification when verify signing key quote:',
+                    valid
+                )
+
+                // if (nvidia_payload) {
+                //     const svc = await this.getService(providerAddress)
+                //     const valid = await Verifier.verifyRA(
+                //         svc.url,
+                //         nvidia_payload
+                //     )
+                //     console.log('nvidia payload verification:', valid)
+
+                //     if (!valid) {
+                //         throw new Error('nvidia payload verify failed')
+                //     }
+                // }
+            }
+
+            // // TODO: use intel_quote to verify signing address
+            // const valid = await Verifier.verifyRA(
+            //     svc.url,
+            //     signerRA.nvidia_payload
+            // )
 
             return {
                 valid,
@@ -163,48 +212,61 @@ export class Verifier extends ZGServingUserBrokerBase {
             })
     }
 
-    static async fetSignerRA(
+    async fetSignerRA(
         providerBrokerURL: string,
         model: string
-    ): Promise<SignerRA> {
-        return fetch(
-            `${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }
-        )
-            .then((response) => {
-                return response.json()
-            })
-            .then((data) => {
-                if (data.nvidia_payload) {
-                    try {
-                        data.nvidia_payload = JSON.parse(data.nvidia_payload)
-                    } catch (error) {
-                        throw Error('parsing nvidia_payload error')
-                    }
-                }
-                if (data.intel_quote) {
-                    try {
-                        data.intel_quote =
-                            '0x' +
-                            Buffer.from(data.intel_quote, 'base64').toString(
-                                'hex'
-                            )
-                    } catch (error) {
-                        throw Error('parsing intel_quote error')
-                    }
-                }
-
-                return data as SignerRA
-            })
-            .catch((error) => {
-                throwFormattedError(error)
-            })
+    ): Promise<string> {
+        const endpoint = `${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`
+        const quoteString = await this.fetchText(endpoint, {
+            method: 'GET',
+        })
+        // Write quoteString to /tmp/del
+        await fs.promises.writeFile('/tmp/del', quoteString)
+        return quoteString
     }
+
+    // static async fetSignerRA(
+    //     providerBrokerURL: string,
+    //     model: string
+    // ): Promise<SignerRA> {
+    //     return fetch(
+    //         `${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`,
+    //         {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //         }
+    //     )
+    //         .then((response) => {
+    //             return response.json()
+    //         })
+    //         .then((data) => {
+    //             if (data.nvidia_payload) {
+    //                 try {
+    //                     data.nvidia_payload = JSON.parse(data.nvidia_payload)
+    //                 } catch (error) {
+    //                     throw Error('parsing nvidia_payload error')
+    //                 }
+    //             }
+    //             if (data.intel_quote) {
+    //                 try {
+    //                     data.intel_quote =
+    //                         '0x' +
+    //                         Buffer.from(data.intel_quote, 'base64').toString(
+    //                             'hex'
+    //                         )
+    //                 } catch (error) {
+    //                     throw Error('parsing intel_quote error')
+    //                 }
+    //             }
+
+    //             return data as SignerRA
+    //         })
+    //         .catch((error) => {
+    //             throwFormattedError(error)
+    //         })
+    // }
 
     static async fetSignatureByChatID(
         providerBrokerURL: string,

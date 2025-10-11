@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@0glabs/0g-serving-broker':
-        specifier: 0.4.0
-        version: 0.4.0(@types/circomlibjs@0.1.6)(@types/crypto-js@4.2.2)(bufferutil@4.0.9)(circomlibjs@0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10))(crypto-js@4.2.0)(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(rollup@4.50.1)(tslib@2.8.1)(typechain@8.3.2(typescript@5.9.2))(typescript@5.9.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        specifier: 0.5.0
+        version: 0.5.0(@types/circomlibjs@0.1.6)(@types/crypto-js@4.2.2)(bufferutil@4.0.9)(circomlibjs@0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10))(crypto-js@4.2.0)(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(rollup@4.50.1)(tslib@2.8.1)(typechain@8.3.2(typescript@5.9.2))(typescript@5.9.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@electric-sql/pglite':
         specifier: ^0.3.7
         version: 0.3.8
@@ -111,8 +111,8 @@ importers:
 
 packages:
 
-  '@0glabs/0g-serving-broker@0.4.0':
-    resolution: {integrity: sha512-URjInKtKvWPBAO6Cmrx4onFlhr4eDoQEXUmrssCQWh8B/Jy6ISWGsVU/3Rv3vW4xr4DvDFQ1DDNZF51C516jGw==}
+  '@0glabs/0g-serving-broker@0.5.0':
+    resolution: {integrity: sha512-rcpU6hJ4MXikBTOgiXKjOdEr8bdSI0b1HHzP/hx1LIs2FmO7DIoICufmAgFHjEnyiAlrjWRi25r2ed60qjtuXA==}
     hasBin: true
     peerDependencies:
       '@types/circomlibjs': ^0.1.6
@@ -4564,7 +4564,7 @@ packages:
 
 snapshots:
 
-  '@0glabs/0g-serving-broker@0.4.0(@types/circomlibjs@0.1.6)(@types/crypto-js@4.2.2)(bufferutil@4.0.9)(circomlibjs@0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10))(crypto-js@4.2.0)(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(rollup@4.50.1)(tslib@2.8.1)(typechain@8.3.2(typescript@5.9.2))(typescript@5.9.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
+  '@0glabs/0g-serving-broker@0.5.0(@types/circomlibjs@0.1.6)(@types/crypto-js@4.2.2)(bufferutil@4.0.9)(circomlibjs@0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10))(crypto-js@4.2.0)(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(rollup@4.50.1)(tslib@2.8.1)(typechain@8.3.2(typescript@5.9.2))(typescript@5.9.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/keccak256': 5.8.0

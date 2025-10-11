@@ -52,6 +52,8 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
             let singerRAVerificationResult =
                 await this.verifier.getSigningAddress(providerAddress)
 
+            console.log('singerRAVerificationResult', singerRAVerificationResult)
+
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(
@@ -88,6 +90,6 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
     ): Promise<bigint> {
         const svc = await extractor.getSvcInfo()
         const outputCount = await extractor.getOutputCount(content)
-        return BigInt(outputCount) * svc.outputPrice
+        return BigInt(outputCount) * BigInt(svc.outputPrice)
     }
 }

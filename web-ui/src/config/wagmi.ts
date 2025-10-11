@@ -2,12 +2,12 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { defineChain } from 'viem';
 
 export const zgTestnet = defineChain({
-  id: 16601,
+  id: 16602,
   name: '0G Testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'A0GI',
-    symbol: 'A0GI',
+    name: '0G',
+    symbol: '0G',
   },
   rpcUrls: {
     default: {
@@ -17,7 +17,7 @@ export const zgTestnet = defineChain({
   blockExplorers: {
     default: {
       name: '0G Testnet Explorer',
-      url: 'https://chainscan-newton.0g.ai',
+      url: 'https://chainscan-galileo.0g.ai/',
     },
   },
   testnet: true,

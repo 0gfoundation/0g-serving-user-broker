@@ -196,7 +196,7 @@ class ZGServingUserBrokerBase {
     async calculateInputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
         const inputCount = await extractor.getInputCount(content);
-        const inputFee = BigInt(inputCount) * svc.inputPrice;
+        const inputFee = BigInt(inputCount) * BigInt(svc.inputPrice);
         return inputFee;
     }
     async updateCachedFee(provider, fee) {
@@ -232,8 +232,8 @@ class ZGServingUserBrokerBase {
             const extractor = await this.getExtractor(provider);
             const svc = await extractor.getSvcInfo();
             // Calculate target and trigger thresholds
-            const targetThreshold = this.topUpTargetThreshold * (svc.inputPrice + svc.outputPrice);
-            const triggerThreshold = this.topUpTriggerThreshold * (svc.inputPrice + svc.outputPrice);
+            const targetThreshold = this.topUpTargetThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
+            const triggerThreshold = this.topUpTriggerThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
             // Check if it's the first round
             const isFirstRound = (await this.cache.getItem(storage_1.CACHE_KEYS.FIRST_ROUND)) !== 'false';
             if (isFirstRound) {

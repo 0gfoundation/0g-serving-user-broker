@@ -1,9 +1,9 @@
 "use client";
 
-import { createLazyPage } from './PageLoader';
+import { createLazyPage } from '../ui/PageLoader';
 
 export const LazyChatPage = createLazyPage(
-  () => import('../app/inference/chat/components/OptimizedChatPage').then(module => ({ default: module.OptimizedChatPage })),
+  () => import('../../../app/inference/chat/components/OptimizedChatPage').then(module => ({ default: module.OptimizedChatPage })),
   <div className="w-full h-full">
     <div className="mb-3">
       <div className="animate-pulse">

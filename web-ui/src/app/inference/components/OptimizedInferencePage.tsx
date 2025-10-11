@@ -9,7 +9,7 @@ import { useOptimizedDataFetching } from "../../../hooks/useOptimizedDataFetchin
 import type { Provider } from "../../../types/broker";
 import { OFFICIAL_PROVIDERS } from "../../../constants/providers";
 import { transformBrokerServicesToProviders } from "../../../utils/providerTransform";
-import { useNavigation } from "../../../components/OptimizedNavigation";
+import { useNavigation } from "../../../shared/components/navigation/OptimizedNavigation";
 import ReactMarkdown from "react-markdown";
 
 

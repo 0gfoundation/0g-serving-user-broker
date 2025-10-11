@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { OptimizedLink, useNavigation } from "./OptimizedNavigation";
+import { OptimizedLink, useNavigation } from "../navigation/OptimizedNavigation";
 
 interface SidebarItem {
   href: string;

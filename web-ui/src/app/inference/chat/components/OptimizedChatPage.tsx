@@ -8,6 +8,8 @@ import { use0GBroker } from "../../../../hooks/use0GBroker";
 import { useChatHistory } from "../../../../hooks/useChatHistory";
 import { useErrorWithTimeout } from "../../../../hooks/useErrorWithTimeout";
 import { useProviderSearch } from "../../../../hooks/useProviderSearch";
+import { useProviderState } from "../../../../hooks/useProviderState";
+import { useStreamingState } from "../../../../hooks/useStreamingState";
 import { a0giToNeuron, neuronToA0gi } from "../../../../utils/currency";
 import type { Provider } from "../../../../types/broker";
 import { OFFICIAL_PROVIDERS } from "../../../../constants/providers";
@@ -31,10 +33,27 @@ export function OptimizedChatPage() {
   const { broker, isInitializing, ledgerInfo, refreshLedgerInfo } = use0GBroker();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
-    null
-  );
+  // Provider state management
+  const {
+    providers,
+    setProviders,
+    selectedProvider,
+    setSelectedProvider,
+    serviceMetadata,
+    setServiceMetadata,
+    providerAcknowledged,
+    setProviderAcknowledged,
+    isVerifyingProvider,
+    setIsVerifyingProvider,
+    providerBalance,
+    setProviderBalance,
+    providerBalanceNeuron,
+    setProviderBalanceNeuron,
+    providerPendingRefund,
+    setProviderPendingRefund,
+    isDropdownOpen,
+    setIsDropdownOpen,
+  } = useProviderState();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "system",
@@ -43,23 +62,18 @@ export function OptimizedChatPage() {
       timestamp: Date.now(),
     },
   ]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  // Streaming state management
+  const {
+    inputMessage,
+    setInputMessage,
+    isLoading,
+    setIsLoading,
+    isStreaming,
+    setIsStreaming,
+    isProcessing,
+  } = useStreamingState();
   const { error, setErrorWithTimeout } = useErrorWithTimeout();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [serviceMetadata, setServiceMetadata] = useState<{
-    endpoint: string;
-    model: string;
-  } | null>(null);
-  const [providerAcknowledged, setProviderAcknowledged] = useState<
-    boolean | null
-  >(null);
-  const [isVerifyingProvider, setIsVerifyingProvider] = useState(false);
   // Note: Deposit modal is now handled globally in LayoutContent
-  const [providerBalance, setProviderBalance] = useState<number | null>(null);
-  const [providerBalanceNeuron, setProviderBalanceNeuron] = useState<bigint | null>(null);
-  const [providerPendingRefund, setProviderPendingRefund] = useState<number | null>(null);
   const [showFundingAlert, setShowFundingAlert] = useState(false);
   const [fundingAlertMessage, setFundingAlertMessage] = useState("");
   const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -1062,7 +1076,7 @@ export function OptimizedChatPage() {
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-gray-900 sr-only">Chat History</h3>
-                {(isLoading || isStreaming) && (
+                {isProcessing && (
                   <div className="flex items-center text-xs text-orange-600">
                     <div className="animate-spin rounded-full h-3 w-3 border border-orange-400 border-t-transparent mr-1"></div>
                     <span>AI responding...</span>
@@ -1075,9 +1089,9 @@ export function OptimizedChatPage() {
                   placeholder="Search messages..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  disabled={isLoading || isStreaming}
+                  disabled={isProcessing}
                   className={`w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                    isLoading || isStreaming ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                    isProcessing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
                   }`}
                 />
                 <svg className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1108,12 +1122,12 @@ export function OptimizedChatPage() {
                         <div
                           key={index}
                           className={`p-3 bg-white border border-gray-200 rounded-lg transition-colors ${
-                            isLoading || isStreaming 
+                            isProcessing 
                               ? 'opacity-50 cursor-not-allowed' 
                               : 'hover:bg-purple-50 hover:border-purple-200 cursor-pointer'
                           }`}
                           onClick={async () => {
-                            if (result.sessionId && !isLoading && !isStreaming) {
+                            if (result.sessionId && !isProcessing) {
                               try {
                                 // Clear search first
                                 clearSearch();
@@ -1162,16 +1176,16 @@ export function OptimizedChatPage() {
                       className={`relative group rounded-lg text-sm transition-colors ${
                         chatHistory.currentSessionId === session.session_id
                           ? 'bg-purple-50 border border-purple-200'
-                          : isLoading || isStreaming
+                          : isProcessing
                           ? 'bg-gray-100 border border-transparent'
                           : 'hover:bg-gray-50 border border-transparent'
                       }`}
                     >
                       <button
                         onClick={() => handleHistoryClick(session.session_id)}
-                        disabled={isLoading || isStreaming}
+                        disabled={isProcessing}
                         className={`w-full text-left p-3 pr-10 rounded-lg transition-colors ${
-                          isLoading || isStreaming
+                          isProcessing
                             ? 'text-gray-400 cursor-not-allowed'
                             : ''
                         }`}
@@ -1188,13 +1202,13 @@ export function OptimizedChatPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!isLoading && !isStreaming) {
+                          if (!isProcessing) {
                             chatHistory.deleteSession(session.session_id);
                           }
                         }}
-                        disabled={isLoading || isStreaming}
+                        disabled={isProcessing}
                         className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${
-                          isLoading || isStreaming
+                          isProcessing
                             ? 'text-gray-300 cursor-not-allowed'
                             : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                         }`}
@@ -1609,13 +1623,13 @@ export function OptimizedChatPage() {
               <div className="relative group">
                 <button
                   onClick={() => {
-                    if (!isLoading && !isStreaming) {
+                    if (!isProcessing) {
                       setShowHistorySidebar(!showHistorySidebar);
                     }
                   }}
-                  disabled={isLoading || isStreaming}
+                  disabled={isProcessing}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center space-x-1 cursor-pointer ${
-                    isLoading || isStreaming
+                    isProcessing
                       ? 'text-gray-400 cursor-not-allowed'
                       : showHistorySidebar
                         ? 'text-purple-600 bg-purple-50'
@@ -1640,13 +1654,13 @@ export function OptimizedChatPage() {
               <div className="relative group">
                 <button
                 onClick={() => {
-                  if (!isLoading && !isStreaming) {
+                  if (!isProcessing) {
                     startNewChat();
                   }
                 }}
-                disabled={isLoading || isStreaming}
+                disabled={isProcessing}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center space-x-1 cursor-pointer ${
-                  isLoading || isStreaming
+                  isProcessing
                     ? 'text-gray-400 cursor-not-allowed'
                     : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                 }`}
@@ -1933,16 +1947,16 @@ export function OptimizedChatPage() {
                   e.preventDefault();
                   if (providerAcknowledged === false) {
                     verifyProvider();
-                  } else if (inputMessage.trim() && !isLoading && !isStreaming) {
+                  } else if (inputMessage.trim() && !isProcessing) {
                     sendMessage();
                   }
                 }
               }}
-              placeholder={isLoading || isStreaming ? "AI is responding..." : "Type your message... (Shift+Enter for new line)"}
+              placeholder={isProcessing ? "AI is responding..." : "Type your message... (Shift+Enter for new line)"}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 resize-none overflow-y-auto disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
               style={{ minHeight: '40px', maxHeight: '120px' }}
               rows={1}
-              disabled={isLoading || isStreaming}
+              disabled={isProcessing}
             />
             <button
               onClick={() => {
@@ -1960,7 +1974,7 @@ export function OptimizedChatPage() {
               disabled={
                 providerAcknowledged === false
                   ? isVerifyingProvider
-                  : !inputMessage.trim() || isLoading || isStreaming
+                  : !inputMessage.trim() || isProcessing
               }
               className={`${
                 providerAcknowledged === false
@@ -1975,11 +1989,11 @@ export function OptimizedChatPage() {
                 providerAcknowledged === false
                   ? "Verify provider to enable messaging"
                   : `Button status: ${
-                      !inputMessage.trim() || isLoading || isStreaming ? "disabled" : "enabled"
+                      !inputMessage.trim() || isProcessing ? "disabled" : "enabled"
                     }`
               }
             >
-              {isLoading || isStreaming || isVerifyingProvider ? (
+              {isProcessing || isVerifyingProvider ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               ) : (
                 <svg

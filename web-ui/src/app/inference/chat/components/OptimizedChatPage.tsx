@@ -8,10 +8,9 @@ import { use0GBroker } from "../../../../hooks/use0GBroker";
 import { useChatHistory } from "../../../../hooks/useChatHistory";
 import { useErrorWithTimeout } from "../../../../hooks/useErrorWithTimeout";
 import { useProviderSearch } from "../../../../hooks/useProviderSearch";
-import { useProviderState } from "../../../../hooks/useProviderState";
 import { useStreamingState } from "../../../../hooks/useStreamingState";
+import { useProviderManagement } from "../../../../hooks/useProviderManagement";
 import { a0giToNeuron, neuronToA0gi } from "../../../../utils/currency";
-import { transformBrokerServicesToProviders } from "../../../../utils/providerTransform";
 import { ChatInput } from "./ChatInput";
 import { ProviderSelector } from "./ProviderSelector";
 import { MessageList } from "./MessageList";
@@ -34,27 +33,38 @@ export function OptimizedChatPage() {
   const { broker, isInitializing, ledgerInfo, refreshLedgerInfo } = use0GBroker();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { error, setErrorWithTimeout } = useErrorWithTimeout();
+  
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState<'verify' | 'top-up' | null>(null);
+  
   // Provider state management
   const {
     providers,
-    setProviders,
     selectedProvider,
-    setSelectedProvider,
     serviceMetadata,
-    setServiceMetadata,
     providerAcknowledged,
-    setProviderAcknowledged,
     isVerifyingProvider,
-    setIsVerifyingProvider,
     providerBalance,
-    setProviderBalance,
     providerBalanceNeuron,
-    setProviderBalanceNeuron,
     providerPendingRefund,
-    setProviderPendingRefund,
-    isDropdownOpen,
-    setIsDropdownOpen,
-  } = useProviderState();
+    isInitializing: isProviderInitializing,
+    setSelectedProvider,
+    verifyProvider,
+    refreshProviderBalance,
+  } = useProviderManagement(
+    broker,
+    refreshLedgerInfo,
+    showTutorial,
+    tutorialStep,
+    setShowTutorial,
+    setTutorialStep,
+    setErrorWithTimeout
+  );
+  
+  // Provider dropdown state (UI only)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "system",
@@ -73,7 +83,6 @@ export function OptimizedChatPage() {
     setIsStreaming,
     isProcessing,
   } = useStreamingState();
-  const { error, setErrorWithTimeout } = useErrorWithTimeout();
   // Note: Deposit modal is now handled globally in LayoutContent
   const [showFundingAlert, setShowFundingAlert] = useState(false);
   const [fundingAlertMessage, setFundingAlertMessage] = useState("");
@@ -81,10 +90,6 @@ export function OptimizedChatPage() {
   const [topUpAmount, setTopUpAmount] = useState("");
   const [isTopping, setIsTopping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Tutorial state
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState<'verify' | 'top-up' | null>(null);
   
   // Initialize chat history hook first - shared across all providers for the same wallet
   const chatHistory = useChatHistory({
@@ -133,48 +138,6 @@ export function OptimizedChatPage() {
     };
   }, [isDropdownOpen]);
 
-  // Fetch real providers when broker is available
-  useEffect(() => {
-    const fetchProviders = async () => {
-      if (broker) {
-        try {
-          // Use the broker to get real service list
-          const services = await broker.inference.listService();
-
-          // Transform services to Provider format
-          const transformedProviders = transformBrokerServicesToProviders(services);
-
-          setProviders(transformedProviders);
-
-          // Check for provider parameter from URL
-          const providerParam = searchParams.get('provider');
-          
-          if (providerParam && !selectedProvider) {
-            // Try to find the provider by address
-            const targetProvider = transformedProviders.find(
-              p => p.address.toLowerCase() === providerParam.toLowerCase()
-            );
-            if (targetProvider) {
-              setSelectedProvider(targetProvider);
-            } else if (transformedProviders.length > 0) {
-              // Fallback to first provider if specified provider not found
-              setSelectedProvider(transformedProviders[0]);
-            }
-          } else if (!selectedProvider && transformedProviders.length > 0) {
-            // Set the first provider as selected if none is selected
-            setSelectedProvider(transformedProviders[0]);
-          }
-        } catch (err: unknown) {
-          console.log('Failed to fetch providers from broker:', err);
-          // Keep the providers list empty on error
-          setProviders([]);
-          setSelectedProvider(null);
-        }
-      }
-    };
-
-    fetchProviders();
-  }, [broker, selectedProvider]);
 
   // Note: Global ledger check is now handled in LayoutContent component
 
@@ -185,114 +148,6 @@ export function OptimizedChatPage() {
     }
   }, [broker, refreshLedgerInfo]);
 
-  // Fetch service metadata when provider is selected
-  useEffect(() => {
-    const fetchServiceMetadata = async () => {
-      if (broker && selectedProvider) {
-        try {
-          // Step 5.1: Get the request metadata
-          const metadata = await broker.inference.getServiceMetadata(
-            selectedProvider.address
-          );
-          if (metadata?.endpoint && metadata?.model) {
-            setServiceMetadata({
-              endpoint: metadata.endpoint,
-              model: metadata.model
-            });
-          } else {
-            setServiceMetadata(null);
-          }
-        } catch (err: unknown) {
-          setServiceMetadata(null);
-        }
-      }
-    };
-
-    fetchServiceMetadata();
-  }, [broker, selectedProvider]);
-
-  // Fetch provider acknowledgment status when provider is selected
-  useEffect(() => {
-    const fetchProviderAcknowledgment = async () => {
-      if (broker && selectedProvider) {
-        try {
-          const acknowledged = await broker.inference.userAcknowledged(
-            selectedProvider.address
-          );
-          setProviderAcknowledged(acknowledged);
-          
-          // Check if we should show tutorial
-          const tutorialKey = `tutorial_seen_${selectedProvider.address}`;
-          if (!localStorage.getItem(tutorialKey) && showTutorial) {
-            // If provider is already acknowledged, skip to top-up step
-            if (acknowledged) {
-              setTutorialStep('top-up');
-            }
-          }
-        } catch (err: unknown) {
-          setProviderAcknowledged(false);
-        }
-      }
-    };
-
-    fetchProviderAcknowledgment();
-  }, [broker, selectedProvider, showTutorial]);
-
-  // Fetch provider balance when provider is selected
-  useEffect(() => {
-    const fetchProviderBalance = async () => {
-      if (broker && selectedProvider) {
-        try {
-          const account = await broker.inference.getAccount(selectedProvider.address);
-          if (account && account.balance) {
-            const balanceInA0gi = neuronToA0gi(account.balance - account.pendingRefund);
-            const pendingRefundInA0gi = neuronToA0gi(account.pendingRefund);
-            setProviderBalance(balanceInA0gi);
-            setProviderBalanceNeuron(account.balance);
-            setProviderPendingRefund(pendingRefundInA0gi);
-          } else {
-            setProviderBalance(0);
-            setProviderBalanceNeuron(BigInt(0));
-            setProviderPendingRefund(0);
-          }
-        } catch (err: unknown) {
-          setProviderBalance(null);
-          setProviderBalanceNeuron(null);
-          setProviderPendingRefund(null);
-        }
-      } else if (!selectedProvider) {
-        // Reset balance states when no provider is selected
-        setProviderBalance(null);
-        setProviderBalanceNeuron(null);
-        setProviderPendingRefund(null);
-      }
-    };
-
-    fetchProviderBalance();
-  }, [broker, selectedProvider]);
-
-  // Initialize tutorial when provider changes
-  useEffect(() => {
-    if (selectedProvider) {
-      const tutorialKey = `tutorial_seen_${selectedProvider.address}`;
-      const hasSeenTutorial = localStorage.getItem(tutorialKey);
-      
-      
-      if (!hasSeenTutorial) {
-        // Small delay to ensure UI is ready
-        const timer = setTimeout(() => {
-          setShowTutorial(true);
-          if (providerAcknowledged === true) {
-            setTutorialStep('top-up');
-          } else {
-            setTutorialStep('verify');
-          }
-        }, 800);
-        
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [selectedProvider, providerAcknowledged]);
 
   // Function to scroll to a specific message
   const scrollToMessage = useCallback((targetContent: string) => {
@@ -516,14 +371,6 @@ export function OptimizedChatPage() {
         currentMetadata = await broker.inference.getServiceMetadata(
           selectedProvider.address
         );
-        if (currentMetadata?.endpoint && currentMetadata?.model) {
-          setServiceMetadata({
-            endpoint: currentMetadata.endpoint,
-            model: currentMetadata.model
-          });
-        } else {
-          setServiceMetadata(null);
-        }
         if (!currentMetadata) {
           throw new Error("Failed to get service metadata");
         }
@@ -836,45 +683,6 @@ export function OptimizedChatPage() {
     lastLoadedSessionRef.current = chatHistory.currentSessionId;
   };
 
-  const verifyProvider = async () => {
-    if (!broker || !selectedProvider) {
-      return;
-    }
-
-    setIsVerifyingProvider(true);
-    setErrorWithTimeout(null);
-
-    try {
-      await broker.inference.acknowledgeProviderSigner(
-        selectedProvider.address
-      );
-
-      // Refresh the acknowledgment status
-      const acknowledged = await broker.inference.userAcknowledged(
-        selectedProvider.address
-      );
-      setProviderAcknowledged(acknowledged);
-
-      
-      // Refresh ledger info after successful verification
-      if (acknowledged) {
-        await refreshLedgerInfo();
-      }
-      
-      // Progress tutorial to top-up step if tutorial is active
-      if (showTutorial && tutorialStep === 'verify' && acknowledged) {
-        setTutorialStep('top-up');
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to verify provider. Please try again.";
-      setErrorWithTimeout(`Verification error: ${errorMessage}`);
-    } finally {
-      setIsVerifyingProvider(false);
-    }
-  };
 
   // Note: handleDeposit is now handled globally in LayoutContent
 
@@ -900,19 +708,10 @@ export function OptimizedChatPage() {
 
       
       // Refresh both ledger info and provider balance in parallel for better performance
-      const [, account] = await Promise.all([
+      await Promise.all([
         refreshLedgerInfo(), // Refresh ledger info to update available balance
-        broker.inference.getAccount(selectedProvider.address) // Get updated provider account
+        refreshProviderBalance() // Refresh provider balance using hook's function
       ]);
-      
-      // Update provider balance state
-      if (account && account.balance) {
-        const balanceInA0gi = neuronToA0gi(account.balance - account.pendingRefund);
-        const pendingRefundInA0gi = neuronToA0gi(account.pendingRefund);
-        setProviderBalance(balanceInA0gi);
-        setProviderBalanceNeuron(account.balance);
-        setProviderPendingRefund(pendingRefundInA0gi);
-      }
       
       // Close modal and reset amount
       setShowTopUpModal(false);

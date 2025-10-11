@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { use0GBroker } from "../../../../hooks/use0GBroker";
 import { useChatHistory } from "../../../../hooks/useChatHistory";
 import { useErrorWithTimeout } from "../../../../hooks/useErrorWithTimeout";
+import { useProviderSearch } from "../../../../hooks/useProviderSearch";
 import { a0giToNeuron, neuronToA0gi } from "../../../../utils/currency";
 import type { Provider } from "../../../../types/broker";
 import { OFFICIAL_PROVIDERS } from "../../../../constants/providers";
@@ -70,18 +71,16 @@ export function OptimizedChatPage() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<'verify' | 'top-up' | null>(null);
   
-  // Chat history state
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<(Message & { sessionId: string })[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  
-  // Initialize chat history hook
+  // Initialize chat history hook first
   const chatHistory = useChatHistory({
     walletAddress: address || '',
     providerAddress: selectedProvider?.address,
     autoSave: true,
   });
+
+  // Chat history state
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const { searchQuery, setSearchQuery, searchResults, isSearching, clearSearch } = useProviderSearch(chatHistory);
 
   // Handle provider change - clear current session to start fresh
   const previousProviderRef = useRef<string | undefined>(undefined);
@@ -369,37 +368,6 @@ export function OptimizedChatPage() {
     }
   }, [chatHistory, scrollToMessage]);
 
-  // Simple debounced search using useEffect and setTimeout
-  useEffect(() => {
-    const timeoutId = setTimeout(async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-
-      setIsSearching(true);
-      try {
-        const results = await chatHistory.searchMessages(searchQuery);
-        const searchMessages: (Message & { sessionId: string })[] = results.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          chatId: msg.chat_id,
-          isVerified: msg.is_verified,
-          isVerifying: msg.is_verifying,
-          sessionId: msg.session_id || '', // Add session_id from database result
-        }));
-        setSearchResults(searchMessages);
-      } catch (err) {
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]); // Only depend on searchQuery
 
   // Track sessions for reference
   const lastLoadedSessionRef = useRef<string | null>(null);
@@ -1148,8 +1116,7 @@ export function OptimizedChatPage() {
                             if (result.sessionId && !isLoading && !isStreaming) {
                               try {
                                 // Clear search first
-                                setSearchQuery('');
-                                setSearchResults([]);
+                                clearSearch();
                                 
                                 // Load the session and scroll to the specific message
                                 await handleHistoryClick(result.sessionId, result.content);

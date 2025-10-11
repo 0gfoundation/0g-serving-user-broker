@@ -205,7 +205,7 @@ export function OptimizedChatPage() {
       await chatHistory.loadSession(sessionId);
       
       // Import dbManager directly to get fresh data
-      const { dbManager } = await import('../../../../lib/database');
+      const { dbManager } = await import('../../../../shared/lib/database');
       const sessionMessages = await dbManager.getMessages(sessionId);
       
       

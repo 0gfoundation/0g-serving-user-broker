@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import type { Provider } from '../../../../types/broker';
+import type { Provider } from '../../../../shared/types/broker';
 import { OFFICIAL_PROVIDERS } from '../../../../constants/providers';
 
 interface ProviderSelectorProps {

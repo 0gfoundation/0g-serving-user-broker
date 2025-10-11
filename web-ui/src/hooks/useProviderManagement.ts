@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { transformBrokerServicesToProviders } from '../utils/providerTransform';
-import { neuronToA0gi } from '../utils/currency';
-import type { Provider } from '../types/broker';
+import { neuronToA0gi } from '../shared/utils/currency';
+import type { Provider } from '../shared/types/broker';
 
 interface ServiceMetadata {
   endpoint: string;

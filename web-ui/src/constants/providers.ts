@@ -1,7 +1,7 @@
 /**
  * Official provider constants for the 0G Broker system
  */
-import type { Provider } from '../types/broker';
+import type { Provider } from '../shared/types/broker';
 
 /**
  * Official providers based on the documentation

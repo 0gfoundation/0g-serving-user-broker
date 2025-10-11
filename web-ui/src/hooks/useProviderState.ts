@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { Provider } from '../types/broker';
+import type { Provider } from "../shared/types/broker";
 
 interface ServiceMetadata {
   endpoint: string;

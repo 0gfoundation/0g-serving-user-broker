@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { a0giToNeuron } from "../../../../utils/currency";
+import { a0giToNeuron } from "../../../../shared/utils/currency";
 
 interface Provider {
   address: string;

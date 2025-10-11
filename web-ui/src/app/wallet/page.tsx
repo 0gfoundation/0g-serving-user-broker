@@ -11,10 +11,8 @@ function LedgerContent() {
   const {
     broker,
     isInitializing,
-    error: brokerError,
     ledgerInfo,
     refreshLedgerInfo,
-    addLedger: createLedger,
     depositFund,
   } = use0GBroker();
   
@@ -144,32 +142,6 @@ function LedgerContent() {
     }
   };
 
-  const handleRefund = async () => {
-    if (!broker) return;
-    
-    setIsAdding(true);
-    setError(null);
-    
-    try {
-      // Check if broker has a refund method, otherwise show a placeholder message
-      if (typeof broker.ledger.refund === 'function') {
-        const availableAmount = parseFloat(displayLedgerInfo.availableBalance);
-        if (availableAmount > 0) {
-          await broker.ledger.refund(availableAmount);
-          alert('Successfully refunded available balance!');
-          await refreshLedgerInfo();
-        }
-      } else {
-        // Placeholder for refund functionality
-        alert('Refund functionality will be implemented when the broker supports it.');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to refund';
-      setError(errorMessage);
-    } finally {
-      setIsAdding(false);
-    }
-  };
 
   if (!isConnected) {
     return (

@@ -1,1 +1,0 @@
-// Wallet components will be added here as they are extracted from the main page

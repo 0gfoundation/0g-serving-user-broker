@@ -6,9 +6,11 @@ import { useAccount } from "wagmi";
 import { useSearchParams, useRouter } from "next/navigation";
 import { use0GBroker } from "../../../../hooks/use0GBroker";
 import { useChatHistory } from "../../../../hooks/useChatHistory";
+import { useErrorWithTimeout } from "../../../../hooks/useErrorWithTimeout";
 import { a0giToNeuron, neuronToA0gi } from "../../../../utils/currency";
 import type { Provider } from "../../../../types/broker";
 import { OFFICIAL_PROVIDERS } from "../../../../constants/providers";
+import { transformBrokerServicesToProviders } from "../../../../utils/providerTransform";
 
 
 import ReactMarkdown from "react-markdown";
@@ -43,8 +45,7 @@ export function OptimizedChatPage() {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { error, setErrorWithTimeout } = useErrorWithTimeout();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [serviceMetadata, setServiceMetadata] = useState<{
     endpoint: string;
@@ -100,33 +101,6 @@ export function OptimizedChatPage() {
     previousProviderRef.current = selectedProvider?.address;
   }, [selectedProvider?.address]);
 
-  // Custom setError function with auto-hide after 8 seconds
-  const setErrorWithTimeout = (errorMessage: string | null) => {
-    // Clear existing timeout
-    if (errorTimeoutRef.current) {
-      clearTimeout(errorTimeoutRef.current);
-      errorTimeoutRef.current = null;
-    }
-    
-    setError(errorMessage);
-    
-    // Set timeout to clear error after 8 seconds
-    if (errorMessage) {
-      errorTimeoutRef.current = setTimeout(() => {
-        setError(null);
-        errorTimeoutRef.current = null;
-      }, 8000);
-    }
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (errorTimeoutRef.current) {
-        clearTimeout(errorTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -155,49 +129,7 @@ export function OptimizedChatPage() {
           const services = await broker.inference.listService();
 
           // Transform services to Provider format
-          const transformedProviders: Provider[] = services.map(
-            (service: unknown) => {
-              // Type assertion for service properties
-              const serviceObj = service as {
-                provider?: string;
-                model?: string;
-                name?: string;
-                verifiability?: string;
-                url?: string;
-                inputPrice?: bigint;
-                outputPrice?: bigint;
-              };
-              // Type guard to ensure service has the required properties
-              const providerAddress = serviceObj.provider || "";
-              const rawModel = serviceObj.model || "Unknown Model";
-              const modelName = rawModel.includes('/') ? rawModel.split('/').slice(1).join('/') : rawModel;
-              const rawProviderName = serviceObj.name || serviceObj.model || "Unknown Provider";
-              const providerName = rawProviderName.includes('/') ? rawProviderName.split('/').slice(1).join('/') : rawProviderName;
-              const verifiability = serviceObj.verifiability || "TEE";
-              const serviceUrl = serviceObj.url || "";
-
-
-              // Convert prices from neuron to A0GI per million tokens
-              const inputPrice = serviceObj.inputPrice
-                ? neuronToA0gi(BigInt(serviceObj.inputPrice) * BigInt(1000000))
-                : undefined;
-              const outputPrice = serviceObj.outputPrice
-                ? neuronToA0gi(BigInt(serviceObj.outputPrice) * BigInt(1000000))
-                : undefined;
-
-              return {
-                address: providerAddress,
-                model: modelName,
-                name: providerName,
-                verifiability: verifiability,
-                url: serviceUrl,
-                inputPrice,
-                outputPrice,
-                inputPriceNeuron: serviceObj.inputPrice,
-                outputPriceNeuron: serviceObj.outputPrice,
-              };
-            }
-          );
+          const transformedProviders = transformBrokerServicesToProviders(services);
 
           setProviders(transformedProviders);
 

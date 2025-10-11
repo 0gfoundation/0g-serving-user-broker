@@ -15,7 +15,7 @@ export const Navbar: React.FC = () => {
             <img src="/favicon.svg" alt="0G" className="w-8 h-8" />
             <span className="text-xl font-bold text-gray-800">Compute Network</span>
             <span className="ml-2 px-2 py-1 text-xs font-medium text-purple-600 bg-purple-100 rounded-full border border-purple-200">
-              v0.3.0
+              beta
             </span>
           </Link>
 

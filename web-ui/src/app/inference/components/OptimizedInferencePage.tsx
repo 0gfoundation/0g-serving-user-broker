@@ -8,17 +8,10 @@ import { use0GBroker } from "../../../hooks/use0GBroker";
 import { useOptimizedDataFetching } from "../../../hooks/useOptimizedDataFetching";
 import type { Provider } from "../../../types/broker";
 import { OFFICIAL_PROVIDERS } from "../../../constants/providers";
+import { transformBrokerServicesToProviders } from "../../../utils/providerTransform";
 import { useNavigation } from "../../../components/OptimizedNavigation";
 import ReactMarkdown from "react-markdown";
 
-// Convert neuron to A0GI (1 A0GI = 10^18 neuron)
-const neuronToA0gi = (value: bigint): number => {
-  const divisor = BigInt(10 ** 18);
-  const integerPart = value / divisor;
-  const remainder = value % divisor;
-  const decimalPart = Number(remainder) / Number(divisor);
-  return Number(integerPart) + decimalPart;
-};
 
 
 export function OptimizedInferencePage() {
@@ -42,49 +35,7 @@ export function OptimizedInferencePage() {
         const services = await broker.inference.listService();
 
         // Transform services to Provider format
-        const transformedProviders: Provider[] = services.map(
-          (service: unknown) => {
-            const serviceObj = service as {
-              provider?: string;
-              model?: string;
-              name?: string;
-              verifiability?: string;
-              url?: string;
-              inputPrice?: bigint;
-              outputPrice?: bigint;
-            };
-            
-            const providerAddress = serviceObj.provider || "";
-            const rawModel = serviceObj.model || "Unknown Model";
-            const modelName = rawModel.includes('/') ? rawModel.split('/').slice(1).join('/') : rawModel;
-            const rawProviderName = serviceObj.name || serviceObj.model || "Unknown Provider";
-            const providerName = rawProviderName.includes('/') ? rawProviderName.split('/').slice(1).join('/') : rawProviderName;
-            const verifiability = serviceObj.verifiability || "TEE";
-            const serviceUrl = serviceObj.url || "";
-
-            // Convert prices from neuron to A0GI per million tokens
-            const inputPrice = serviceObj.inputPrice
-              ? neuronToA0gi(serviceObj.inputPrice * BigInt(1000000))
-              : undefined;
-            const outputPrice = serviceObj.outputPrice
-              ? neuronToA0gi(serviceObj.outputPrice * BigInt(1000000))
-              : undefined;
-
-            return {
-              address: providerAddress,
-              model: modelName,
-              name: providerName,
-              verifiability: verifiability,
-              url: serviceUrl,
-              inputPrice,
-              outputPrice,
-              inputPriceNeuron: serviceObj.inputPrice,
-              outputPriceNeuron: serviceObj.outputPrice,
-            };
-          }
-        );
-
-        return transformedProviders;
+        return transformBrokerServicesToProviders(services);
       } catch (err) {
         return [];
       }

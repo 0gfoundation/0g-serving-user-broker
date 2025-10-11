@@ -13375,12 +13375,8 @@ class Verifier extends ZGServingUserBrokerBase {
                 nvidia_payload: '',
                 intel_quote: '',
             };
-            let quoteString;
             if (vllmProxy) {
-                quoteString = await this.fetSignerRA(svc.url, svc.model);
-                // Write quoteString to /tmp/del
-                // quoteString = JSON.stringify(signerRA)
-                await fs$1.promises.writeFile('/tmp/del2.json', quoteString);
+                const quoteString = await this.fetSignerRA(svc.url, svc.model);
                 signerRA = JSON.parse(quoteString);
                 if (!signerRA?.signing_address) {
                     throw new Error('signing address does not exist');
@@ -13388,16 +13384,12 @@ class Verifier extends ZGServingUserBrokerBase {
             }
             else {
                 const { quote } = await this.getQuote(providerAddress);
-                quoteString = quote;
-                // Write quoteString to /tmp/del
-                await fs$1.promises.writeFile('/tmp/del', quoteString);
-                signerRA = JSON.parse(quoteString);
+                signerRA = JSON.parse(quote);
             }
             signingKey = `${this.contract.getUserAddress()}_${providerAddress}`;
             await this.metadata.storeSigningKey(signingKey, signerRA.signing_address);
             let valid = false;
             const rpc = process.env.RPC_ENDPOINT;
-            console.log("signerRA.intel_quote", signerRA.intel_quote);
             // bypass quote verification if testing on localhost
             if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
                 valid =
@@ -14200,7 +14192,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-39b43fee.js');
+    const { download } = await import('./index-c399e93f.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -19436,4 +19428,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, bigintToBytes as l, genKeyPair as m, Request$1 as n, pedersenHash as p, signData as s, upload as u };
-//# sourceMappingURL=index-15d7f8ef.js.map
+//# sourceMappingURL=index-6b92e992.js.map

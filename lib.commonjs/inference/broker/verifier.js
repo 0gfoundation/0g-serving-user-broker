@@ -54,12 +54,8 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 nvidia_payload: '',
                 intel_quote: '',
             };
-            let quoteString;
             if (vllmProxy) {
-                quoteString = await this.fetSignerRA(svc.url, svc.model);
-                // Write quoteString to /tmp/del
-                // quoteString = JSON.stringify(signerRA)
-                await fs.promises.writeFile('/tmp/del2.json', quoteString);
+                const quoteString = await this.fetSignerRA(svc.url, svc.model);
                 signerRA = JSON.parse(quoteString);
                 if (!signerRA?.signing_address) {
                     throw new Error('signing address does not exist');
@@ -67,16 +63,12 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             }
             else {
                 const { quote } = await this.getQuote(providerAddress);
-                quoteString = quote;
-                // Write quoteString to /tmp/del
-                await fs.promises.writeFile('/tmp/del', quoteString);
-                signerRA = JSON.parse(quoteString);
+                signerRA = JSON.parse(quote);
             }
             signingKey = `${this.contract.getUserAddress()}_${providerAddress}`;
             await this.metadata.storeSigningKey(signingKey, signerRA.signing_address);
             let valid = false;
             const rpc = process.env.RPC_ENDPOINT;
-            console.log("signerRA.intel_quote", signerRA.intel_quote);
             // bypass quote verification if testing on localhost
             if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
                 valid =

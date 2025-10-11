@@ -4,7 +4,7 @@ export { Sidebar } from './layout/Sidebar';
 export { Navbar } from './layout/Navbar';
 
 // Navigation components
-export { OptimizedNavigation, useNavigation } from './navigation/OptimizedNavigation';
+export { OptimizedLink, NavigationProvider, useNavigation } from './navigation/OptimizedNavigation';
 export { LazyChatPage } from './navigation/LazyPages';
 
 // UI components

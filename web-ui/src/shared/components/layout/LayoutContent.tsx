@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
 import { Sidebar } from "./Sidebar";
-import { use0GBroker } from "../../../hooks/use0GBroker";
+import { use0GBroker } from "../../hooks/use0GBroker";
 import { NavigationProvider, useNavigation } from "../navigation/OptimizedNavigation";
 import SimpleLoader from "../ui/SimpleLoader";
 

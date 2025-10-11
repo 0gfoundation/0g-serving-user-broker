@@ -4,9 +4,9 @@ import type { ZGComputeNetworkBroker } from '@0glabs/0g-serving-broker'
 import { createZGComputeNetworkBroker } from '@0glabs/0g-serving-broker'
 import type { JsonRpcSigner } from 'ethers'
 import { BrowserProvider } from 'ethers'
-import { APP_CONSTANTS } from '../shared/constants/app'
-import { errorHandler } from '../shared/utils/errorHandling'
-import { neuronToA0gi } from '../shared/utils/currency'
+import { APP_CONSTANTS } from '../constants/app'
+import { errorHandler } from '../utils/errorHandling'
+import { neuronToA0gi } from '../utils/currency'
 
 const formatBalance = (value: number): string => {
     if (value === 0) return '0'

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useAccount } from 'wagmi';
-import { use0GBroker } from '../../hooks/use0GBroker';
+import { use0GBroker } from '../../shared/hooks/use0GBroker';
 import { useSearchParams } from 'next/navigation';
 
 function LedgerContent() {

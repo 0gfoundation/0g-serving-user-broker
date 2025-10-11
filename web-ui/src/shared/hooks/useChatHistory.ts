@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { dbManager, type ChatMessage, type ChatSession } from '../shared/lib/database';
+import { dbManager, type ChatMessage, type ChatSession } from '../lib/database';
 
 export interface UseChatHistoryOptions {
   walletAddress: string;

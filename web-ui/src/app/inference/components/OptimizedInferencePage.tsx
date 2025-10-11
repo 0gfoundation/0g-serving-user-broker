@@ -4,11 +4,11 @@ import * as React from "react";
 import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
-import { use0GBroker } from "../../../hooks/use0GBroker";
-import { useOptimizedDataFetching } from "../../../hooks/useOptimizedDataFetching";
+import { use0GBroker } from "../../../shared/hooks/use0GBroker";
+import { useOptimizedDataFetching } from "../../../shared/hooks/useOptimizedDataFetching";
 import type { Provider } from "../../../shared/types/broker";
-import { OFFICIAL_PROVIDERS } from "../../../constants/providers";
-import { transformBrokerServicesToProviders } from "../../../utils/providerTransform";
+import { OFFICIAL_PROVIDERS } from "../constants/providers";
+import { transformBrokerServicesToProviders } from "../utils/providerTransform";
 import { useNavigation } from "../../../shared/components/navigation/OptimizedNavigation";
 import ReactMarkdown from "react-markdown";
 

@@ -185,7 +185,7 @@ export function TopUpModal({
                   <span>Loading...</span>
                 )} 
                 (<a 
-                  href="/ledger" 
+                  href="/wallet" 
                   className="text-purple-500 hover:text-purple-700 hover:underline cursor-pointer"
                   title="Go to ledger page to view details and deposit funds"
                 >

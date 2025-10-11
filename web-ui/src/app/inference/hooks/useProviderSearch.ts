@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { type ChatMessage } from '../shared/lib/database';
+import { type ChatMessage } from '../../../shared/lib/database';
 
 interface Message {
   role: "system" | "user" | "assistant";

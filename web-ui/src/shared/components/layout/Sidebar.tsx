@@ -38,9 +38,9 @@ export const Sidebar: React.FC = () => {
       ),
     },
     {
-      href: "/ledger",
+      href: "/wallet",
       label: "Account",
-      pageType: "ledger",
+      pageType: "wallet",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -53,8 +53,8 @@ export const Sidebar: React.FC = () => {
     if (href === "/inference") {
       return pathname === "/inference" || pathname.startsWith("/inference");
     }
-    if (href === "/ledger") {
-      return pathname === "/ledger" || pathname.startsWith("/ledger");
+    if (href === "/wallet") {
+      return pathname === "/wallet" || pathname.startsWith("/wallet");
     }
     return pathname === href;
   };

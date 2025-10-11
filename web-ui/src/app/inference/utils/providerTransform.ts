@@ -1,8 +1,8 @@
 /**
  * Provider service transformation utilities
  */
-import type { Provider } from '../shared/types/broker';
-import { neuronToA0gi } from '../shared/utils/currency';
+import type { Provider } from '../../../shared/types/broker';
+import { neuronToA0gi } from '../../../shared/utils/currency';
 
 /**
  * Service object structure from broker

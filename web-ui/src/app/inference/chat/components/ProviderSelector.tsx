@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { Provider } from '../../../../shared/types/broker';
-import { OFFICIAL_PROVIDERS } from '../../../../constants/providers';
+import { OFFICIAL_PROVIDERS } from '../../constants/providers';
 
 interface ProviderSelectorProps {
   // Provider selection

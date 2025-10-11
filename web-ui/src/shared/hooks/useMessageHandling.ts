@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { a0giToNeuron } from '../shared/utils/currency';
+import { a0giToNeuron } from '../utils/currency';
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -280,7 +280,7 @@ export function useMessageHandling(config: MessageHandlingConfig) {
       // Save assistant message to database
       if (completeContent.trim() && currentSessionForAssistant) {
         try {
-          const { dbManager } = await import('../shared/lib/database');
+          const { dbManager } = await import('../lib/database');
           await dbManager.saveMessage(currentSessionForAssistant, {
             role: "assistant",
             content: completeContent,

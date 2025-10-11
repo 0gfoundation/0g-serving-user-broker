@@ -5,7 +5,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit';
-import { wagmiConfig } from '../shared/config/wagmi';
+import { wagmiConfig } from '../config/wagmi';
 
 const queryClient = new QueryClient();
 

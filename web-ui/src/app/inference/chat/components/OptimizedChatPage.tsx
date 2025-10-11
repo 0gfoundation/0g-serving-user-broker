@@ -86,10 +86,9 @@ export function OptimizedChatPage() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<'verify' | 'top-up' | null>(null);
   
-  // Initialize chat history hook first
+  // Initialize chat history hook first - shared across all providers for the same wallet
   const chatHistory = useChatHistory({
     walletAddress: address || '',
-    providerAddress: selectedProvider?.address,
     autoSave: true,
   });
 

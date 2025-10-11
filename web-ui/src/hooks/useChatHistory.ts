@@ -56,22 +56,23 @@ export function useChatHistory({ walletAddress, providerAddress, autoSave = true
     initializeDatabase();
   }, [walletAddress]);
 
-  // Load sessions for current wallet
+  // Load sessions for current wallet (all providers)
   const loadSessions = useCallback(async () => {
     try {
-      // Only pass walletAddress if it's not empty
+      // Only pass walletAddress if it's not empty, don't filter by provider
       const effectiveWalletAddress = walletAddress || undefined;
-      const walletSessions = await dbManager.getChatSessions(effectiveWalletAddress, providerAddress);
+      const walletSessions = await dbManager.getChatSessions(effectiveWalletAddress);
       setSessions(walletSessions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sessions');
     }
-  }, [walletAddress, providerAddress]);
+  }, [walletAddress]);
 
-  // Create new session
+  // Create new session (not tied to specific provider)
   const createNewSession = useCallback(async (title?: string): Promise<string> => {
     try {
-      const sessionId = await dbManager.createChatSession(providerAddress || '', walletAddress || '', title);
+      // Use empty string for provider_address as sessions are now shared across providers
+      const sessionId = await dbManager.createChatSession('', walletAddress || '', title);
       setCurrentSessionId(sessionId);
       setMessages([]);
       await loadSessions(); // Refresh sessions list
@@ -80,7 +81,7 @@ export function useChatHistory({ walletAddress, providerAddress, autoSave = true
       setError(err instanceof Error ? err.message : 'Failed to create session');
       throw err;
     }
-  }, [walletAddress, providerAddress, loadSessions]);
+  }, [walletAddress, loadSessions]);
 
   // Load existing session
   const loadSession = useCallback(async (sessionId: string) => {
@@ -177,7 +178,7 @@ export function useChatHistory({ walletAddress, providerAddress, autoSave = true
       setError(err instanceof Error ? err.message : 'Failed to add message');
       return null;
     }
-  }, [currentSessionId, providerAddress, autoSave, createNewSession, messages, generateChatTitle, loadSessions]);
+  }, [currentSessionId, autoSave, createNewSession, messages, generateChatTitle, loadSessions]);
 
   // Update message in current session
   const updateMessage = useCallback((index: number, updates: Partial<ChatMessage>) => {

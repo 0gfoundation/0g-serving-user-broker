@@ -1,10 +1,5 @@
 import type { AddressLike } from 'ethers'
-import { genKeyPair } from '../common/settle-signer'
-import {
-    encryptData,
-    privateKeyToStr,
-    throwFormattedError,
-} from '../common/utils'
+import { throwFormattedError } from '../common/utils'
 import type { LedgerManagerContract } from './contract'
 import type { InferenceServingContract } from '../inference/contract'
 import type { FineTuningServingContract } from '../fine-tuning/contract'
@@ -106,13 +101,14 @@ export class LedgerProcessor {
                 }
             } catch (error) {}
 
-            const { settleSignerPublicKey, settleSignerEncryptedPrivateKey } =
-                await this.createSettleSignerKey()
+            // Use placeholders since Inference contract doesn't use these values
+            const placeholderSigner: [bigint, bigint] = [BigInt(0), BigInt(0)]
+            const placeholderInfo = ""
 
             await this.ledgerContract.addLedger(
-                settleSignerPublicKey,
+                placeholderSigner,
                 this.a0giToNeuron(balance),
-                settleSignerEncryptedPrivateKey,
+                placeholderInfo,
                 gasPrice
             )
         } catch (error) {
@@ -202,33 +198,8 @@ export class LedgerProcessor {
         }
     }
 
-    private async createSettleSignerKey(): Promise<{
-        settleSignerPublicKey: [bigint, bigint]
-        settleSignerEncryptedPrivateKey: string
-    }> {
-        try {
-            // [pri, pub]
-            const keyPair = await genKeyPair()
-            const key = `${this.ledgerContract.getUserAddress()}`
-
-            this.metadata.storeSettleSignerPrivateKey(
-                key,
-                keyPair.packedPrivkey
-            )
-
-            const settleSignerEncryptedPrivateKey = await encryptData(
-                this.ledgerContract.signer,
-                privateKeyToStr(keyPair.packedPrivkey)
-            )
-
-            return {
-                settleSignerEncryptedPrivateKey,
-                settleSignerPublicKey: keyPair.doublePackedPubkey,
-            }
-        } catch (error) {
-            throwFormattedError(error)
-        }
-    }
+    // Method removed: createSettleSignerKey is no longer needed
+    // since we're using placeholders in addLedger
 
     protected a0giToNeuron(value: number): bigint {
         const valueStr = value.toFixed(18)

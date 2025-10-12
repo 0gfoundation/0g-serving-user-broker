@@ -1,4 +1,4 @@
-import { PGlite } from '@electric-sql/pglite';
+import Dexie, { type EntityTable } from 'dexie';
 import { APP_CONSTANTS } from '../constants/app';
 
 export interface ChatMessage {
@@ -23,278 +23,223 @@ export interface ChatSession {
   title?: string;
 }
 
+class ChatDatabase extends Dexie {
+  sessions!: EntityTable<ChatSession, 'id'>;
+  messages!: EntityTable<ChatMessage, 'id'>;
+
+  constructor() {
+    super(APP_CONSTANTS.DATABASE.DB_NAME);
+    
+    this.version(1).stores({
+      sessions: '++id, session_id, provider_address, wallet_address, created_at, updated_at',
+      messages: '++id, session_id, role, timestamp, provider_address'
+    });
+  }
+}
+
 class DatabaseManager {
-  private db: PGlite | null = null;
+  private db: ChatDatabase | null = null;
   private initPromise: Promise<void> | null = null;
 
-  async init(): Promise<void> {
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = this._init();
-    return this.initPromise;
-  }
-
-  private async _init(): Promise<void> {
-    // Skip initialization on server side
-    if (typeof window === 'undefined') {
-      return;
+  // Get database instance, initialize if needed
+  private async getDB(): Promise<ChatDatabase> {
+    if (this.db) {
+      return this.db;
     }
     
-    try {
-      // Initialize PGlite with IndexedDB persistence
-      this.db = new PGlite({
-        dataDir: APP_CONSTANTS.DATABASE.DB_NAME,
-      });
-
-      // Create tables
-      await this.db.exec(`
-        CREATE TABLE IF NOT EXISTS chat_sessions (
-          id SERIAL PRIMARY KEY,
-          session_id TEXT UNIQUE NOT NULL,
-          provider_address TEXT NOT NULL,
-          wallet_address TEXT,
-          created_at BIGINT NOT NULL,
-          updated_at BIGINT NOT NULL,
-          title TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS chat_messages (
-          id SERIAL PRIMARY KEY,
-          session_id TEXT NOT NULL,
-          role TEXT NOT NULL CHECK (role IN ('system', 'user', 'assistant')),
-          content TEXT NOT NULL,
-          timestamp BIGINT NOT NULL,
-          chat_id TEXT,
-          is_verified BOOLEAN,
-          is_verifying BOOLEAN DEFAULT FALSE,
-          provider_address TEXT,
-          FOREIGN KEY (session_id) REFERENCES chat_sessions(session_id) ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);
-        CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp);
-        CREATE INDEX IF NOT EXISTS idx_chat_sessions_provider ON chat_sessions(provider_address);
-        CREATE INDEX IF NOT EXISTS idx_chat_sessions_wallet ON chat_sessions(wallet_address);
-        CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated ON chat_sessions(updated_at);
-        
-        -- Composite indexes for common queries
-        CREATE INDEX IF NOT EXISTS idx_chat_sessions_wallet_provider ON chat_sessions(wallet_address, provider_address);
-        CREATE INDEX IF NOT EXISTS idx_chat_messages_session_timestamp ON chat_messages(session_id, timestamp);
-        CREATE INDEX IF NOT EXISTS idx_chat_sessions_wallet_updated ON chat_sessions(wallet_address, updated_at);
-      `);
-
-      // Migration: Add wallet_address column if it doesn't exist
-      try {
-        await this.db.exec(`
-          ALTER TABLE chat_sessions 
-          ADD COLUMN IF NOT EXISTS wallet_address TEXT;
-        `);
-      } catch (error) {
-        // Column might already exist, which is fine
-      }
-
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  private async ensureInit(): Promise<PGlite> {
     // Skip on server side
     if (typeof window === 'undefined') {
       throw new Error('Database operations are not available on server side');
     }
+
+    if (!this.initPromise) {
+      this.initPromise = this.init();
+    }
+    
+    await this.initPromise;
     
     if (!this.db) {
-      await this.init();
+      throw new Error('Database initialization failed');
     }
-    if (!this.db) {
-      throw new Error('Database not initialized');
-    }
+    
     return this.db;
+  }
+
+  private async init(): Promise<void> {
+    try {
+      this.db = new ChatDatabase();
+      await this.db.open();
+      console.log('✅ Chat database initialized with Dexie.js');
+    } catch (error) {
+      console.error('❌ Database initialization failed:', error);
+      throw error;
+    }
   }
 
   // Chat session methods
   async createChatSession(providerAddress: string, walletAddress: string, title?: string): Promise<string> {
-    const db = await this.ensureInit();
+    const db = await this.getDB();
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
     const now = Date.now();
 
-    await db.query(`
-      INSERT INTO chat_sessions (session_id, provider_address, wallet_address, created_at, updated_at, title)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [sessionId, providerAddress, walletAddress, now, now, title || null]);
+    await db.sessions.add({
+      session_id: sessionId,
+      provider_address: providerAddress,
+      wallet_address: walletAddress,
+      created_at: now,
+      updated_at: now,
+      title: title || undefined
+    });
 
     return sessionId;
   }
 
   async getChatSessions(walletAddress?: string, providerAddress?: string): Promise<ChatSession[]> {
-    const db = await this.ensureInit();
+    const db = await this.getDB();
     
-    let query = 'SELECT * FROM chat_sessions';
-    const params: (string | number)[] = [];
-    const conditions: string[] = [];
+    const query = db.sessions.orderBy('updated_at').reverse();
     
-    if (walletAddress) {
-      conditions.push(`wallet_address = $${params.length + 1}`);
-      params.push(walletAddress);
+    if (walletAddress && providerAddress) {
+      return query.filter(session => 
+        session.wallet_address === walletAddress && 
+        session.provider_address === providerAddress
+      ).toArray();
+    } else if (walletAddress) {
+      return query.filter(session => session.wallet_address === walletAddress).toArray();
+    } else if (providerAddress) {
+      return query.filter(session => session.provider_address === providerAddress).toArray();
     }
     
-    if (providerAddress) {
-      conditions.push(`provider_address = $${params.length + 1}`);
-      params.push(providerAddress);
-    }
-    
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-    
-    query += ' ORDER BY updated_at DESC';
-
-    const result = await db.query(query, params);
-    return result.rows as ChatSession[];
+    return query.toArray();
   }
 
   async updateChatSessionTitle(sessionId: string, title: string): Promise<void> {
-    const db = await this.ensureInit();
-    await db.query('UPDATE chat_sessions SET title = $1, updated_at = $2 WHERE session_id = $3', 
-      [title, Date.now(), sessionId]);
+    const db = await this.getDB();
+    await db.sessions
+      .where('session_id')
+      .equals(sessionId)
+      .modify({
+        title: title,
+        updated_at: Date.now()
+      });
   }
 
   async deleteChatSession(sessionId: string): Promise<void> {
-    const db = await this.ensureInit();
+    const db = await this.getDB();
     
-    try {
-      // Start a transaction
-      await db.exec('BEGIN');
-      
-      // First, check if the session exists
-      const checkResult = await db.query('SELECT * FROM chat_sessions WHERE session_id = $1', [sessionId]);
-      
-      if (checkResult.rows.length === 0) {
-        await db.exec('ROLLBACK');
-        return;
-      }
-      
-      // Delete messages first (even though CASCADE should handle this)
-      await db.query('DELETE FROM chat_messages WHERE session_id = $1', [sessionId]);
-      
+    await db.transaction('rw', db.sessions, db.messages, async () => {
+      // Delete messages first
+      await db.messages.where('session_id').equals(sessionId).delete();
       // Delete the session
-      await db.query('DELETE FROM chat_sessions WHERE session_id = $1', [sessionId]);
-      
-      // Commit the transaction
-      await db.exec('COMMIT');
-      
-    } catch (error) {
-      await db.exec('ROLLBACK');
-      throw error;
-    }
+      await db.sessions.where('session_id').equals(sessionId).delete();
+    });
   }
 
   // Chat message methods
   async saveMessage(sessionId: string, message: Omit<ChatMessage, 'id'>): Promise<number> {
-    const db = await this.ensureInit();
+    const db = await this.getDB();
     
-    const result = await db.query(`
-      INSERT INTO chat_messages (
-        session_id, role, content, timestamp, chat_id, 
-        is_verified, is_verifying, provider_address
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id
-    `, [
-      sessionId,
-      message.role,
-      message.content,
-      message.timestamp,
-      message.chat_id || null,
-      message.is_verified ?? null,
-      message.is_verifying ?? false,
-      message.provider_address || null,
-    ]);
+    const messageId = await db.messages.add({
+      session_id: sessionId,
+      role: message.role,
+      content: message.content,
+      timestamp: message.timestamp,
+      chat_id: message.chat_id || undefined,
+      is_verified: message.is_verified ?? undefined,
+      is_verifying: message.is_verifying ?? false,
+      provider_address: message.provider_address || undefined,
+    });
 
     // Update session updated_at timestamp
-    await db.query('UPDATE chat_sessions SET updated_at = $1 WHERE session_id = $2', 
-      [Date.now(), sessionId]);
+    await db.sessions
+      .where('session_id')
+      .equals(sessionId)
+      .modify({ updated_at: Date.now() });
 
-    return (result.rows[0] as any).id;
+    return messageId as number;
   }
 
   async getMessages(sessionId: string): Promise<ChatMessage[]> {
-    const db = await this.ensureInit();
-    
-    const result = await db.query('SELECT * FROM chat_messages WHERE session_id = $1 ORDER BY timestamp ASC', 
-      [sessionId]);
-
-    return result.rows as ChatMessage[];
+    const db = await this.getDB();
+    return db.messages
+      .where('session_id')
+      .equals(sessionId)
+      .sortBy('timestamp');
   }
 
   async updateMessageVerification(messageId: number, isVerified: boolean, isVerifying: boolean = false): Promise<void> {
-    const db = await this.ensureInit();
-    
-    await db.query('UPDATE chat_messages SET is_verified = $1, is_verifying = $2 WHERE id = $3', 
-      [isVerified, isVerifying, messageId]);
+    const db = await this.getDB();
+    await db.messages.update(messageId, {
+      is_verified: isVerified,
+      is_verifying: isVerifying
+    });
   }
 
   async clearMessages(sessionId: string): Promise<void> {
-    const db = await this.ensureInit();
-    await db.query('DELETE FROM chat_messages WHERE session_id = $1', [sessionId]);
+    const db = await this.getDB();
+    await db.messages.where('session_id').equals(sessionId).delete();
   }
 
   // Search messages
   async searchMessages(query: string, walletAddress?: string, providerAddress?: string): Promise<ChatMessage[]> {
-    const db = await this.ensureInit();
+    const db = await this.getDB();
     
-    let sqlQuery = `
-      SELECT cm.* FROM chat_messages cm
-      JOIN chat_sessions cs ON cm.session_id = cs.session_id
-      WHERE cm.content ILIKE $1
-    `;
-    const params: (string | number)[] = [`%${query}%`];
-    
-    if (walletAddress) {
-      sqlQuery += ` AND cs.wallet_address = $${params.length + 1}`;
-      params.push(walletAddress);
-    }
-    
-    if (providerAddress) {
-      sqlQuery += ` AND cs.provider_address = $${params.length + 1}`;
-      params.push(providerAddress);
-    }
-    
-    sqlQuery += ' ORDER BY cm.timestamp DESC LIMIT 100';
+    // Get all messages and filter by content
+    let messages = await db.messages
+      .orderBy('timestamp')
+      .reverse()
+      .limit(100)
+      .toArray();
 
-    const result = await db.query(sqlQuery, params);
-    return result.rows as ChatMessage[];
+    // Filter by content
+    messages = messages.filter(msg => 
+      msg.content.toLowerCase().includes(query.toLowerCase())
+    );
+
+    // If wallet or provider filters are specified, we need to join with sessions
+    if (walletAddress || providerAddress) {
+      const sessionIds = new Set();
+      
+      let sessions = await db.sessions.toArray();
+      if (walletAddress) {
+        sessions = sessions.filter(s => s.wallet_address === walletAddress);
+      }
+      if (providerAddress) {
+        sessions = sessions.filter(s => s.provider_address === providerAddress);
+      }
+      
+      sessions.forEach(s => sessionIds.add(s.session_id));
+      messages = messages.filter(msg => sessionIds.has(msg.session_id));
+    }
+
+    return messages;
   }
 
   // Get recent sessions for wallet
-  async getRecentSessions(walletAddress: string, providerAddress?: string, limit: number = APP_CONSTANTS.LIMITS.SESSION_HISTORY_LIMIT): Promise<ChatSession[]> {
-    const db = await this.ensureInit();
+  async getRecentSessions(
+    walletAddress: string, 
+    providerAddress?: string, 
+    limit: number = APP_CONSTANTS.LIMITS.SESSION_HISTORY_LIMIT
+  ): Promise<ChatSession[]> {
+    const db = await this.getDB();
     
-    let query = `
-      SELECT * FROM chat_sessions 
-      WHERE wallet_address = $1
-    `;
-    const params: (string | number)[] = [walletAddress];
+    let query = db.sessions
+      .where('wallet_address')
+      .equals(walletAddress);
     
     if (providerAddress) {
-      query += ` AND provider_address = $${params.length + 1}`;
-      params.push(providerAddress);
+      query = query.and(session => session.provider_address === providerAddress);
     }
     
-    query += ` ORDER BY updated_at DESC LIMIT $${params.length + 1}`;
-    params.push(limit);
-    
-    const result = await db.query(query, params);
-
-    return result.rows as ChatSession[];
+    return query
+      .reverse()
+      .sortBy('updated_at')
+      .then(results => results.slice(0, limit));
   }
 
   async close(): Promise<void> {
     if (this.db) {
-      await this.db.close();
+      this.db.close();
       this.db = null;
       this.initPromise = null;
     }

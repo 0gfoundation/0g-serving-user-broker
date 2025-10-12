@@ -275,6 +275,8 @@ export function OptimizedChatPage() {
     lastClickedSessionRef.current = null;
     lastTargetMessageRef.current = null;
   }, []);
+
+  // Database will initialize automatically when needed (Dexie.js is lightweight)
   
   // Track user scroll behavior to stop auto-scroll when user manually scrolls up
   useEffect(() => {

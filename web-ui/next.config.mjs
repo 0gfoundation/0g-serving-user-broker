@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Optimize for production performance
+    reactStrictMode: false, // Disable in production to avoid double renders
+    poweredByHeader: false, // Remove X-Powered-By header
+    compress: true, // Enable gzip compression
+    
     webpack: (config, { isServer }) => {
         if (!isServer) {
             config.resolve.fallback = {
@@ -19,19 +24,20 @@ const nextConfig = {
                 'node:stream': false,
                 'node:util': false,
             }
+            
+            // Dexie.js is already lightweight, no special bundling needed
         } else {
-            // Prevent server-side bundling of browser-only packages
-            config.externals = [
-                ...(config.externals || []),
-                {
-                    '@electric-sql/pglite': 'commonjs @electric-sql/pglite',
-                },
-            ]
+            // No server-side externals needed for Dexie.js
         }
         return config
     },
     transpilePackages: ['@0glabs/0g-serving-broker'],
     output: 'standalone',
+    
+    // Optimize bundle splitting
+    experimental: {
+        optimizePackageImports: ['dexie', '0g-serving-broker']
+    },
 }
 
 export default nextConfig

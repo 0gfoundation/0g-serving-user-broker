@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 
 interface ChatInputProps {
   inputMessage: string;
@@ -29,28 +29,56 @@ export function ChatInput({
   onSendMessage,
   onVerifyProvider,
 }: ChatInputProps) {
+  // Force client-side rendering to prevent hydration issues
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Memoize the textarea change handler with debouncing for resize
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputMessage(value);
+    
+    // Debounce the resize operation using requestAnimationFrame
+    requestAnimationFrame(() => {
+      const textarea = e.target as HTMLTextAreaElement;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    });
+  }, [setInputMessage]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (providerAcknowledged === false) {
+        onVerifyProvider();
+      } else if (inputMessage.trim() && !isProcessing) {
+        onSendMessage();
+      }
+    }
+  }, [providerAcknowledged, inputMessage, isProcessing, onVerifyProvider, onSendMessage]);
+
+  // Show loading state until client-side hydration
+  if (!isClient) {
+    return (
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex space-x-3 items-end">
+          <div className="flex-1 h-10 bg-gray-100 rounded-md animate-pulse" />
+          <div className="w-20 h-10 bg-gray-100 rounded-md animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 border-t border-gray-200">
       <div className="flex space-x-3 items-end">
         <textarea
           value={inputMessage}
-          onChange={(e) => {
-            setInputMessage(e.target.value);
-            // Auto-resize textarea
-            const textarea = e.target as HTMLTextAreaElement;
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              if (providerAcknowledged === false) {
-                onVerifyProvider();
-              } else if (inputMessage.trim() && !isProcessing) {
-                onSendMessage();
-              }
-            }
-          }}
+          onChange={handleTextareaChange}
+          onKeyDown={handleKeyDown}
           placeholder={isProcessing ? "AI is responding..." : "Type your message... (Shift+Enter for new line)"}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 resize-none overflow-y-auto disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
           style={{ minHeight: '40px', maxHeight: '120px' }}

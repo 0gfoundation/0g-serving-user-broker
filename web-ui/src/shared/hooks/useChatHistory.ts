@@ -39,12 +39,11 @@ export function useChatHistory({ walletAddress, providerAddress, autoSave = true
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize database and load sessions
+  // Load sessions (database will initialize automatically)
   useEffect(() => {
     const initializeDatabase = async () => {
       try {
         setIsLoading(true);
-        await dbManager.init();
         await loadSessions();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Database initialization failed');

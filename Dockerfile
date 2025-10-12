@@ -72,4 +72,7 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
+# Performance optimizations for production
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 CMD ["node", "server.js"]

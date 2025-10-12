@@ -1,4 +1,4 @@
-export { default as OptimizedChatPage } from './OptimizedChatPage';
+export { OptimizedChatPage } from './OptimizedChatPage';
 export { ChatInput } from './ChatInput';
 export { ChatMessage } from './ChatMessage';
 export { ChatSidebar } from './ChatSidebar';

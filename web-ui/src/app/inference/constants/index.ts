@@ -1,1 +1,1 @@
-export { MOCK_PROVIDERS } from './providers';
+export { OFFICIAL_PROVIDERS } from './providers';

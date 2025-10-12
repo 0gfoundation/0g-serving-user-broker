@@ -85,8 +85,9 @@ export function OptimizedChatPage() {
     isProcessing,
   } = useStreamingState();
   // Note: Deposit modal is now handled globally in LayoutContent
-  const [showFundingAlert, setShowFundingAlert] = useState(false);
-  const [fundingAlertMessage, setFundingAlertMessage] = useState("");
+  // Funding alert states (reserved for future use)
+  // const [showFundingAlert, setShowFundingAlert] = useState(false);
+  // const [fundingAlertMessage, setFundingAlertMessage] = useState("");
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [isTopping, setIsTopping] = useState(false);
@@ -479,7 +480,8 @@ export function OptimizedChatPage() {
         </div>
       )}
 
-      {showFundingAlert && (
+      {/* Funding alert reserved for future use */}
+      {/* {showFundingAlert && (
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
           <div className="flex items-start">
             <svg
@@ -501,7 +503,7 @@ export function OptimizedChatPage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="flex bg-white rounded-xl border border-gray-200" style={{ height: CHAT_CONFIG.CHAT_HEIGHT }}>
         {/* History Sidebar */}

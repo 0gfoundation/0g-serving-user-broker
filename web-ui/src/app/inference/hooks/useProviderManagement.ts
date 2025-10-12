@@ -28,7 +28,7 @@ interface ProviderManagementActions {
 }
 
 export function useProviderManagement(
-  broker: any,
+  broker: any, // TODO: Replace with proper broker type when available
   refreshLedgerInfo: () => Promise<void>,
   showTutorial: boolean,
   tutorialStep: 'verify' | 'top-up' | null,

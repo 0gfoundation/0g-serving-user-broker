@@ -37,6 +37,11 @@ class DatabaseManager {
   }
 
   private async _init(): Promise<void> {
+    // Skip initialization on server side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
       // Initialize PGlite with IndexedDB persistence
       this.db = new PGlite({
@@ -96,6 +101,11 @@ class DatabaseManager {
   }
 
   private async ensureInit(): Promise<PGlite> {
+    // Skip on server side
+    if (typeof window === 'undefined') {
+      throw new Error('Database operations are not available on server side');
+    }
+    
     if (!this.db) {
       await this.init();
     }

@@ -16,7 +16,7 @@ interface LedgerInfo {
 interface TopUpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  broker: any;
+  broker: any; // TODO: Replace with proper broker type when available
   selectedProvider: Provider | null;
   topUpAmount: string;
   setTopUpAmount: (amount: string) => void;

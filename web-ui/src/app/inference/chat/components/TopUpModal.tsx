@@ -34,6 +34,25 @@ interface TopUpModalProps {
   setTutorialStep: (step: 'verify' | 'top-up' | null) => void;
 }
 
+// Helper function to format numbers with appropriate precision
+const formatNumber = (num: number): string => {
+  // Use toPrecision to maintain significant digits, then parseFloat to clean up
+  const cleanValue = parseFloat(num.toPrecision(15));
+  
+  // If the number is very small, show more decimal places
+  if (Math.abs(cleanValue) < 0.000001) {
+    return cleanValue.toFixed(12).replace(/\.?0+$/, '');
+  }
+  // For larger numbers, show fewer decimal places
+  else if (Math.abs(cleanValue) < 0.01) {
+    return cleanValue.toFixed(8).replace(/\.?0+$/, '');
+  }
+  // For normal sized numbers, show up to 6 decimal places
+  else {
+    return cleanValue.toFixed(6).replace(/\.?0+$/, '');
+  }
+};
+
 export function TopUpModal({
   isOpen,
   onClose,
@@ -160,19 +179,22 @@ export function TopUpModal({
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="text-sm text-yellow-800">
                     <p className="mb-2">
-                      <span className="font-semibold">Pending Refund: {providerPendingRefund.toFixed(6)} A0GI</span>
+                      <span className="font-semibold">Pending Refund: {formatNumber(providerPendingRefund)} A0GI</span>
                     </p>
                     <p className="text-xs mb-3">
                       You previously requested to withdraw funds from this provider. Please cancel the withdrawal request to replenish the fund.
                     </p>
                     <button
                       onClick={() => {
-                        setTopUpAmount(providerPendingRefund.toFixed(6));
+                        // Use parseFloat to clean up floating point precision issues
+                        // and toPrecision to maintain significant digits
+                        const cleanValue = parseFloat(providerPendingRefund.toPrecision(15));
+                        setTopUpAmount(cleanValue.toString());
                       }}
                       className="px-3 py-1 bg-yellow-600 text-white text-xs font-medium rounded hover:bg-yellow-700 transition-colors cursor-pointer"
                       disabled={isTopping}
                     >
-                      Use Pending Refund ({providerPendingRefund.toFixed(6)} A0GI)
+                      Use Pending Refund ({formatNumber(providerPendingRefund)} A0GI)
                     </button>
                   </div>
                 </div>
@@ -202,7 +224,7 @@ export function TopUpModal({
                   min="0"
                   step="0.000001"
                   className="w-full px-4 py-3 pr-16 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  disabled={isTopping || !!(providerPendingRefund && providerPendingRefund > 0)}
+                  disabled={isTopping}
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <span className="text-gray-500 sm:text-sm">A0GI</span>

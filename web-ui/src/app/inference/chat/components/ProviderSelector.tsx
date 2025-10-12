@@ -4,6 +4,25 @@ import React from 'react';
 import type { Provider } from '../../../../shared/types/broker';
 import { OFFICIAL_PROVIDERS } from '../../constants/providers';
 
+// Helper function to format numbers with appropriate precision
+const formatNumber = (num: number): string => {
+  // Use toPrecision to maintain significant digits, then parseFloat to clean up
+  const cleanValue = parseFloat(num.toPrecision(15));
+  
+  // If the number is very small, show more decimal places
+  if (Math.abs(cleanValue) < 0.000001) {
+    return cleanValue.toFixed(12).replace(/\.?0+$/, '');
+  }
+  // For larger numbers, show fewer decimal places
+  else if (Math.abs(cleanValue) < 0.01) {
+    return cleanValue.toFixed(8).replace(/\.?0+$/, '');
+  }
+  // For normal sized numbers, show up to 6 decimal places
+  else {
+    return cleanValue.toFixed(6).replace(/\.?0+$/, '');
+  }
+};
+
 interface ProviderSelectorProps {
   // Provider selection
   providers: Provider[];
@@ -305,9 +324,9 @@ export function ProviderSelector({
               }`}>
                 {providerBalance !== null ? (
                   <>
-                    {providerBalance.toFixed(4)} A0GI
+                    {formatNumber(providerBalance)} A0GI
                     {providerPendingRefund !== null && providerPendingRefund > 0 && (
-                      <span className="text-orange-600"> (+{providerPendingRefund.toFixed(4)} pending)</span>
+                      <span className="text-orange-600"> (+{formatNumber(providerPendingRefund)} pending)</span>
                     )}
                   </>
                 ) : (

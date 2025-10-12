@@ -61,7 +61,24 @@ export function TutorialOverlay({
                 Top Up Provider
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Fund the provider with a certain amount (excess funds can be refunded)
+                Now you need to fund the provider to start using its services:
+              </p>
+              <div className="text-sm text-gray-600 mb-4 space-y-2">
+                <div className="flex items-start space-x-2">
+                  <span className="inline-block w-5 h-5 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold flex items-center justify-center mt-0.5">•</span>
+                  <div>
+                    <span className="font-medium">Transfer funds</span> from your account balance to the provider
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="inline-block w-5 h-5 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold flex items-center justify-center mt-0.5">•</span>
+                  <div>
+                    <span className="font-medium">Excess funds</span> can be refunded at any time
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Click "Add Funds" to transfer funds to this provider.
               </p>
             </>
           )}

@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ZGServingUserBrokerBase = void 0;
 const extractor_1 = require("../extractor");
 const utils_1 = require("../../common/utils");
-const settle_signer_1 = require("../../common/settle-signer");
 const storage_1 = require("../../common/storage");
 const ethers_1 = require("ethers");
 class ZGServingUserBrokerBase {
@@ -19,13 +18,6 @@ class ZGServingUserBrokerBase {
         this.ledger = ledger;
         this.metadata = metadata;
         this.cache = cache;
-    }
-    async getProviderData() {
-        const key = `${this.contract.getUserAddress()}`;
-        const [settleSignerPrivateKey] = await Promise.all([
-            this.metadata.getSettleSignerPrivateKey(key),
-        ]);
-        return { settleSignerPrivateKey };
     }
     async getService(providerAddress, useCache = true) {
         const key = storage_1.CacheKeyHelpers.getServiceKey(providerAddress);
@@ -141,57 +133,17 @@ class ZGServingUserBrokerBase {
         const decimalPart = Number(remainder) / Number(divisor);
         return Number(integerPart) + decimalPart;
     }
-    async getHeader(providerAddress, content, outputFee, vllmProxy) {
-        try {
-            const userAddress = this.contract.getUserAddress();
-            if (!(await this.userAcknowledged(providerAddress))) {
-                throw new Error('Provider signer is not acknowledged');
-            }
-            const extractor = await this.getExtractor(providerAddress);
-            const { settleSignerPrivateKey } = await this.getProviderData();
-            const key = userAddress;
-            let privateKey = settleSignerPrivateKey;
-            if (!privateKey) {
-                const account = await this.contract.getAccount(providerAddress);
-                const privateKeyStr = await (0, utils_1.decryptData)(this.contract.signer, account.additionalInfo);
-                privateKey = (0, utils_1.strToPrivateKey)(privateKeyStr);
-                console.log('Private key new:', privateKey);
-                this.metadata.storeSettleSignerPrivateKey(key, privateKey);
-            }
-            const nonce = await (0, utils_1.getNonceWithCache)(this.cache);
-            const inputFee = await this.calculateInputFees(extractor, content);
-            const fee = inputFee + outputFee;
-            const request = new settle_signer_1.Request(nonce.toString(), fee.toString(), userAddress, providerAddress);
-            const settleSignature = await (0, settle_signer_1.signData)([request], privateKey);
-            const sig = JSON.stringify(Array.from(settleSignature[0]));
-            const requestHash = await this.calculatePedersenHash(nonce, userAddress, providerAddress);
-            return {
-                'X-Phala-Signature-Type': 'StandaloneApi',
-                Address: userAddress,
-                Fee: fee.toString(),
-                'Input-Fee': inputFee.toString(),
-                Nonce: nonce.toString(),
-                'Request-Hash': requestHash,
-                Signature: sig,
-                'VLLM-Proxy': `${vllmProxy}`,
-            };
+    async getHeader(providerAddress, vllmProxy) {
+        const userAddress = this.contract.getUserAddress();
+        // Check if provider is acknowledged - this is still necessary
+        if (!(await this.userAcknowledged(providerAddress))) {
+            throw new Error('Provider signer is not acknowledged');
         }
-        catch (error) {
-            (0, utils_1.throwFormattedError)(error);
-        }
-    }
-    async calculatePedersenHash(nonce, userAddress, providerAddress) {
-        const ADDR_LENGTH = 20;
-        const NONCE_LENGTH = 8;
-        const buffer = new ArrayBuffer(NONCE_LENGTH + ADDR_LENGTH * 2);
-        let offset = 0;
-        const nonceBytes = (0, settle_signer_1.bigintToBytes)(BigInt(nonce), NONCE_LENGTH);
-        new Uint8Array(buffer, offset, NONCE_LENGTH).set(nonceBytes);
-        offset += NONCE_LENGTH;
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set((0, settle_signer_1.bigintToBytes)(BigInt(userAddress), ADDR_LENGTH));
-        offset += ADDR_LENGTH;
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set((0, settle_signer_1.bigintToBytes)(BigInt(providerAddress), ADDR_LENGTH));
-        return (0, ethers_1.hexlify)(await (0, settle_signer_1.pedersenHash)(Buffer.from(buffer)));
+        // Simplified: Only return Address and VLLM-Proxy headers
+        return {
+            Address: userAddress,
+            'VLLM-Proxy': `${vllmProxy}`,
+        };
     }
     async calculateInputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
@@ -257,15 +209,17 @@ class ZGServingUserBrokerBase {
                     // Check if it's an insufficient balance error
                     const errorMessage = error?.message?.toLowerCase() || '';
                     if (errorMessage.includes('insufficient')) {
-                        throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                        console.warn(`Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                        return;
                     }
-                    throw error;
+                    console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`);
+                    return;
                 }
             }
             await this.clearCacheFee(provider, newFee);
         }
         catch (error) {
-            (0, utils_1.throwFormattedError)(error);
+            console.warn(`Warning: Top up account failed: ${error?.message || error}`);
         }
     }
     async handleFirstRound(provider, triggerThreshold, targetThreshold, gasPrice) {
@@ -286,9 +240,11 @@ class ZGServingUserBrokerBase {
                 // Check if it's an insufficient balance error
                 const errorMessage = error?.message?.toLowerCase() || '';
                 if (errorMessage.includes('insufficient')) {
-                    throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    console.warn(`Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    return;
                 }
-                throw error;
+                console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`);
+                return;
             }
         }
         // Mark the first round as complete

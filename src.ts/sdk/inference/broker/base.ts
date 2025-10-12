@@ -301,17 +301,19 @@ export abstract class ZGServingUserBrokerBase {
                     // Check if it's an insufficient balance error
                     const errorMessage = error?.message?.toLowerCase() || ''
                     if (errorMessage.includes('insufficient')) {
-                        throw new Error(
-                            `To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
+                        console.warn(
+                            `Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
                         )
+                        return
                     }
-                    throw error
+                    console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`)
+                    return
                 }
             }
 
             await this.clearCacheFee(provider, newFee)
-        } catch (error) {
-            throwFormattedError(error)
+        } catch (error: any) {
+            console.warn(`Warning: Top up account failed: ${error?.message || error}`)
         }
     }
 
@@ -343,11 +345,13 @@ export abstract class ZGServingUserBrokerBase {
                 // Check if it's an insufficient balance error
                 const errorMessage = error?.message?.toLowerCase() || ''
                 if (errorMessage.includes('insufficient')) {
-                    throw new Error(
-                        `To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
+                    console.warn(
+                        `Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`
                     )
+                    return
                 }
-                throw error
+                console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`)
+                return
             }
         }
 

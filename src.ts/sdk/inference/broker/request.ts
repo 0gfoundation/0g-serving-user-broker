@@ -133,7 +133,6 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
             let { quote, provider_signer } = await this.getQuote(
                 providerAddress
             )
-            console.log('quote', quote)
 
             if (!quote || !provider_signer) {
                 throw new Error('Invalid quote')

@@ -51,7 +51,8 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
             if (vllmProxy === undefined) {
                 vllmProxy = true;
             }
-            return await this.getHeader(providerAddress, content, BigInt(0), vllmProxy);
+            // Simplified call - only pass required parameters
+            return await this.getHeader(providerAddress, vllmProxy);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -66,7 +67,6 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
             }
             let { quote, provider_signer } = await this.getQuote(providerAddress);
-            console.log('quote', quote);
             if (!quote || !provider_signer) {
                 throw new Error('Invalid quote');
             }

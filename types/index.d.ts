@@ -4,5 +4,4 @@ export * from './ledger';
 export * from './broker';
 export * from './common/utils/env';
 export * from './common/utils/crypto-adapter';
-export * from './common/settle-signer';
 //# sourceMappingURL=index.d.ts.map

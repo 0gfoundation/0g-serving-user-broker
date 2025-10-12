@@ -51,29 +51,13 @@ export class Metadata {
         }
     }
 
-    async storeSettleSignerPrivateKey(key: string, value: bigint[]) {
-        const bigIntStringArray: string[] = value.map((bi) => bi.toString())
-        const bigIntJsonString: string = JSON.stringify(bigIntStringArray)
-        await this.setItem(
-            CacheKeyHelpers.getSettleSignerPrivateKeyKey(key),
-            bigIntJsonString
-        )
-    }
+    // storeSettleSignerPrivateKey removed - no longer needed
 
     async storeSigningKey(key: string, value: string) {
         await this.setItem(CacheKeyHelpers.getSigningKeyKey(key), value)
     }
 
-    async getSettleSignerPrivateKey(key: string): Promise<bigint[] | null> {
-        const value: string | null = await this.getItem(
-            CacheKeyHelpers.getSettleSignerPrivateKeyKey(key)
-        )
-        if (!value) {
-            return null
-        }
-        const bigIntStringArray: string[] = JSON.parse(value)
-        return bigIntStringArray.map((str) => BigInt(str))
-    }
+    // getSettleSignerPrivateKey removed - no longer needed
 
     async getSigningKey(key: string): Promise<string | null> {
         const value = await this.getItem(CacheKeyHelpers.getSigningKeyKey(key))

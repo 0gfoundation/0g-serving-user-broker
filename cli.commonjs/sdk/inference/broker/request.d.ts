@@ -4,36 +4,38 @@ import type { InferenceServingContract } from '../contract';
 import type { LedgerBroker } from '../../ledger';
 import { Automata } from '../../common/automata ';
 /**
- * ServingRequestHeaders contains headers related to request billing.
- * These need to be added to the request.
+ * ServingRequestHeaders contains headers related to request.
+ * Only Address and VLLM-Proxy are required now.
  */
 export interface ServingRequestHeaders {
-    'X-Phala-Signature-Type': 'StandaloneApi';
+    /**
+     * @deprecated This field is no longer used but kept for backwards compatibility
+     */
+    'X-Phala-Signature-Type'?: 'StandaloneApi';
     /**
      * User's address
      */
     Address: string;
     /**
-     * Total fee for the request.
-     * Equals 'Input-Fee' + 'Previous-Output-Fee'
+     * @deprecated Total fee for the request - no longer used
      */
-    Fee: string;
+    Fee?: string;
     /**
-     * Fee required for the input of this request.
-     * For example, for a chatbot service,
-     * 'Input-Fee' = number of tokens input by the user * price per token
+     * @deprecated Fee required for the input - no longer used
      */
-    'Input-Fee': string;
+    'Input-Fee'?: string;
     /**
-     * Pedersen hash for nonce, user address and provider address
+     * @deprecated Pedersen hash - no longer used
      */
-    'Request-Hash': string;
-    Nonce: string;
+    'Request-Hash'?: string;
     /**
-     * User's signature for the other headers.
-     * By adding this information, the user gives the current request the characteristics of a settlement proof.
+     * @deprecated Nonce - no longer used
      */
-    Signature: string;
+    Nonce?: string;
+    /**
+     * @deprecated User's signature - no longer used
+     */
+    Signature?: string;
     /**
      * Broker service use a proxy for chat signature
      */

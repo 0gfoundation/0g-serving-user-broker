@@ -1,6 +1,4 @@
-import { ethers, ContractFactory, Interface, Contract, ZeroAddress, hexlify, Wallet } from 'ethers';
-import CryptoJS from 'crypto-js';
-import { buildPedersenHash, buildBabyjub, buildEddsa } from 'circomlibjs';
+import { ethers, ContractFactory, Interface, Contract, ZeroAddress, Wallet } from 'ethers';
 import * as fs$1 from 'fs';
 import { spawn as spawn$1 } from 'child_process';
 import * as path$1 from 'path';
@@ -36,32 +34,6 @@ class ChatBot extends Extractor {
         return encoded.length;
     }
 }
-
-/**
- * MESSAGE_FOR_ENCRYPTION_KEY is a fixed message used to derive the encryption key.
- *
- * Background:
- * To ensure a consistent and unique encryption key can be generated from a user's Ethereum wallet,
- * we utilize a fixed message combined with a signing mechanism.
- *
- * Purpose:
- * - This string is provided to the Ethereum signing function to generate a digital signature based on the user's private key.
- * - The produced signature is then hashed (using SHA-256) to create a consistent 256-bit encryption key from the same wallet.
- * - This process offers a way to protect data without storing additional keys.
- *
- * Note:
- * - The uniqueness and stability of this message are crucial; do not change it unless you fully understand the impact
- *   on the key derivation and encryption process.
- * - Because the signature is derived from the wallet's private key, it ensures that different wallets cannot produce the same key.
- */
-const MESSAGE_FOR_ENCRYPTION_KEY = 'MESSAGE_FOR_ENCRYPTION_KEY';
-// Define which errors to retry on
-const RETRY_ERROR_SUBSTRINGS = [
-    'transaction underpriced',
-    'replacement transaction underpriced',
-    'fee too low',
-    'mempool',
-];
 
 var dist = {};
 
@@ -8518,23 +8490,6 @@ const ivLength = 12;
 const tagLength = 16;
 const sigLength = 65;
 const chunkLength = 64 * 1024 * 1024 + tagLength;
-// Inference
-async function deriveEncryptionKey(signer) {
-    const signature = await signer.signMessage(MESSAGE_FOR_ENCRYPTION_KEY);
-    const hash = ethers.sha256(ethers.toUtf8Bytes(signature));
-    return hash;
-}
-async function encryptData(signer, data) {
-    const key = await deriveEncryptionKey(signer);
-    const encrypted = CryptoJS.AES.encrypt(data, key).toString();
-    return encrypted;
-}
-async function decryptData(signer, encryptedData) {
-    const key = await deriveEncryptionKey(signer);
-    const bytes = CryptoJS.AES.decrypt(encryptedData, key);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    return decrypted;
-}
 // Fine-tuning
 function hexToRoots(hexString) {
     if (hexString.startsWith('0x')) {
@@ -8606,353 +8561,9 @@ async function aesGCMDecryptToFile(key, encryptedModelPath, decryptedModelPath, 
     }
 }
 
-function strToPrivateKey(str) {
-    const parsed = JSON.parse(str);
-    if (!Array.isArray(parsed) || parsed.length !== 2) {
-        throw new Error('Invalid input string');
-    }
-    const [first, second] = parsed.map((value) => {
-        if (typeof value === 'string' || typeof value === 'number') {
-            return BigInt(value);
-        }
-        throw new Error('Invalid number format');
-    });
-    return [first, second];
-}
-function privateKeyToStr(key) {
-    try {
-        return JSON.stringify(key.map((v) => v.toString()));
-    }
-    catch (error) {
-        throw error;
-    }
-}
-
-/**
- * Centralized cache key management
- * This file contains all cache key constants and helper functions
- * to ensure no key conflicts across different storage objects
- */
-// Fixed cache keys
-const CACHE_KEYS = {
-    // Nonce related
-    NONCE: 'nonce',
-    NONCE_LOCK: 'nonce_lock',
-    // First round marker
-    FIRST_ROUND: 'firstRound',
-};
-// Cache key prefix patterns
-const CACHE_KEY_PREFIXES = {
-    // Service cache
-    SERVICE: 'service_',
-    // User acknowledgment
-    USER_ACK: '_ack',
-    // Cached fee
-    CACHED_FEE: '_cachedFee',
-};
-// Metadata key suffixes
-const METADATA_KEY_SUFFIXES = {
-    SETTLE_SIGNER_PRIVATE_KEY: '_settleSignerPrivateKey',
-    SIGNING_KEY: '_signingKey',
-};
-// Helper functions to generate dynamic cache keys
-const CacheKeyHelpers = {
-    // Service cache key
-    getServiceKey(providerAddress) {
-        return `${CACHE_KEY_PREFIXES.SERVICE}${providerAddress}`;
-    },
-    // User acknowledgment key
-    getUserAckKey(userAddress, providerAddress) {
-        return `${userAddress}_${providerAddress}${CACHE_KEY_PREFIXES.USER_ACK}`;
-    },
-    // Cached fee key
-    getCachedFeeKey(provider) {
-        return `${provider}${CACHE_KEY_PREFIXES.CACHED_FEE}`;
-    },
-    // Metadata: settle signer private key
-    getSettleSignerPrivateKeyKey(key) {
-        return `${key}${METADATA_KEY_SUFFIXES.SETTLE_SIGNER_PRIVATE_KEY}`;
-    },
-    // Metadata: signing key
-    getSigningKeyKey(key) {
-        return `${key}${METADATA_KEY_SUFFIXES.SIGNING_KEY}`;
-    },
-    // Dynamic content key (for inference server)
-    getContentKey(id) {
-        return id; // Keep as is since it's already unique
-    },
-};
-
-class Metadata {
-    nodeStorage = {};
-    initialized = false;
-    isBrowser = typeof window !== 'undefined' &&
-        typeof window.localStorage !== 'undefined';
-    storagePrefix = '0g_metadata_';
-    constructor() { }
-    async initialize() {
-        if (this.initialized) {
-            return;
-        }
-        if (!this.isBrowser) {
-            this.nodeStorage = {};
-        }
-        this.initialized = true;
-    }
-    async setItem(key, value) {
-        await this.initialize();
-        const fullKey = this.storagePrefix + key;
-        if (this.isBrowser) {
-            try {
-                console.log('Setting localStorage item:', fullKey, value);
-                window.localStorage.setItem(fullKey, value);
-            }
-            catch (e) {
-                console.warn('Failed to set localStorage item:', e);
-                this.nodeStorage[key] = value;
-            }
-        }
-        else {
-            this.nodeStorage[key] = value;
-        }
-    }
-    async getItem(key) {
-        await this.initialize();
-        const fullKey = this.storagePrefix + key;
-        if (this.isBrowser) {
-            try {
-                return window.localStorage.getItem(fullKey);
-            }
-            catch (e) {
-                console.warn('Failed to get localStorage item:', e);
-                return this.nodeStorage[key] ?? null;
-            }
-        }
-        else {
-            return this.nodeStorage[key] ?? null;
-        }
-    }
-    async storeSettleSignerPrivateKey(key, value) {
-        const bigIntStringArray = value.map((bi) => bi.toString());
-        const bigIntJsonString = JSON.stringify(bigIntStringArray);
-        await this.setItem(CacheKeyHelpers.getSettleSignerPrivateKeyKey(key), bigIntJsonString);
-    }
-    async storeSigningKey(key, value) {
-        await this.setItem(CacheKeyHelpers.getSigningKeyKey(key), value);
-    }
-    async getSettleSignerPrivateKey(key) {
-        const value = await this.getItem(CacheKeyHelpers.getSettleSignerPrivateKeyKey(key));
-        if (!value) {
-            return null;
-        }
-        const bigIntStringArray = JSON.parse(value);
-        return bigIntStringArray.map((str) => BigInt(str));
-    }
-    async getSigningKey(key) {
-        const value = await this.getItem(CacheKeyHelpers.getSigningKeyKey(key));
-        return value ?? null;
-    }
-}
-
-var CacheValueTypeEnum;
-(function (CacheValueTypeEnum) {
-    CacheValueTypeEnum["Service"] = "service";
-    CacheValueTypeEnum["BigInt"] = "bigint";
-    CacheValueTypeEnum["Other"] = "other";
-})(CacheValueTypeEnum || (CacheValueTypeEnum = {}));
-class Cache {
-    nodeStorage = {};
-    initialized = false;
-    isBrowser = typeof window !== 'undefined' &&
-        typeof window.localStorage !== 'undefined';
-    storagePrefix = '0g_cache_';
-    constructor() { }
-    setLock(key, value, ttl, type) {
-        this.initialize();
-        if (this.getStorageItem(key)) {
-            return false;
-        }
-        this.setItem(key, value, ttl, type);
-        return true;
-    }
-    removeLock(key) {
-        this.initialize();
-        this.removeStorageItem(key);
-    }
-    setItem(key, value, ttl, type) {
-        this.initialize();
-        const now = new Date();
-        const item = {
-            type,
-            value: Cache.encodeValue(value),
-            expiry: now.getTime() + ttl,
-        };
-        this.setStorageItem(key, JSON.stringify(item));
-    }
-    getItem(key) {
-        this.initialize();
-        const itemStr = this.getStorageItem(key);
-        if (!itemStr) {
-            return null;
-        }
-        const item = JSON.parse(itemStr);
-        const now = new Date();
-        if (now.getTime() > item.expiry) {
-            this.removeStorageItem(key);
-            return null;
-        }
-        return Cache.decodeValue(item.value, item.type);
-    }
-    initialize() {
-        if (this.initialized) {
-            return;
-        }
-        if (!this.isBrowser) {
-            this.nodeStorage = {};
-        }
-        else {
-            this.cleanupExpiredItems();
-        }
-        this.initialized = true;
-    }
-    setStorageItem(key, value) {
-        const fullKey = this.storagePrefix + key;
-        if (this.isBrowser) {
-            try {
-                window.localStorage.setItem(fullKey, value);
-            }
-            catch (e) {
-                console.warn('Failed to set localStorage item:', e);
-                this.nodeStorage[key] = value;
-            }
-        }
-        else {
-            this.nodeStorage[key] = value;
-        }
-    }
-    getStorageItem(key) {
-        const fullKey = this.storagePrefix + key;
-        if (this.isBrowser) {
-            try {
-                return window.localStorage.getItem(fullKey);
-            }
-            catch (e) {
-                console.warn('Failed to get localStorage item:', e);
-                return this.nodeStorage[key] ?? null;
-            }
-        }
-        else {
-            return this.nodeStorage[key] ?? null;
-        }
-    }
-    removeStorageItem(key) {
-        const fullKey = this.storagePrefix + key;
-        if (this.isBrowser) {
-            try {
-                window.localStorage.removeItem(fullKey);
-            }
-            catch (e) {
-                console.warn('Failed to remove localStorage item:', e);
-                delete this.nodeStorage[key];
-            }
-        }
-        else {
-            delete this.nodeStorage[key];
-        }
-    }
-    cleanupExpiredItems() {
-        if (!this.isBrowser)
-            return;
-        try {
-            const keysToRemove = [];
-            for (let i = 0; i < window.localStorage.length; i++) {
-                const key = window.localStorage.key(i);
-                if (key && key.startsWith(this.storagePrefix)) {
-                    const itemStr = window.localStorage.getItem(key);
-                    if (itemStr) {
-                        try {
-                            const item = JSON.parse(itemStr);
-                            if (new Date().getTime() > item.expiry) {
-                                keysToRemove.push(key);
-                            }
-                        }
-                        catch (e) {
-                            keysToRemove.push(key);
-                        }
-                    }
-                }
-            }
-            keysToRemove.forEach((key) => window.localStorage.removeItem(key));
-        }
-        catch (e) {
-            console.warn('Failed to cleanup expired items:', e);
-        }
-    }
-    static encodeValue(value) {
-        return JSON.stringify(value, (_, val) => typeof val === 'bigint' ? `${val.toString()}n` : val);
-    }
-    static decodeValue(encodedValue, type) {
-        let ret = JSON.parse(encodedValue, (_, val) => {
-            if (typeof val === 'string' && /^\d+n$/.test(val)) {
-                return BigInt(val.slice(0, -1));
-            }
-            return val;
-        });
-        if (type === CacheValueTypeEnum.Service) {
-            return Cache.createServiceStructOutput(ret);
-        }
-        return ret;
-    }
-    static createServiceStructOutput(fields) {
-        const tuple = fields;
-        const object = {
-            provider: fields[0],
-            serviceType: fields[1],
-            url: fields[2],
-            inputPrice: fields[3],
-            outputPrice: fields[4],
-            updatedAt: fields[5],
-            model: fields[6],
-            verifiability: fields[7],
-            additionalInfo: fields[8],
-        };
-        return Object.assign(tuple, object);
-    }
-}
-
-async function getNonceWithCache(cache) {
-    const lockKey = CACHE_KEYS.NONCE_LOCK;
-    const nonceKey = CACHE_KEYS.NONCE;
-    while (!(await acquireLock(cache, lockKey))) {
-        await delay(10);
-    }
-    try {
-        const now = new Date();
-        const lastNonce = cache.getItem(nonceKey) || 0;
-        let nonce = now.getTime() * 10000 + 40;
-        if (lastNonce >= nonce) {
-            nonce = lastNonce + 40;
-        }
-        cache.setItem(nonceKey, nonce, 10000000 * 60 * 1000, CacheValueTypeEnum.Other);
-        return nonce;
-    }
-    finally {
-        await releaseLock(cache, lockKey);
-    }
-}
 function getNonce() {
     const now = new Date();
     return now.getTime() * 10000 + 40;
-}
-async function acquireLock(cache, key) {
-    const lock = await cache.setLock(key, 'true', 1000, CacheValueTypeEnum.Other);
-    return lock;
-}
-async function releaseLock(cache, key) {
-    await cache.removeLock(key);
-}
-function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /* Autogenerated file. Do not edit manually. */
@@ -12507,173 +12118,283 @@ function throwFormattedError(error) {
     throw formattedError;
 }
 
-let eddsa;
-let babyjubjub;
-async function initBabyJub() {
-    if (!babyjubjub) {
-        babyjubjub = await buildBabyjub();
-    }
-}
-async function initEddsa() {
-    if (!eddsa) {
-        eddsa = await buildEddsa();
-    }
-}
-async function babyJubJubGeneratePrivateKey() {
-    await initBabyJub();
-    return babyjubjub.F.random();
-}
-async function babyJubJubGeneratePublicKey(privateKey) {
-    await initEddsa();
-    return eddsa.prv2pub(privateKey);
-}
-async function babyJubJubSignature(msg, privateKey) {
-    await initEddsa();
-    return eddsa.signPedersen(privateKey, msg);
-}
-async function packSignature(signature) {
-    await initEddsa();
-    return eddsa.packSignature(signature);
-}
-async function packPoint(point) {
-    await initBabyJub();
-    return babyjubjub.packPoint(point);
-}
-async function pedersenHash(msg) {
-    const h = await buildPedersenHash();
-    return h.hash(msg);
-}
-
-const BYTE_SIZE = 8;
-function bigintToBytes(bigint, length) {
-    const bytes = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-        bytes[i] = Number((bigint >> BigInt(BYTE_SIZE * i)) & BigInt(0xff));
-    }
-    return bytes;
-}
-function bytesToBigint(bytes) {
-    let bigint = BigInt(0);
-    for (let i = 0; i < bytes.length; i++) {
-        bigint += BigInt(bytes[i]) << BigInt(BYTE_SIZE * i);
-    }
-    return bigint;
-}
-
-const FIELD_SIZE = 32;
-async function signRequests(requests, privateKey) {
-    const serializedRequestTrace = requests.map((request) => request.serialize());
-    const signatures = [];
-    for (let i = 0; i < serializedRequestTrace.length; i++) {
-        const signature = await babyJubJubSignature(serializedRequestTrace[i], privateKey);
-        signatures.push(await packSignature(signature));
-    }
-    return signatures;
-}
-
-const BIGINT_SIZE = 16;
-async function genKeyPair() {
-    // generate private key
-    const privkey = await babyJubJubGeneratePrivateKey();
-    // generate public key
-    const pubkey = await babyJubJubGeneratePublicKey(privkey);
-    // pack public key to FIELD_SIZE bytes
-    const packedPubkey = await packPoint(pubkey);
-    // unpack packed pubkey to bigint
-    const packedPubkey0 = bytesToBigint(packedPubkey.slice(0, BIGINT_SIZE));
-    const packedPubkey1 = bytesToBigint(packedPubkey.slice(BIGINT_SIZE));
-    // unpack private key to bigint
-    const packPrivkey0 = bytesToBigint(privkey.slice(0, BIGINT_SIZE));
-    const packPrivkey1 = bytesToBigint(privkey.slice(BIGINT_SIZE));
-    return {
-        packedPrivkey: [packPrivkey0, packPrivkey1],
-        doublePackedPubkey: [packedPubkey0, packedPubkey1],
-    };
-}
-async function signData(data, packedPrivkey) {
-    // unpack private key to bytes
-    const packedPrivkey0 = bigintToBytes(packedPrivkey[0], BIGINT_SIZE);
-    const packedPrivkey1 = bigintToBytes(packedPrivkey[1], BIGINT_SIZE);
-    // combine bytes to Uint8Array
-    const privateKey = new Uint8Array(FIELD_SIZE);
-    privateKey.set(packedPrivkey0, 0);
-    privateKey.set(packedPrivkey1, BIGINT_SIZE);
-    // sign data
-    const signatures = await signRequests(data, privateKey);
-    return signatures;
-}
-
-const ADDR_LENGTH = 20;
-const NONCE_LENGTH = 8;
-const FEE_LENGTH = 16;
-let Request$1 = class Request {
-    nonce;
-    fee;
-    userAddress;
-    providerAddress;
-    constructor(nonce, fee, userAddress, // hexstring format with '0x' prefix
-    providerAddress // hexstring format with '0x' prefix
-    ) {
-        this.nonce = BigInt(nonce);
-        this.fee = BigInt(fee);
-        this.userAddress = BigInt(userAddress);
-        this.providerAddress = BigInt(providerAddress);
-    }
-    serialize() {
-        const buffer = new ArrayBuffer(NONCE_LENGTH + ADDR_LENGTH * 2 + FEE_LENGTH);
-        let offset = 0;
-        // write nonce (u64)
-        const nonceBytes = bigintToBytes(this.nonce, NONCE_LENGTH);
-        new Uint8Array(buffer, offset, NONCE_LENGTH).set(nonceBytes);
-        offset += NONCE_LENGTH;
-        // write fee (u128)
-        const feeBytes = bigintToBytes(this.fee, FEE_LENGTH);
-        new Uint8Array(buffer, offset, FEE_LENGTH).set(feeBytes);
-        offset += FEE_LENGTH;
-        // write userAddress (u160)
-        const userAddressBytes = bigintToBytes(this.userAddress, ADDR_LENGTH);
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set(userAddressBytes);
-        offset += ADDR_LENGTH;
-        // write providerAddress (u160)
-        const providerAddressBytes = bigintToBytes(this.providerAddress, ADDR_LENGTH);
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set(providerAddressBytes);
-        offset += ADDR_LENGTH;
-        return new Uint8Array(buffer);
-    }
-    static deserialize(byteArray) {
-        const expectedLength = NONCE_LENGTH + ADDR_LENGTH * 2 + FEE_LENGTH;
-        if (byteArray.length !== expectedLength) {
-            throw new Error(`Invalid byte array length for deserialization. Expected: ${expectedLength}, but got: ${byteArray.length}`);
-        }
-        let offset = 0;
-        // read nonce (u64)
-        const nonce = bytesToBigint(new Uint8Array(byteArray.slice(offset, offset + NONCE_LENGTH)));
-        offset += NONCE_LENGTH;
-        // read fee (u128)
-        const fee = bytesToBigint(new Uint8Array(byteArray.slice(offset, offset + FEE_LENGTH)));
-        offset += FEE_LENGTH;
-        // read userAddress (u160)
-        const userAddress = bytesToBigint(new Uint8Array(byteArray.slice(offset, offset + ADDR_LENGTH)));
-        offset += ADDR_LENGTH;
-        // read providerAddress (u160)
-        const providerAddress = bytesToBigint(new Uint8Array(byteArray.slice(offset, offset + ADDR_LENGTH)));
-        offset += ADDR_LENGTH;
-        return new Request(nonce.toString(), fee.toString(), '0x' + userAddress.toString(16), '0x' + providerAddress.toString(16));
-    }
-    // Getters
-    getNonce() {
-        return this.nonce;
-    }
-    getFee() {
-        return this.fee;
-    }
-    getUserAddress() {
-        return this.userAddress;
-    }
-    getProviderAddress() {
-        return this.providerAddress;
-    }
+/**
+ * Centralized cache key management
+ * This file contains all cache key constants and helper functions
+ * to ensure no key conflicts across different storage objects
+ */
+// Fixed cache keys
+const CACHE_KEYS = {
+    // Nonce related
+    NONCE: 'nonce',
+    NONCE_LOCK: 'nonce_lock',
+    // First round marker
+    FIRST_ROUND: 'firstRound',
 };
+// Cache key prefix patterns
+const CACHE_KEY_PREFIXES = {
+    // Service cache
+    SERVICE: 'service_',
+    // User acknowledgment
+    USER_ACK: '_ack',
+    // Cached fee
+    CACHED_FEE: '_cachedFee',
+};
+// Metadata key suffixes
+const METADATA_KEY_SUFFIXES = {
+    // SETTLE_SIGNER_PRIVATE_KEY removed - no longer needed
+    SIGNING_KEY: '_signingKey',
+};
+// Helper functions to generate dynamic cache keys
+const CacheKeyHelpers = {
+    // Service cache key
+    getServiceKey(providerAddress) {
+        return `${CACHE_KEY_PREFIXES.SERVICE}${providerAddress}`;
+    },
+    // User acknowledgment key
+    getUserAckKey(userAddress, providerAddress) {
+        return `${userAddress}_${providerAddress}${CACHE_KEY_PREFIXES.USER_ACK}`;
+    },
+    // Cached fee key
+    getCachedFeeKey(provider) {
+        return `${provider}${CACHE_KEY_PREFIXES.CACHED_FEE}`;
+    },
+    // getSettleSignerPrivateKeyKey removed - no longer needed
+    // Metadata: signing key
+    getSigningKeyKey(key) {
+        return `${key}${METADATA_KEY_SUFFIXES.SIGNING_KEY}`;
+    },
+    // Dynamic content key (for inference server)
+    getContentKey(id) {
+        return id; // Keep as is since it's already unique
+    },
+};
+
+class Metadata {
+    nodeStorage = {};
+    initialized = false;
+    isBrowser = typeof window !== 'undefined' &&
+        typeof window.localStorage !== 'undefined';
+    storagePrefix = '0g_metadata_';
+    constructor() { }
+    async initialize() {
+        if (this.initialized) {
+            return;
+        }
+        if (!this.isBrowser) {
+            this.nodeStorage = {};
+        }
+        this.initialized = true;
+    }
+    async setItem(key, value) {
+        await this.initialize();
+        const fullKey = this.storagePrefix + key;
+        if (this.isBrowser) {
+            try {
+                console.log('Setting localStorage item:', fullKey, value);
+                window.localStorage.setItem(fullKey, value);
+            }
+            catch (e) {
+                console.warn('Failed to set localStorage item:', e);
+                this.nodeStorage[key] = value;
+            }
+        }
+        else {
+            this.nodeStorage[key] = value;
+        }
+    }
+    async getItem(key) {
+        await this.initialize();
+        const fullKey = this.storagePrefix + key;
+        if (this.isBrowser) {
+            try {
+                return window.localStorage.getItem(fullKey);
+            }
+            catch (e) {
+                console.warn('Failed to get localStorage item:', e);
+                return this.nodeStorage[key] ?? null;
+            }
+        }
+        else {
+            return this.nodeStorage[key] ?? null;
+        }
+    }
+    // storeSettleSignerPrivateKey removed - no longer needed
+    async storeSigningKey(key, value) {
+        await this.setItem(CacheKeyHelpers.getSigningKeyKey(key), value);
+    }
+    // getSettleSignerPrivateKey removed - no longer needed
+    async getSigningKey(key) {
+        const value = await this.getItem(CacheKeyHelpers.getSigningKeyKey(key));
+        return value ?? null;
+    }
+}
+
+var CacheValueTypeEnum;
+(function (CacheValueTypeEnum) {
+    CacheValueTypeEnum["Service"] = "service";
+    CacheValueTypeEnum["BigInt"] = "bigint";
+    CacheValueTypeEnum["Other"] = "other";
+})(CacheValueTypeEnum || (CacheValueTypeEnum = {}));
+class Cache {
+    nodeStorage = {};
+    initialized = false;
+    isBrowser = typeof window !== 'undefined' &&
+        typeof window.localStorage !== 'undefined';
+    storagePrefix = '0g_cache_';
+    constructor() { }
+    setLock(key, value, ttl, type) {
+        this.initialize();
+        if (this.getStorageItem(key)) {
+            return false;
+        }
+        this.setItem(key, value, ttl, type);
+        return true;
+    }
+    removeLock(key) {
+        this.initialize();
+        this.removeStorageItem(key);
+    }
+    setItem(key, value, ttl, type) {
+        this.initialize();
+        const now = new Date();
+        const item = {
+            type,
+            value: Cache.encodeValue(value),
+            expiry: now.getTime() + ttl,
+        };
+        this.setStorageItem(key, JSON.stringify(item));
+    }
+    getItem(key) {
+        this.initialize();
+        const itemStr = this.getStorageItem(key);
+        if (!itemStr) {
+            return null;
+        }
+        const item = JSON.parse(itemStr);
+        const now = new Date();
+        if (now.getTime() > item.expiry) {
+            this.removeStorageItem(key);
+            return null;
+        }
+        return Cache.decodeValue(item.value, item.type);
+    }
+    initialize() {
+        if (this.initialized) {
+            return;
+        }
+        if (!this.isBrowser) {
+            this.nodeStorage = {};
+        }
+        else {
+            this.cleanupExpiredItems();
+        }
+        this.initialized = true;
+    }
+    setStorageItem(key, value) {
+        const fullKey = this.storagePrefix + key;
+        if (this.isBrowser) {
+            try {
+                window.localStorage.setItem(fullKey, value);
+            }
+            catch (e) {
+                console.warn('Failed to set localStorage item:', e);
+                this.nodeStorage[key] = value;
+            }
+        }
+        else {
+            this.nodeStorage[key] = value;
+        }
+    }
+    getStorageItem(key) {
+        const fullKey = this.storagePrefix + key;
+        if (this.isBrowser) {
+            try {
+                return window.localStorage.getItem(fullKey);
+            }
+            catch (e) {
+                console.warn('Failed to get localStorage item:', e);
+                return this.nodeStorage[key] ?? null;
+            }
+        }
+        else {
+            return this.nodeStorage[key] ?? null;
+        }
+    }
+    removeStorageItem(key) {
+        const fullKey = this.storagePrefix + key;
+        if (this.isBrowser) {
+            try {
+                window.localStorage.removeItem(fullKey);
+            }
+            catch (e) {
+                console.warn('Failed to remove localStorage item:', e);
+                delete this.nodeStorage[key];
+            }
+        }
+        else {
+            delete this.nodeStorage[key];
+        }
+    }
+    cleanupExpiredItems() {
+        if (!this.isBrowser)
+            return;
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < window.localStorage.length; i++) {
+                const key = window.localStorage.key(i);
+                if (key && key.startsWith(this.storagePrefix)) {
+                    const itemStr = window.localStorage.getItem(key);
+                    if (itemStr) {
+                        try {
+                            const item = JSON.parse(itemStr);
+                            if (new Date().getTime() > item.expiry) {
+                                keysToRemove.push(key);
+                            }
+                        }
+                        catch (e) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                }
+            }
+            keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+        }
+        catch (e) {
+            console.warn('Failed to cleanup expired items:', e);
+        }
+    }
+    static encodeValue(value) {
+        return JSON.stringify(value, (_, val) => typeof val === 'bigint' ? `${val.toString()}n` : val);
+    }
+    static decodeValue(encodedValue, type) {
+        let ret = JSON.parse(encodedValue, (_, val) => {
+            if (typeof val === 'string' && /^\d+n$/.test(val)) {
+                return BigInt(val.slice(0, -1));
+            }
+            return val;
+        });
+        if (type === CacheValueTypeEnum.Service) {
+            return Cache.createServiceStructOutput(ret);
+        }
+        return ret;
+    }
+    static createServiceStructOutput(fields) {
+        const tuple = fields;
+        const object = {
+            provider: fields[0],
+            serviceType: fields[1],
+            url: fields[2],
+            inputPrice: fields[3],
+            outputPrice: fields[4],
+            updatedAt: fields[5],
+            model: fields[6],
+            verifiability: fields[7],
+            additionalInfo: fields[8],
+        };
+        return Object.assign(tuple, object);
+    }
+}
 
 class ZGServingUserBrokerBase {
     contract;
@@ -12688,13 +12409,6 @@ class ZGServingUserBrokerBase {
         this.ledger = ledger;
         this.metadata = metadata;
         this.cache = cache;
-    }
-    async getProviderData() {
-        const key = `${this.contract.getUserAddress()}`;
-        const [settleSignerPrivateKey] = await Promise.all([
-            this.metadata.getSettleSignerPrivateKey(key),
-        ]);
-        return { settleSignerPrivateKey };
     }
     async getService(providerAddress, useCache = true) {
         const key = CacheKeyHelpers.getServiceKey(providerAddress);
@@ -12810,57 +12524,17 @@ class ZGServingUserBrokerBase {
         const decimalPart = Number(remainder) / Number(divisor);
         return Number(integerPart) + decimalPart;
     }
-    async getHeader(providerAddress, content, outputFee, vllmProxy) {
-        try {
-            const userAddress = this.contract.getUserAddress();
-            if (!(await this.userAcknowledged(providerAddress))) {
-                throw new Error('Provider signer is not acknowledged');
-            }
-            const extractor = await this.getExtractor(providerAddress);
-            const { settleSignerPrivateKey } = await this.getProviderData();
-            const key = userAddress;
-            let privateKey = settleSignerPrivateKey;
-            if (!privateKey) {
-                const account = await this.contract.getAccount(providerAddress);
-                const privateKeyStr = await decryptData(this.contract.signer, account.additionalInfo);
-                privateKey = strToPrivateKey(privateKeyStr);
-                console.log('Private key new:', privateKey);
-                this.metadata.storeSettleSignerPrivateKey(key, privateKey);
-            }
-            const nonce = await getNonceWithCache(this.cache);
-            const inputFee = await this.calculateInputFees(extractor, content);
-            const fee = inputFee + outputFee;
-            const request = new Request$1(nonce.toString(), fee.toString(), userAddress, providerAddress);
-            const settleSignature = await signData([request], privateKey);
-            const sig = JSON.stringify(Array.from(settleSignature[0]));
-            const requestHash = await this.calculatePedersenHash(nonce, userAddress, providerAddress);
-            return {
-                'X-Phala-Signature-Type': 'StandaloneApi',
-                Address: userAddress,
-                Fee: fee.toString(),
-                'Input-Fee': inputFee.toString(),
-                Nonce: nonce.toString(),
-                'Request-Hash': requestHash,
-                Signature: sig,
-                'VLLM-Proxy': `${vllmProxy}`,
-            };
+    async getHeader(providerAddress, vllmProxy) {
+        const userAddress = this.contract.getUserAddress();
+        // Check if provider is acknowledged - this is still necessary
+        if (!(await this.userAcknowledged(providerAddress))) {
+            throw new Error('Provider signer is not acknowledged');
         }
-        catch (error) {
-            throwFormattedError(error);
-        }
-    }
-    async calculatePedersenHash(nonce, userAddress, providerAddress) {
-        const ADDR_LENGTH = 20;
-        const NONCE_LENGTH = 8;
-        const buffer = new ArrayBuffer(NONCE_LENGTH + ADDR_LENGTH * 2);
-        let offset = 0;
-        const nonceBytes = bigintToBytes(BigInt(nonce), NONCE_LENGTH);
-        new Uint8Array(buffer, offset, NONCE_LENGTH).set(nonceBytes);
-        offset += NONCE_LENGTH;
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set(bigintToBytes(BigInt(userAddress), ADDR_LENGTH));
-        offset += ADDR_LENGTH;
-        new Uint8Array(buffer, offset, ADDR_LENGTH).set(bigintToBytes(BigInt(providerAddress), ADDR_LENGTH));
-        return hexlify(await pedersenHash(Buffer.from(buffer)));
+        // Simplified: Only return Address and VLLM-Proxy headers
+        return {
+            Address: userAddress,
+            'VLLM-Proxy': `${vllmProxy}`,
+        };
     }
     async calculateInputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
@@ -12926,15 +12600,17 @@ class ZGServingUserBrokerBase {
                     // Check if it's an insufficient balance error
                     const errorMessage = error?.message?.toLowerCase() || '';
                     if (errorMessage.includes('insufficient')) {
-                        throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                        console.warn(`Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                        return;
                     }
-                    throw error;
+                    console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`);
+                    return;
                 }
             }
             await this.clearCacheFee(provider, newFee);
         }
         catch (error) {
-            throwFormattedError(error);
+            console.warn(`Warning: Top up account failed: ${error?.message || error}`);
         }
     }
     async handleFirstRound(provider, triggerThreshold, targetThreshold, gasPrice) {
@@ -12955,9 +12631,11 @@ class ZGServingUserBrokerBase {
                 // Check if it's an insufficient balance error
                 const errorMessage = error?.message?.toLowerCase() || '';
                 if (errorMessage.includes('insufficient')) {
-                    throw new Error(`To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    console.warn(`Warning: To ensure stable service from the provider, ${targetThreshold} neuron needs to be transferred from the balance, but the current balance is insufficient.`);
+                    return;
                 }
-                throw error;
+                console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`);
+                return;
             }
         }
         // Mark the first round as complete
@@ -13249,7 +12927,8 @@ class RequestProcessor extends ZGServingUserBrokerBase {
             if (vllmProxy === undefined) {
                 vllmProxy = true;
             }
-            return await this.getHeader(providerAddress, content, BigInt(0), vllmProxy);
+            // Simplified call - only pass required parameters
+            return await this.getHeader(providerAddress, vllmProxy);
         }
         catch (error) {
             throwFormattedError(error);
@@ -13264,7 +12943,6 @@ class RequestProcessor extends ZGServingUserBrokerBase {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
             }
             let { quote, provider_signer } = await this.getQuote(providerAddress);
-            console.log('quote', quote);
             if (!quote || !provider_signer) {
                 throw new Error('Invalid quote');
             }
@@ -13889,6 +13567,14 @@ class BrokerBase {
     }
 }
 
+// Define which errors to retry on
+const RETRY_ERROR_SUBSTRINGS = [
+    'transaction underpriced',
+    'replacement transaction underpriced',
+    'fee too low',
+    'mempool',
+];
+
 const TIMEOUT_MS$1 = 300_000;
 class FineTuningServingContract {
     serving;
@@ -14192,7 +13878,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-c399e93f.js');
+    const { download } = await import('./index-c2440ca5.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -18915,8 +18601,10 @@ class LedgerProcessor {
                 }
             }
             catch (error) { }
-            const { settleSignerPublicKey, settleSignerEncryptedPrivateKey } = await this.createSettleSignerKey();
-            await this.ledgerContract.addLedger(settleSignerPublicKey, this.a0giToNeuron(balance), settleSignerEncryptedPrivateKey, gasPrice);
+            // Use placeholders since Inference contract doesn't use these values
+            const placeholderSigner = [BigInt(0), BigInt(0)];
+            const placeholderInfo = "";
+            await this.ledgerContract.addLedger(placeholderSigner, this.a0giToNeuron(balance), placeholderInfo, gasPrice);
         }
         catch (error) {
             throwFormattedError(error);
@@ -18976,22 +18664,8 @@ class LedgerProcessor {
             throwFormattedError(error);
         }
     }
-    async createSettleSignerKey() {
-        try {
-            // [pri, pub]
-            const keyPair = await genKeyPair();
-            const key = `${this.ledgerContract.getUserAddress()}`;
-            this.metadata.storeSettleSignerPrivateKey(key, keyPair.packedPrivkey);
-            const settleSignerEncryptedPrivateKey = await encryptData(this.ledgerContract.signer, privateKeyToStr(keyPair.packedPrivkey));
-            return {
-                settleSignerEncryptedPrivateKey,
-                settleSignerPublicKey: keyPair.doublePackedPubkey,
-            };
-        }
-        catch (error) {
-            throwFormattedError(error);
-        }
-    }
+    // Method removed: createSettleSignerKey is no longer needed
+    // since we're using placeholders in addLedger
     a0giToNeuron(value) {
         const valueStr = value.toFixed(18);
         const parts = valueStr.split('.');
@@ -19427,5 +19101,5 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
     }
 }
 
-export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, bigintToBytes as l, genKeyPair as m, Request$1 as n, pedersenHash as p, signData as s, upload as u };
-//# sourceMappingURL=index-6b92e992.js.map
+export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
+//# sourceMappingURL=index-3a58cc26.js.map

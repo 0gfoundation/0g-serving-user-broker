@@ -25,7 +25,7 @@ exports.CACHE_KEY_PREFIXES = {
 };
 // Metadata key suffixes
 exports.METADATA_KEY_SUFFIXES = {
-    SETTLE_SIGNER_PRIVATE_KEY: '_settleSignerPrivateKey',
+    // SETTLE_SIGNER_PRIVATE_KEY removed - no longer needed
     SIGNING_KEY: '_signingKey',
 };
 // Helper functions to generate dynamic cache keys
@@ -42,10 +42,7 @@ exports.CacheKeyHelpers = {
     getCachedFeeKey(provider) {
         return `${provider}${exports.CACHE_KEY_PREFIXES.CACHED_FEE}`;
     },
-    // Metadata: settle signer private key
-    getSettleSignerPrivateKeyKey(key) {
-        return `${key}${exports.METADATA_KEY_SUFFIXES.SETTLE_SIGNER_PRIVATE_KEY}`;
-    },
+    // getSettleSignerPrivateKeyKey removed - no longer needed
     // Metadata: signing key
     getSigningKeyKey(key) {
         return `${key}${exports.METADATA_KEY_SUFFIXES.SIGNING_KEY}`;

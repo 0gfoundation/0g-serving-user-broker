@@ -51,7 +51,8 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
             if (vllmProxy === undefined) {
                 vllmProxy = true;
             }
-            return await this.getHeader(providerAddress, content, BigInt(0), vllmProxy);
+            // Simplified call - only pass required parameters
+            return await this.getHeader(providerAddress, vllmProxy);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -72,26 +73,26 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
             if (!quote.startsWith('0x')) {
                 quote = '0x' + quote;
             }
-            // const rpc = process.env.RPC_ENDPOINT
+            const rpc = process.env.RPC_ENDPOINT;
             // bypass quote verification if testing on localhost
-            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-            //     const isVerified = await this.automata.verifyQuote(quote)
-            //     console.log('Quote verification:', isVerified)
-            //     if (!isVerified) {
-            //         throw new Error('Quote verification failed')
-            //     }
-            //     if (nvidia_payload) {
-            //         const svc = await this.getService(providerAddress)
-            //         const valid = await Verifier.verifyRA(
-            //             svc.url,
-            //             nvidia_payload
-            //         )
-            //         console.log('nvidia payload verification:', valid)
-            //         if (!valid) {
-            //             throw new Error('nvidia payload verify failed')
-            //         }
-            //     }
-            // }
+            if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
+                const isVerified = await this.automata.verifyQuote(quote);
+                console.log('Quote verification:', isVerified);
+                if (!isVerified) {
+                    throw new Error('Quote verification failed');
+                }
+                // if (nvidia_payload) {
+                //     const svc = await this.getService(providerAddress)
+                //     const valid = await Verifier.verifyRA(
+                //         svc.url,
+                //         nvidia_payload
+                //     )
+                //     console.log('nvidia payload verification:', valid)
+                //     if (!valid) {
+                //         throw new Error('nvidia payload verify failed')
+                //     }
+                // }
+            }
             const account = await this.contract.getAccount(providerAddress);
             if (account.teeSignerAddress === provider_signer) {
                 console.log('Provider signer already acknowledged');

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Message } from '../../../../types/broker';
-import { APP_CONSTANTS } from '../../../../constants/app';
+import type { Message } from '../../../../shared/types/broker';
+import { APP_CONSTANTS } from '../../../../shared/constants/app';
 
 interface ChatMessageProps {
   message: Message;

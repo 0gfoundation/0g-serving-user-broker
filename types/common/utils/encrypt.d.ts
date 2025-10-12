@@ -1,6 +1,4 @@
-import type { AddressLike, BigNumberish, JsonRpcSigner, Wallet } from 'ethers';
-export declare function encryptData(signer: JsonRpcSigner | Wallet, data: string): Promise<string>;
-export declare function decryptData(signer: JsonRpcSigner | Wallet, encryptedData: string): Promise<string>;
+import type { AddressLike, BigNumberish, Wallet } from 'ethers';
 export declare function hexToRoots(hexString: string): string;
 export declare function signRequest(signer: Wallet, userAddress: AddressLike, nonce: BigNumberish, datasetRootHash: string, fee: BigNumberish): Promise<string>;
 export declare function signTaskID(signer: Wallet, taskID: string): Promise<string>;

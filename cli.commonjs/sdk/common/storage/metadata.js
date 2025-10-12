@@ -51,22 +51,11 @@ class Metadata {
             return this.nodeStorage[key] ?? null;
         }
     }
-    async storeSettleSignerPrivateKey(key, value) {
-        const bigIntStringArray = value.map((bi) => bi.toString());
-        const bigIntJsonString = JSON.stringify(bigIntStringArray);
-        await this.setItem(cache_keys_1.CacheKeyHelpers.getSettleSignerPrivateKeyKey(key), bigIntJsonString);
-    }
+    // storeSettleSignerPrivateKey removed - no longer needed
     async storeSigningKey(key, value) {
         await this.setItem(cache_keys_1.CacheKeyHelpers.getSigningKeyKey(key), value);
     }
-    async getSettleSignerPrivateKey(key) {
-        const value = await this.getItem(cache_keys_1.CacheKeyHelpers.getSettleSignerPrivateKeyKey(key));
-        if (!value) {
-            return null;
-        }
-        const bigIntStringArray = JSON.parse(value);
-        return bigIntStringArray.map((str) => BigInt(str));
-    }
+    // getSettleSignerPrivateKey removed - no longer needed
     async getSigningKey(key) {
         const value = await this.getItem(cache_keys_1.CacheKeyHelpers.getSigningKeyKey(key));
         return value ?? null;

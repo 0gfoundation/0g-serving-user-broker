@@ -47,7 +47,7 @@ export default function Home() {
             Manage your account balance, add funds for AI services.
           </p>
           <Link
-            href="/ledger"
+            href="/wallet"
             className="text-purple-600 hover:text-purple-700 font-medium"
           >
             Go to Account →

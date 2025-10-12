@@ -19,19 +19,15 @@ export declare abstract class ZGServingUserBrokerBase {
     private topUpTargetThreshold;
     protected ledger: LedgerBroker;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    protected getProviderData(): Promise<{
-        settleSignerPrivateKey: bigint[] | null;
-    }>;
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput>;
     getQuote(providerAddress: string): Promise<QuoteResponse>;
     userAcknowledged(providerAddress: string): Promise<boolean>;
-    private fetchText;
+    fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput): Extractor;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
-    getHeader(providerAddress: string, content: string, outputFee: bigint, vllmProxy: boolean): Promise<ServingRequestHeaders>;
-    calculatePedersenHash(nonce: number, userAddress: string, providerAddress: string): Promise<string>;
+    getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
     clearCacheFee(provider: string, fee: bigint): Promise<void>;

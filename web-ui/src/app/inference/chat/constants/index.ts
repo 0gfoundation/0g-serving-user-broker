@@ -1,0 +1,1 @@
+export { CHAT_CONFIG } from './chat';

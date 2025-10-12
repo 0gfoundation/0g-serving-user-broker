@@ -29,6 +29,68 @@ function detectPackageManager(): 'pnpm' | 'yarn' | 'npm' {
 
 export default function webUIEmbedded(program: Command) {
     program
+        .command('clean-web')
+        .description('Clean web UI build artifacts')
+        .option('--all', 'Also remove node_modules')
+        .action((options) => {
+            const embeddedUIPath = path.join(__dirname, '../../web-ui')
+            const defaultBuildPath = path.join(embeddedUIPath, '.next')
+            let cleaned = false
+            
+            // Check if .next is a symlink
+            if (existsSync(defaultBuildPath)) {
+                try {
+                    const stats = lstatSync(defaultBuildPath)
+                    if (stats.isSymbolicLink()) {
+                        const target = readlinkSync(defaultBuildPath)
+                        const targetPath = path.isAbsolute(target) 
+                            ? target 
+                            : path.resolve(path.dirname(defaultBuildPath), target)
+                        
+                        console.log(`🔗 Found symlink .next -> ${targetPath}`)
+                        
+                        // Remove the symlink
+                        unlinkSync(defaultBuildPath)
+                        console.log('✅ Symlink removed')
+                        
+                        // Remove the target directory if it exists
+                        if (existsSync(targetPath)) {
+                            execSync(`rm -rf "${targetPath}"`)
+                            console.log(`✅ Target build directory removed: ${targetPath}`)
+                        }
+                        cleaned = true
+                    } else {
+                        // It's a real directory
+                        execSync(`rm -rf "${defaultBuildPath}"`)
+                        console.log(`✅ Build directory removed: ${defaultBuildPath}`)
+                        cleaned = true
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to clean build directory:', error)
+                    process.exit(1)
+                }
+            }
+            
+            // Clean node_modules if --all flag is used
+            if (options.all) {
+                const nodeModulesPath = path.join(embeddedUIPath, 'node_modules')
+                if (existsSync(nodeModulesPath)) {
+                    console.log('🗑️  Removing node_modules...')
+                    execSync(`rm -rf "${nodeModulesPath}"`)
+                    console.log('✅ node_modules removed')
+                    cleaned = true
+                }
+            }
+            
+            if (!cleaned) {
+                console.log('ℹ️  No build artifacts found to clean')
+            } else {
+                console.log('\n🎉 Cleanup completed successfully!')
+                console.log('   Run "0g-compute-cli start-web --auto-build" to rebuild')
+            }
+        })
+
+    program
         .command('web-info')
         .description('Show web UI build information')
         .action(() => {
@@ -82,7 +144,6 @@ export default function webUIEmbedded(program: Command) {
             }
         })
 
-    // 启动 Web UI 的命令
     program
         .command('start-web')
         .description('Start the embedded web UI')

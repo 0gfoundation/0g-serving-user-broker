@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LedgerProcessor = void 0;
-const settle_signer_1 = require("../common/settle-signer");
 const utils_1 = require("../common/utils");
 const storage_1 = require("../common/storage");
 /**
@@ -73,8 +72,10 @@ class LedgerProcessor {
                 }
             }
             catch (error) { }
-            const { settleSignerPublicKey, settleSignerEncryptedPrivateKey } = await this.createSettleSignerKey();
-            await this.ledgerContract.addLedger(settleSignerPublicKey, this.a0giToNeuron(balance), settleSignerEncryptedPrivateKey, gasPrice);
+            // Use placeholders since Inference contract doesn't use these values
+            const placeholderSigner = [BigInt(0), BigInt(0)];
+            const placeholderInfo = "";
+            await this.ledgerContract.addLedger(placeholderSigner, this.a0giToNeuron(balance), placeholderInfo, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -134,22 +135,8 @@ class LedgerProcessor {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async createSettleSignerKey() {
-        try {
-            // [pri, pub]
-            const keyPair = await (0, settle_signer_1.genKeyPair)();
-            const key = `${this.ledgerContract.getUserAddress()}`;
-            this.metadata.storeSettleSignerPrivateKey(key, keyPair.packedPrivkey);
-            const settleSignerEncryptedPrivateKey = await (0, utils_1.encryptData)(this.ledgerContract.signer, (0, utils_1.privateKeyToStr)(keyPair.packedPrivkey));
-            return {
-                settleSignerEncryptedPrivateKey,
-                settleSignerPublicKey: keyPair.doublePackedPubkey,
-            };
-        }
-        catch (error) {
-            (0, utils_1.throwFormattedError)(error);
-        }
-    }
+    // Method removed: createSettleSignerKey is no longer needed
+    // since we're using placeholders in addLedger
     a0giToNeuron(value) {
         const valueStr = value.toFixed(18);
         const parts = valueStr.split('.');

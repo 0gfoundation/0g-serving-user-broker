@@ -1,17 +1,45 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.encryptData = encryptData;
-exports.decryptData = decryptData;
 exports.hexToRoots = hexToRoots;
 exports.signRequest = signRequest;
 exports.signTaskID = signTaskID;
 exports.eciesDecrypt = eciesDecrypt;
 exports.aesGCMDecrypt = aesGCMDecrypt;
 exports.aesGCMDecryptToFile = aesGCMDecryptToFile;
-const tslib_1 = require("tslib");
 const ethers_1 = require("ethers");
-const const_1 = require("./const");
-const crypto_js_1 = tslib_1.__importDefault(require("crypto-js"));
 const eciesjs_1 = require("eciesjs");
 const crypto_adapter_1 = require("./crypto-adapter");
 const env_1 = require("./env");
@@ -19,23 +47,6 @@ const ivLength = 12;
 const tagLength = 16;
 const sigLength = 65;
 const chunkLength = 64 * 1024 * 1024 + tagLength;
-// Inference
-async function deriveEncryptionKey(signer) {
-    const signature = await signer.signMessage(const_1.MESSAGE_FOR_ENCRYPTION_KEY);
-    const hash = ethers_1.ethers.sha256(ethers_1.ethers.toUtf8Bytes(signature));
-    return hash;
-}
-async function encryptData(signer, data) {
-    const key = await deriveEncryptionKey(signer);
-    const encrypted = crypto_js_1.default.AES.encrypt(data, key).toString();
-    return encrypted;
-}
-async function decryptData(signer, encryptedData) {
-    const key = await deriveEncryptionKey(signer);
-    const bytes = crypto_js_1.default.AES.decrypt(encryptedData, key);
-    const decrypted = bytes.toString(crypto_js_1.default.enc.Utf8);
-    return decrypted;
-}
 // Fine-tuning
 function hexToRoots(hexString) {
     if (hexString.startsWith('0x')) {
@@ -79,7 +90,7 @@ async function aesGCMDecryptToFile(key, encryptedModelPath, decryptedModelPath, 
         throw new Error('File operations are not supported in browser environment. Use aesGCMDecrypt with ArrayBuffer instead.');
     }
     // Only import fs when in Node.js environment
-    const { promises: fs } = await Promise.resolve().then(() => tslib_1.__importStar(require('fs')));
+    const { promises: fs } = await Promise.resolve().then(() => __importStar(require('fs')));
     const fd = await fs.open(encryptedModelPath, 'r');
     // read signature and nonce
     const tagSig = Buffer.alloc(sigLength);

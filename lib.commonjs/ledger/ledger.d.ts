@@ -27,7 +27,6 @@ export declare class LedgerProcessor {
     refund(balance: number, gasPrice?: number): Promise<void>;
     transferFund(to: AddressLike, serviceTypeStr: 'inference' | 'fine-tuning', balance: bigint, gasPrice?: number): Promise<void>;
     retrieveFund(serviceTypeStr: 'inference' | 'fine-tuning', gasPrice?: number): Promise<void>;
-    private createSettleSignerKey;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
 }

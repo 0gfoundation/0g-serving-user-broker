@@ -8,5 +8,4 @@ tslib_1.__exportStar(require("./broker"), exports);
 // Export browser compatibility utilities
 tslib_1.__exportStar(require("./common/utils/env"), exports);
 tslib_1.__exportStar(require("./common/utils/crypto-adapter"), exports);
-tslib_1.__exportStar(require("./common/settle-signer"), exports);
 //# sourceMappingURL=index.js.map

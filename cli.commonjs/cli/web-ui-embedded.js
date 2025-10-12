@@ -23,6 +23,64 @@ function detectPackageManager() {
 }
 function webUIEmbedded(program) {
     program
+        .command('clean-web')
+        .description('Clean web UI build artifacts')
+        .option('--all', 'Also remove node_modules')
+        .action((options) => {
+        const embeddedUIPath = path_1.default.join(__dirname, '../../web-ui');
+        const defaultBuildPath = path_1.default.join(embeddedUIPath, '.next');
+        let cleaned = false;
+        // Check if .next is a symlink
+        if ((0, fs_1.existsSync)(defaultBuildPath)) {
+            try {
+                const stats = (0, fs_1.lstatSync)(defaultBuildPath);
+                if (stats.isSymbolicLink()) {
+                    const target = (0, fs_1.readlinkSync)(defaultBuildPath);
+                    const targetPath = path_1.default.isAbsolute(target)
+                        ? target
+                        : path_1.default.resolve(path_1.default.dirname(defaultBuildPath), target);
+                    console.log(`🔗 Found symlink .next -> ${targetPath}`);
+                    // Remove the symlink
+                    (0, fs_1.unlinkSync)(defaultBuildPath);
+                    console.log('✅ Symlink removed');
+                    // Remove the target directory if it exists
+                    if ((0, fs_1.existsSync)(targetPath)) {
+                        (0, child_process_1.execSync)(`rm -rf "${targetPath}"`);
+                        console.log(`✅ Target build directory removed: ${targetPath}`);
+                    }
+                    cleaned = true;
+                }
+                else {
+                    // It's a real directory
+                    (0, child_process_1.execSync)(`rm -rf "${defaultBuildPath}"`);
+                    console.log(`✅ Build directory removed: ${defaultBuildPath}`);
+                    cleaned = true;
+                }
+            }
+            catch (error) {
+                console.error('❌ Failed to clean build directory:', error);
+                process.exit(1);
+            }
+        }
+        // Clean node_modules if --all flag is used
+        if (options.all) {
+            const nodeModulesPath = path_1.default.join(embeddedUIPath, 'node_modules');
+            if ((0, fs_1.existsSync)(nodeModulesPath)) {
+                console.log('🗑️  Removing node_modules...');
+                (0, child_process_1.execSync)(`rm -rf "${nodeModulesPath}"`);
+                console.log('✅ node_modules removed');
+                cleaned = true;
+            }
+        }
+        if (!cleaned) {
+            console.log('ℹ️  No build artifacts found to clean');
+        }
+        else {
+            console.log('\n🎉 Cleanup completed successfully!');
+            console.log('   Run "0g-compute-cli start-web --auto-build" to rebuild');
+        }
+    });
+    program
         .command('web-info')
         .description('Show web UI build information')
         .action(() => {
@@ -65,7 +123,6 @@ function webUIEmbedded(program) {
             console.log(`   Run "0g-compute-cli start-web --auto-build" to build`);
         }
     });
-    // 启动 Web UI 的命令
     program
         .command('start-web')
         .description('Start the embedded web UI')

@@ -14,14 +14,12 @@ export declare const CACHE_KEY_PREFIXES: {
     readonly CACHED_FEE: "_cachedFee";
 };
 export declare const METADATA_KEY_SUFFIXES: {
-    readonly SETTLE_SIGNER_PRIVATE_KEY: "_settleSignerPrivateKey";
     readonly SIGNING_KEY: "_signingKey";
 };
 export declare const CacheKeyHelpers: {
     getServiceKey(providerAddress: string): string;
     getUserAckKey(userAddress: string, providerAddress: string): string;
     getCachedFeeKey(provider: string): string;
-    getSettleSignerPrivateKeyKey(key: string): string;
     getSigningKeyKey(key: string): string;
     getContentKey(id: string): string;
 };

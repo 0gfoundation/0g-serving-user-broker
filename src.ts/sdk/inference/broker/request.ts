@@ -8,36 +8,38 @@ import { throwFormattedError } from '../../common/utils'
 // import { Verifier } from './verifier'
 
 /**
- * ServingRequestHeaders contains headers related to request billing.
- * These need to be added to the request.
+ * ServingRequestHeaders contains headers related to request.
+ * Only Address and VLLM-Proxy are required now.
  */
 export interface ServingRequestHeaders {
-    'X-Phala-Signature-Type': 'StandaloneApi'
+    /**
+     * @deprecated This field is no longer used but kept for backwards compatibility
+     */
+    'X-Phala-Signature-Type'?: 'StandaloneApi'
     /**
      * User's address
      */
     Address: string
     /**
-     * Total fee for the request.
-     * Equals 'Input-Fee' + 'Previous-Output-Fee'
+     * @deprecated Total fee for the request - no longer used
      */
-    Fee: string
+    Fee?: string
     /**
-     * Fee required for the input of this request.
-     * For example, for a chatbot service,
-     * 'Input-Fee' = number of tokens input by the user * price per token
+     * @deprecated Fee required for the input - no longer used
      */
-    'Input-Fee': string
+    'Input-Fee'?: string
     /**
-     * Pedersen hash for nonce, user address and provider address
+     * @deprecated Pedersen hash - no longer used
      */
-    'Request-Hash': string
-    Nonce: string
+    'Request-Hash'?: string
     /**
-     * User's signature for the other headers.
-     * By adding this information, the user gives the current request the characteristics of a settlement proof.
+     * @deprecated Nonce - no longer used
      */
-    Signature: string
+    Nonce?: string
+    /**
+     * @deprecated User's signature - no longer used
+     */
+    Signature?: string
     /**
      * Broker service use a proxy for chat signature
      */
@@ -105,12 +107,8 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
             if (vllmProxy === undefined) {
                 vllmProxy = true
             }
-            return await this.getHeader(
-                providerAddress,
-                content,
-                BigInt(0),
-                vllmProxy
-            )
+            // Simplified call - only pass required parameters
+            return await this.getHeader(providerAddress, vllmProxy)
         } catch (error) {
             throwFormattedError(error)
         }
@@ -143,28 +141,28 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
                 quote = '0x' + quote
             }
 
-            // const rpc = process.env.RPC_ENDPOINT
+            const rpc = process.env.RPC_ENDPOINT
             // bypass quote verification if testing on localhost
-            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-            //     const isVerified = await this.automata.verifyQuote(quote)
-            //     console.log('Quote verification:', isVerified)
-            //     if (!isVerified) {
-            //         throw new Error('Quote verification failed')
-            //     }
+            if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
+                const isVerified = await this.automata.verifyQuote(quote)
+                console.log('Quote verification:', isVerified)
+                if (!isVerified) {
+                    throw new Error('Quote verification failed')
+                }
 
-            //     if (nvidia_payload) {
-            //         const svc = await this.getService(providerAddress)
-            //         const valid = await Verifier.verifyRA(
-            //             svc.url,
-            //             nvidia_payload
-            //         )
-            //         console.log('nvidia payload verification:', valid)
+                // if (nvidia_payload) {
+                //     const svc = await this.getService(providerAddress)
+                //     const valid = await Verifier.verifyRA(
+                //         svc.url,
+                //         nvidia_payload
+                //     )
+                //     console.log('nvidia payload verification:', valid)
 
-            //         if (!valid) {
-            //             throw new Error('nvidia payload verify failed')
-            //         }
-            //     }
-            // }
+                //     if (!valid) {
+                //         throw new Error('nvidia payload verify failed')
+                //     }
+                // }
+            }
 
             const account = await this.contract.getAccount(providerAddress)
             if (account.teeSignerAddress === provider_signer) {

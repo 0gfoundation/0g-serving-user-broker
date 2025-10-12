@@ -32,6 +32,7 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
                 vllmProxy = true;
             }
             let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress);
+            console.log('singerRAVerificationResult', singerRAVerificationResult);
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(providerAddress, true, vllmProxy);
@@ -49,7 +50,7 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
     async calculateOutputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
         const outputCount = await extractor.getOutputCount(content);
-        return BigInt(outputCount) * svc.outputPrice;
+        return BigInt(outputCount) * BigInt(svc.outputPrice);
     }
 }
 exports.ResponseProcessor = ResponseProcessor;

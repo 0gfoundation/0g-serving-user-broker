@@ -1,4 +1,8 @@
 import { ZGServingUserBrokerBase } from './base';
+import { Automata } from '../../common/automata ';
+import type { InferenceServingContract } from '../contract';
+import type { LedgerBroker } from '../../ledger';
+import type { Cache, Metadata } from '../../common/storage';
 export interface ResponseSignature {
     text: string;
     signature: string;
@@ -23,6 +27,8 @@ export interface SingerRAVerificationResult {
  * The Verifier class contains methods for verifying service reliability.
  */
 export declare class Verifier extends ZGServingUserBrokerBase {
+    protected automata: Automata;
+    constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     verifyService(providerAddress: string): Promise<boolean | null>;
     /**
      * getSigningAddress verifies whether the signing address
@@ -40,7 +46,7 @@ export declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
+    fetSignerRA(providerBrokerURL: string, model: string): Promise<string>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }

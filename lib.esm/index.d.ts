@@ -739,9 +739,7 @@ declare class Metadata {
     initialize(): Promise<void>;
     private setItem;
     private getItem;
-    storeSettleSignerPrivateKey(key: string, value: bigint[]): Promise<void>;
     storeSigningKey(key: string, value: string): Promise<void>;
-    getSettleSignerPrivateKey(key: string): Promise<bigint[] | null>;
     getSigningKey(key: string): Promise<string | null>;
 }
 
@@ -1845,7 +1843,6 @@ declare class LedgerProcessor {
     refund(balance: number, gasPrice?: number): Promise<void>;
     transferFund(to: AddressLike, serviceTypeStr: 'inference' | 'fine-tuning', balance: bigint, gasPrice?: number): Promise<void>;
     retrieveFund(serviceTypeStr: 'inference' | 'fine-tuning', gasPrice?: number): Promise<void>;
-    private createSettleSignerKey;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
 }
@@ -1961,36 +1958,38 @@ declare class Automata {
 }
 
 /**
- * ServingRequestHeaders contains headers related to request billing.
- * These need to be added to the request.
+ * ServingRequestHeaders contains headers related to request.
+ * Only Address and VLLM-Proxy are required now.
  */
 interface ServingRequestHeaders {
-    'X-Phala-Signature-Type': 'StandaloneApi';
+    /**
+     * @deprecated This field is no longer used but kept for backwards compatibility
+     */
+    'X-Phala-Signature-Type'?: 'StandaloneApi';
     /**
      * User's address
      */
     Address: string;
     /**
-     * Total fee for the request.
-     * Equals 'Input-Fee' + 'Previous-Output-Fee'
+     * @deprecated Total fee for the request - no longer used
      */
-    Fee: string;
+    Fee?: string;
     /**
-     * Fee required for the input of this request.
-     * For example, for a chatbot service,
-     * 'Input-Fee' = number of tokens input by the user * price per token
+     * @deprecated Fee required for the input - no longer used
      */
-    'Input-Fee': string;
+    'Input-Fee'?: string;
     /**
-     * Pedersen hash for nonce, user address and provider address
+     * @deprecated Pedersen hash - no longer used
      */
-    'Request-Hash': string;
-    Nonce: string;
+    'Request-Hash'?: string;
     /**
-     * User's signature for the other headers.
-     * By adding this information, the user gives the current request the characteristics of a settlement proof.
+     * @deprecated Nonce - no longer used
      */
-    Signature: string;
+    Nonce?: string;
+    /**
+     * @deprecated User's signature - no longer used
+     */
+    Signature?: string;
     /**
      * Broker service use a proxy for chat signature
      */
@@ -2027,19 +2026,15 @@ declare abstract class ZGServingUserBrokerBase {
     private topUpTargetThreshold;
     protected ledger: LedgerBroker;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    protected getProviderData(): Promise<{
-        settleSignerPrivateKey: bigint[] | null;
-    }>;
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
     getQuote(providerAddress: string): Promise<QuoteResponse>;
     userAcknowledged(providerAddress: string): Promise<boolean>;
-    private fetchText;
+    fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput$1): Extractor;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
-    getHeader(providerAddress: string, content: string, outputFee: bigint, vllmProxy: boolean): Promise<ServingRequestHeaders>;
-    calculatePedersenHash(nonce: number, userAddress: string, providerAddress: string): Promise<string>;
+    getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
     clearCacheFee(provider: string, fee: bigint): Promise<void>;
@@ -2086,11 +2081,6 @@ interface ResponseSignature {
     text: string;
     signature: string;
 }
-interface SignerRA {
-    signing_address: string;
-    nvidia_payload: string;
-    intel_quote: string;
-}
 interface SingerRAVerificationResult {
     /**
      * Whether the signer RA is valid
@@ -2106,6 +2096,8 @@ interface SingerRAVerificationResult {
  * The Verifier class contains methods for verifying service reliability.
  */
 declare class Verifier extends ZGServingUserBrokerBase {
+    protected automata: Automata;
+    constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     verifyService(providerAddress: string): Promise<boolean | null>;
     /**
      * getSigningAddress verifies whether the signing address
@@ -2123,7 +2115,7 @@ declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
+    fetSignerRA(providerBrokerURL: string, model: string): Promise<string>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }
@@ -2430,34 +2422,4 @@ interface CryptoAdapter {
 }
 declare function getCryptoAdapter(): CryptoAdapter;
 
-type SignatureBuffer = Uint8Array;
-declare function pedersenHash(msg: Uint8Array): Promise<Uint8Array>;
-//# sourceMappingURL=crypto.d.ts.map
-
-declare class Request {
-    private nonce;
-    private fee;
-    private userAddress;
-    private providerAddress;
-    constructor(nonce: string, fee: string, userAddress: string, // hexstring format with '0x' prefix
-    providerAddress: string);
-    serialize(): Uint8Array;
-    static deserialize(byteArray: Uint8Array): Request;
-    getNonce(): bigint;
-    getFee(): bigint;
-    getUserAddress(): bigint;
-    getProviderAddress(): bigint;
-}
-
-type DoublePackedPubkey = [bigint, bigint];
-type PackedPrivkey = [bigint, bigint];
-type KeyPair = {
-    packedPrivkey: PackedPrivkey;
-    doublePackedPubkey: DoublePackedPubkey;
-};
-declare function genKeyPair(): Promise<KeyPair>;
-declare function signData(data: Request[], packedPrivkey: PackedPrivkey): Promise<SignatureBuffer[]>;
-
-declare function bigintToBytes(bigint: bigint, length: number): Uint8Array;
-
-export { type CryptoAdapter, type DoublePackedPubkey, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, type KeyPair, LedgerBroker, type PackedPrivkey, Request, ZGComputeNetworkBroker, bigintToBytes, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, genKeyPair, getCryptoAdapter, hasWebCrypto, isBrowser, isNode, isWebWorker, pedersenHash, signData };
+export { type CryptoAdapter, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, LedgerBroker, ZGComputeNetworkBroker, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, getCryptoAdapter, hasWebCrypto, isBrowser, isNode, isWebWorker };

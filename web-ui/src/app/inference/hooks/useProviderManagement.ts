@@ -175,9 +175,17 @@ export function useProviderManagement(
     }
   };
   
+  // Only fetch balance when provider is acknowledged
   useEffect(() => {
-    refreshProviderBalance();
-  }, [broker, selectedProvider]);
+    if (providerAcknowledged === true) {
+      refreshProviderBalance();
+    } else if (providerAcknowledged === false) {
+      // Reset balance states when provider is not acknowledged
+      setProviderBalance(null);
+      setProviderBalanceNeuron(null);
+      setProviderPendingRefund(null);
+    }
+  }, [broker, selectedProvider, providerAcknowledged]);
 
   // Initialize tutorial when provider changes
   useEffect(() => {
@@ -222,10 +230,12 @@ export function useProviderManagement(
       );
       setProviderAcknowledged(acknowledged);
 
-      
-      // Refresh ledger info after successful verification
+      // Refresh ledger info and provider balance after successful verification
       if (acknowledged) {
-        await refreshLedgerInfo();
+        await Promise.all([
+          refreshLedgerInfo(),
+          refreshProviderBalance()  // Explicitly refresh balance after verification
+        ]);
       }
       
       // Progress tutorial to top-up step if tutorial is active

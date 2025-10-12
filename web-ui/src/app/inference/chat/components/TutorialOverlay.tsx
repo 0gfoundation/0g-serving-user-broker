@@ -34,7 +34,24 @@ export function TutorialOverlay({
                 Verify Provider
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Verify that the provider is running in a verifiable TEE environment
+                Provider verification requires two blockchain transactions:
+              </p>
+              <div className="text-sm text-gray-600 mb-4 space-y-2">
+                <div className="flex items-start space-x-2">
+                  <span className="inline-block w-5 h-5 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold flex items-center justify-center mt-0.5">1</span>
+                  <div>
+                    <span className="font-medium">Account Creation</span> - Creates a payment account for this provider
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="inline-block w-5 h-5 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold flex items-center justify-center mt-0.5">2</span>
+                  <div>
+                    <span className="font-medium">TEE Verification</span> - Confirms the provider runs in a secure environment
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Click "Verify Provider" to start the process.
               </p>
             </>
           )}

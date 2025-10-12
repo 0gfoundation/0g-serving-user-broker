@@ -38,6 +38,8 @@ interface ProviderSelectorProps {
   providerBalance: number | null;
   providerBalanceNeuron: bigint | null;
   providerPendingRefund: number | null;
+  providerAcknowledged: boolean | null;
+  isVerifyingProvider: boolean;
   
   // Actions
   onAddFunds: () => void;
@@ -53,6 +55,8 @@ export function ProviderSelector({
   providerBalance,
   providerBalanceNeuron,
   providerPendingRefund,
+  providerAcknowledged,
+  isVerifyingProvider,
   onAddFunds,
 }: ProviderSelectorProps) {
   return (
@@ -276,96 +280,123 @@ export function ProviderSelector({
               </div>
             </div>
           )}
-          {/* Right Section: Balance */}
+          {/* Right Section: Balance or Verification Status */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-md">
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${
-              (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
-                ? 'bg-red-50 border-red-200'
-                : providerBalanceNeuron !== null &&
-                  selectedProvider.inputPriceNeuron !== undefined && 
-                  selectedProvider.outputPriceNeuron !== undefined && 
-                  providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
-                ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-white border-gray-200'
-            }`}>
-              {(providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0 ? (
-                <svg 
-                  className="w-3.5 h-3.5 text-red-500" 
-                  fill="currentColor" 
-                  viewBox="0 0 20 20"
-                >
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            {providerAcknowledged === false ? (
+              // Show verification pending status
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-yellow-50 border border-yellow-200">
+                <svg className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-              ) : providerBalanceNeuron !== null &&
-                selectedProvider.inputPriceNeuron !== undefined && 
-                selectedProvider.outputPriceNeuron !== undefined && 
-                providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron) ? (
-                <svg 
-                  className="w-3.5 h-3.5 text-yellow-500" 
-                  fill="currentColor" 
-                  viewBox="0 0 20 20"
-                >
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              )}
-              <span className={`text-xs font-medium ${
-                (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
-                  ? 'text-red-700'
-                  : providerBalanceNeuron !== null &&
+                <span className="text-xs font-medium text-yellow-700">
+                  Waiting for Provider Verification
+                </span>
+              </div>
+            ) : isVerifyingProvider ? (
+              // Show verifying status
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 border border-blue-200">
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-blue-500 border-t-transparent"></div>
+                <span className="text-xs font-medium text-blue-700">
+                  Verifying Provider...
+                </span>
+              </div>
+            ) : providerAcknowledged === true ? (
+              // Show balance and add funds button
+              <>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${
+                  (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
+                    ? 'bg-red-50 border-red-200'
+                    : providerBalanceNeuron !== null &&
+                      selectedProvider.inputPriceNeuron !== undefined && 
+                      selectedProvider.outputPriceNeuron !== undefined && 
+                      providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-white border-gray-200'
+                }`}>
+                  {(providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0 ? (
+                    <svg 
+                      className="w-3.5 h-3.5 text-red-500" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : providerBalanceNeuron !== null &&
                     selectedProvider.inputPriceNeuron !== undefined && 
                     selectedProvider.outputPriceNeuron !== undefined && 
-                    providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
-                  ? 'text-yellow-700'
-                  : 'text-gray-700'
-              }`}>
-                {providerBalance !== null ? (
-                  <>
-                    {formatNumber(providerBalance)} A0GI
-                    {providerPendingRefund !== null && providerPendingRefund > 0 && (
-                      <span className="text-orange-600"> (+{formatNumber(providerPendingRefund)} pending)</span>
+                    providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron) ? (
+                    <svg 
+                      className="w-3.5 h-3.5 text-yellow-500" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  )}
+                  <span className={`text-xs font-medium ${
+                    (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
+                      ? 'text-red-700'
+                      : providerBalanceNeuron !== null &&
+                        selectedProvider.inputPriceNeuron !== undefined && 
+                        selectedProvider.outputPriceNeuron !== undefined && 
+                        providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
+                      ? 'text-yellow-700'
+                      : 'text-gray-700'
+                  }`}>
+                    {providerBalance !== null ? (
+                      <>
+                        {formatNumber(providerBalance)} A0GI
+                        {providerPendingRefund !== null && providerPendingRefund > 0 && (
+                          <span className="text-orange-600"> (+{formatNumber(providerPendingRefund)} pending)</span>
+                        )}
+                      </>
+                    ) : (
+                      'Loading...'
                     )}
-                  </>
-                ) : (
-                  'Loading...'
-                )}
-              </span>
-            </div>
-            <button
-              onClick={onAddFunds}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
-                  ? 'bg-red-500 text-white hover:bg-red-600 shadow-md animate-pulse'
-                  : providerBalanceNeuron !== null &&
-                    selectedProvider.inputPriceNeuron !== undefined && 
-                    selectedProvider.outputPriceNeuron !== undefined && 
-                    providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
-                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                  : 'bg-purple-500 text-white hover:bg-purple-600'
-              } ${
-                (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
-                  ? ''
-                  : ''
-              }`}
-            >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span>Add Funds</span>
-            </button>
+                  </span>
+                </div>
+                <button
+                  onClick={onAddFunds}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                    (providerBalanceNeuron !== null && providerBalanceNeuron === BigInt(0)) || (providerBalance ?? 0) === 0
+                      ? 'bg-red-500 text-white hover:bg-red-600 shadow-md animate-pulse'
+                      : providerBalanceNeuron !== null &&
+                        selectedProvider.inputPriceNeuron !== undefined && 
+                        selectedProvider.outputPriceNeuron !== undefined && 
+                        providerBalanceNeuron <= BigInt(50000) * (selectedProvider.inputPriceNeuron + selectedProvider.outputPriceNeuron)
+                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>Add Funds</span>
+                </button>
+              </>
+            ) : (
+              // Loading verification status
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-200">
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent"></div>
+                <span className="text-xs font-medium text-gray-500">
+                  Checking verification status...
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

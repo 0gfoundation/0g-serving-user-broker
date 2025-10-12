@@ -532,6 +532,8 @@ export function OptimizedChatPage() {
               providerBalance={providerBalance}
               providerBalanceNeuron={providerBalanceNeuron}
               providerPendingRefund={providerPendingRefund}
+              providerAcknowledged={providerAcknowledged}
+              isVerifyingProvider={isVerifyingProvider}
               onAddFunds={() => {
                 // Use the existing top-up modal logic
                 setShowTopUpModal(true);

@@ -2081,6 +2081,11 @@ interface ResponseSignature {
     text: string;
     signature: string;
 }
+interface SignerRA {
+    signing_address: string;
+    nvidia_payload: string;
+    intel_quote: string;
+}
 interface SingerRAVerificationResult {
     /**
      * Whether the signer RA is valid
@@ -2115,7 +2120,7 @@ declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    fetSignerRA(providerBrokerURL: string, model: string): Promise<string>;
+    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }

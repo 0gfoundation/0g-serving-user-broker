@@ -13887,7 +13887,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-76433d33.js');
+    const { download } = await import('./index-bf5ff869.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -18662,7 +18662,7 @@ class LedgerProcessor {
                 throw new Error('No providers found, please ensure you are using Wallet instance to create the broker');
             }
             const providerAddresses = providers
-                .filter((x) => x[1] - x[2] > 0n)
+                .filter((x) => x[1] - x[2] >= 0n)
                 .map((x) => x[0]);
             await this.ledgerContract.retrieveFund(providerAddresses, serviceTypeStr, gasPrice);
             if (serviceTypeStr == 'inference') {
@@ -19111,4 +19111,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
-//# sourceMappingURL=index-297e6e71.js.map
+//# sourceMappingURL=index-abfd093e.js.map

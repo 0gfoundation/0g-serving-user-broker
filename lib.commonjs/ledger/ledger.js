@@ -124,7 +124,7 @@ class LedgerProcessor {
                 throw new Error('No providers found, please ensure you are using Wallet instance to create the broker');
             }
             const providerAddresses = providers
-                .filter((x) => x[1] - x[2] > 0n)
+                .filter((x) => x[1] - x[2] >= 0n)
                 .map((x) => x[0]);
             await this.ledgerContract.retrieveFund(providerAddresses, serviceTypeStr, gasPrice);
             if (serviceTypeStr == 'inference') {

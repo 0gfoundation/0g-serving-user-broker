@@ -74,7 +74,7 @@ class LedgerProcessor {
             catch (error) { }
             // Use placeholders since Inference contract doesn't use these values
             const placeholderSigner = [BigInt(0), BigInt(0)];
-            const placeholderInfo = "";
+            const placeholderInfo = '';
             await this.ledgerContract.addLedger(placeholderSigner, this.a0giToNeuron(balance), placeholderInfo, gasPrice);
         }
         catch (error) {

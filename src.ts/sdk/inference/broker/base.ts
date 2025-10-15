@@ -190,12 +190,12 @@ export abstract class ZGServingUserBrokerBase {
         vllmProxy: boolean
     ): Promise<ServingRequestHeaders> {
         const userAddress = this.contract.getUserAddress()
-        
+
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged')
         }
-        
+
         // Simplified: Only return Address and VLLM-Proxy headers
         return {
             Address: userAddress,
@@ -262,9 +262,11 @@ export abstract class ZGServingUserBrokerBase {
 
             // Calculate target and trigger thresholds
             const targetThreshold =
-                this.topUpTargetThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
+                this.topUpTargetThreshold *
+                (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
             const triggerThreshold =
-                this.topUpTriggerThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
+                this.topUpTriggerThreshold *
+                (BigInt(svc.inputPrice) + BigInt(svc.outputPrice))
 
             // Check if it's the first round
             const isFirstRound =
@@ -306,14 +308,20 @@ export abstract class ZGServingUserBrokerBase {
                         )
                         return
                     }
-                    console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`)
+                    console.warn(
+                        `Warning: Failed to transfer funds: ${
+                            error?.message || error
+                        }`
+                    )
                     return
                 }
             }
 
             await this.clearCacheFee(provider, newFee)
         } catch (error: any) {
-            console.warn(`Warning: Top up account failed: ${error?.message || error}`)
+            console.warn(
+                `Warning: Top up account failed: ${error?.message || error}`
+            )
         }
     }
 
@@ -350,7 +358,11 @@ export abstract class ZGServingUserBrokerBase {
                     )
                     return
                 }
-                console.warn(`Warning: Failed to transfer funds: ${error?.message || error}`)
+                console.warn(
+                    `Warning: Failed to transfer funds: ${
+                        error?.message || error
+                    }`
+                )
                 return
             }
         }

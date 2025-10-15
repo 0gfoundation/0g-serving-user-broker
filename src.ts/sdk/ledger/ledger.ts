@@ -103,7 +103,7 @@ export class LedgerProcessor {
 
             // Use placeholders since Inference contract doesn't use these values
             const placeholderSigner: [bigint, bigint] = [BigInt(0), BigInt(0)]
-            const placeholderInfo = ""
+            const placeholderInfo = ''
 
             await this.ledgerContract.addLedger(
                 placeholderSigner,
@@ -178,7 +178,7 @@ export class LedgerProcessor {
             const providerAddresses = providers
                 .filter((x) => x[1] - x[2] >= 0n)
                 .map((x) => x[0])
-            
+
             await this.ledgerContract.retrieveFund(
                 providerAddresses,
                 serviceTypeStr,

@@ -221,8 +221,7 @@ export interface FineTuningServingInterface extends Interface {
     getFunction(
         nameOrSignature:
             | 'accountExists'
-            | 'acknowledgeDeliverable(address,string)'
-            | 'acknowledgeDeliverable(address,address,string)'
+            | 'acknowledgeDeliverable'
             | 'acknowledgeProviderSigner'
             | 'addAccount'
             | 'addDeliverable'
@@ -269,12 +268,8 @@ export interface FineTuningServingInterface extends Interface {
         values: [AddressLike, AddressLike]
     ): string
     encodeFunctionData(
-        functionFragment: 'acknowledgeDeliverable(address,string)',
+        functionFragment: 'acknowledgeDeliverable',
         values: [AddressLike, string]
-    ): string
-    encodeFunctionData(
-        functionFragment: 'acknowledgeDeliverable(address,address,string)',
-        values: [AddressLike, AddressLike, string]
     ): string
     encodeFunctionData(
         functionFragment: 'acknowledgeProviderSigner',
@@ -403,11 +398,7 @@ export interface FineTuningServingInterface extends Interface {
         data: BytesLike
     ): Result
     decodeFunctionResult(
-        functionFragment: 'acknowledgeDeliverable(address,string)',
-        data: BytesLike
-    ): Result
-    decodeFunctionResult(
-        functionFragment: 'acknowledgeDeliverable(address,address,string)',
+        functionFragment: 'acknowledgeDeliverable',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -701,14 +692,8 @@ export interface FineTuningServing extends BaseContract {
         'view'
     >
 
-    'acknowledgeDeliverable(address,string)': TypedContractMethod<
+    acknowledgeDeliverable: TypedContractMethod<
         [provider: AddressLike, id: string],
-        [void],
-        'nonpayable'
-    >
-
-    'acknowledgeDeliverable(address,address,string)': TypedContractMethod<
-        [user: AddressLike, provider: AddressLike, id: string],
         [void],
         'nonpayable'
     >
@@ -910,16 +895,9 @@ export interface FineTuningServing extends BaseContract {
         'view'
     >
     getFunction(
-        nameOrSignature: 'acknowledgeDeliverable(address,string)'
+        nameOrSignature: 'acknowledgeDeliverable'
     ): TypedContractMethod<
         [provider: AddressLike, id: string],
-        [void],
-        'nonpayable'
-    >
-    getFunction(
-        nameOrSignature: 'acknowledgeDeliverable(address,address,string)'
-    ): TypedContractMethod<
-        [user: AddressLike, provider: AddressLike, id: string],
         [void],
         'nonpayable'
     >

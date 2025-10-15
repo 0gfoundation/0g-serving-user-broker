@@ -9,7 +9,6 @@ const tagLength: number = 16
 const sigLength: number = 65
 const chunkLength: number = 64 * 1024 * 1024 + tagLength
 
-
 // Fine-tuning
 
 export function hexToRoots(hexString: string): string {

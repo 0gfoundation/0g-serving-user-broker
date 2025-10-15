@@ -184,8 +184,10 @@ class ZGServingUserBrokerBase {
             const extractor = await this.getExtractor(provider);
             const svc = await extractor.getSvcInfo();
             // Calculate target and trigger thresholds
-            const targetThreshold = this.topUpTargetThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
-            const triggerThreshold = this.topUpTriggerThreshold * (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
+            const targetThreshold = this.topUpTargetThreshold *
+                (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
+            const triggerThreshold = this.topUpTriggerThreshold *
+                (BigInt(svc.inputPrice) + BigInt(svc.outputPrice));
             // Check if it's the first round
             const isFirstRound = (await this.cache.getItem(storage_1.CACHE_KEYS.FIRST_ROUND)) !== 'false';
             if (isFirstRound) {

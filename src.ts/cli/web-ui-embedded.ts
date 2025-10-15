@@ -36,33 +36,40 @@ export default function webUIEmbedded(program: Command) {
             const embeddedUIPath = path.join(__dirname, '../../web-ui')
             const defaultBuildPath = path.join(embeddedUIPath, '.next')
             let cleaned = false
-            
+
             // Check if .next is a symlink
             if (existsSync(defaultBuildPath)) {
                 try {
                     const stats = lstatSync(defaultBuildPath)
                     if (stats.isSymbolicLink()) {
                         const target = readlinkSync(defaultBuildPath)
-                        const targetPath = path.isAbsolute(target) 
-                            ? target 
-                            : path.resolve(path.dirname(defaultBuildPath), target)
-                        
+                        const targetPath = path.isAbsolute(target)
+                            ? target
+                            : path.resolve(
+                                  path.dirname(defaultBuildPath),
+                                  target
+                              )
+
                         console.log(`🔗 Found symlink .next -> ${targetPath}`)
-                        
+
                         // Remove the symlink
                         unlinkSync(defaultBuildPath)
                         console.log('✅ Symlink removed')
-                        
+
                         // Remove the target directory if it exists
                         if (existsSync(targetPath)) {
                             execSync(`rm -rf "${targetPath}"`)
-                            console.log(`✅ Target build directory removed: ${targetPath}`)
+                            console.log(
+                                `✅ Target build directory removed: ${targetPath}`
+                            )
                         }
                         cleaned = true
                     } else {
                         // It's a real directory
                         execSync(`rm -rf "${defaultBuildPath}"`)
-                        console.log(`✅ Build directory removed: ${defaultBuildPath}`)
+                        console.log(
+                            `✅ Build directory removed: ${defaultBuildPath}`
+                        )
                         cleaned = true
                     }
                 } catch (error) {
@@ -70,10 +77,13 @@ export default function webUIEmbedded(program: Command) {
                     process.exit(1)
                 }
             }
-            
+
             // Clean node_modules if --all flag is used
             if (options.all) {
-                const nodeModulesPath = path.join(embeddedUIPath, 'node_modules')
+                const nodeModulesPath = path.join(
+                    embeddedUIPath,
+                    'node_modules'
+                )
                 if (existsSync(nodeModulesPath)) {
                     console.log('🗑️  Removing node_modules...')
                     execSync(`rm -rf "${nodeModulesPath}"`)
@@ -81,12 +91,14 @@ export default function webUIEmbedded(program: Command) {
                     cleaned = true
                 }
             }
-            
+
             if (!cleaned) {
                 console.log('ℹ️  No build artifacts found to clean')
             } else {
                 console.log('\n🎉 Cleanup completed successfully!')
-                console.log('   Run "0g-compute-cli start-web --auto-build" to rebuild')
+                console.log(
+                    '   Run "0g-compute-cli start-web --auto-build" to rebuild'
+                )
             }
         })
 

@@ -52,7 +52,10 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
             let singerRAVerificationResult =
                 await this.verifier.getSigningAddress(providerAddress)
 
-            console.log('singerRAVerificationResult', singerRAVerificationResult)
+            console.log(
+                'singerRAVerificationResult',
+                singerRAVerificationResult
+            )
 
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =

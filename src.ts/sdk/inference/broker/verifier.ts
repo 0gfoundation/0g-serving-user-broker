@@ -125,7 +125,6 @@ export class Verifier extends ZGServingUserBrokerBase {
 
             let valid = false
 
-            
             // const rpc = process.env.RPC_ENDPOINT
             // // bypass quote verification if testing on localhost
             // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
@@ -152,10 +151,7 @@ export class Verifier extends ZGServingUserBrokerBase {
             // }
 
             // TODO: use intel_quote to verify signing address
-            valid = await Verifier.verifyRA(
-                svc.url,
-                signerRA.nvidia_payload
-            )
+            valid = await Verifier.verifyRA(svc.url, signerRA.nvidia_payload)
 
             return {
                 valid,

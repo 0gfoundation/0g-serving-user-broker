@@ -186,11 +186,10 @@ export type VerifierInputStructOutput = [
     user: string;
 };
 export interface FineTuningServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeDeliverable(address,string)' | 'acknowledgeDeliverable(address,address,string)' | 'acknowledgeProviderSigner' | 'addAccount' | 'addDeliverable' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getDeliverable' | 'getDeliverables' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'penaltyPercentage' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFees' | 'transferOwnership' | 'updateLockTime' | 'updatePenaltyPercentage'): FunctionFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeDeliverable' | 'acknowledgeProviderSigner' | 'addAccount' | 'addDeliverable' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getDeliverable' | 'getDeliverables' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'penaltyPercentage' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFees' | 'transferOwnership' | 'updateLockTime' | 'updatePenaltyPercentage'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeDeliverable(address,string)', values: [AddressLike, string]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeDeliverable(address,address,string)', values: [AddressLike, AddressLike, string]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeDeliverable', values: [AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'acknowledgeProviderSigner', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addDeliverable', values: [AddressLike, string, BytesLike]): string;
@@ -229,8 +228,7 @@ export interface FineTuningServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     encodeFunctionData(functionFragment: 'updatePenaltyPercentage', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: 'acknowledgeDeliverable(address,string)', data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: 'acknowledgeDeliverable(address,address,string)', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'acknowledgeDeliverable', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'acknowledgeProviderSigner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addAccount', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addDeliverable', data: BytesLike): Result;
@@ -382,14 +380,7 @@ export interface FineTuningServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    'acknowledgeDeliverable(address,string)': TypedContractMethod<[
-        provider: AddressLike,
-        id: string
-    ], [
-        void
-    ], 'nonpayable'>;
-    'acknowledgeDeliverable(address,address,string)': TypedContractMethod<[
-        user: AddressLike,
+    acknowledgeDeliverable: TypedContractMethod<[
         provider: AddressLike,
         id: string
     ], [
@@ -574,14 +565,7 @@ export interface FineTuningServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    getFunction(nameOrSignature: 'acknowledgeDeliverable(address,string)'): TypedContractMethod<[
-        provider: AddressLike,
-        id: string
-    ], [
-        void
-    ], 'nonpayable'>;
-    getFunction(nameOrSignature: 'acknowledgeDeliverable(address,address,string)'): TypedContractMethod<[
-        user: AddressLike,
+    getFunction(nameOrSignature: 'acknowledgeDeliverable'): TypedContractMethod<[
         provider: AddressLike,
         id: string
     ], [

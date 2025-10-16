@@ -13,6 +13,7 @@ class ZGServingUserBrokerBase {
     topUpTriggerThreshold = BigInt(1000000);
     topUpTargetThreshold = BigInt(2000000);
     ledger;
+    sessionDuration = 24 * 60 * 60 * 1000; // 24 hours validity
     constructor(contract, ledger, metadata, cache) {
         this.contract = contract;
         this.ledger = ledger;
@@ -133,16 +134,72 @@ class ZGServingUserBrokerBase {
         const decimalPart = Number(remainder) / Number(divisor);
         return Number(integerPart) + decimalPart;
     }
+    generateNonce() {
+        if (typeof window !== 'undefined' && window.crypto) {
+            // Browser environment - use Web Crypto API
+            const array = new Uint8Array(16);
+            window.crypto.getRandomValues(array);
+            return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+        else {
+            // Node.js or other environment - use timestamp-based nonce
+            const timestamp = Date.now();
+            const random = Math.random();
+            const randomStr = random.toString(36).substring(2, 15);
+            return `${timestamp}-${randomStr}`.padEnd(32, '0');
+        }
+    }
+    async generateSessionToken(providerAddress) {
+        const userAddress = this.contract.getUserAddress();
+        const timestamp = Date.now();
+        const expiresAt = timestamp + this.sessionDuration;
+        const nonce = this.generateNonce();
+        const token = {
+            address: userAddress,
+            provider: providerAddress,
+            timestamp,
+            expiresAt,
+            nonce,
+        };
+        // Create message to be signed
+        const message = JSON.stringify(token);
+        // Create hash using the same method as signRequest in encrypt.ts
+        const messageHash = (0, ethers_1.keccak256)((0, ethers_1.toUtf8Bytes)(message));
+        // Sign using the same pattern as signRequest: signMessage with toBeArray
+        const signature = await this.contract.signer.signMessage(Buffer.from(messageHash.slice(2), 'hex'));
+        const session = {
+            token,
+            signature,
+            rawMessage: message,
+        };
+        // Cache the session using the existing cache with proper TTL
+        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        await this.cache.setItem(cacheKey, session, this.sessionDuration, storage_1.CacheValueTypeEnum.Session);
+        return session;
+    }
+    async getOrCreateSession(providerAddress) {
+        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const cached = await this.cache.getItem(cacheKey);
+        // Check if cached session exists and is not expired (with 1 hour buffer)
+        if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
+            return cached;
+        }
+        // Generate new session
+        return await this.generateSessionToken(providerAddress);
+    }
     async getHeader(providerAddress, vllmProxy) {
         const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
         }
-        // Simplified: Only return Address and VLLM-Proxy headers
+        // Get or create session token
+        const session = await this.getOrCreateSession(providerAddress);
         return {
             Address: userAddress,
             'VLLM-Proxy': `${vllmProxy}`,
+            'Session-Token': session.rawMessage,
+            'Session-Signature': session.signature,
         };
     }
     async calculateInputFees(extractor, content) {

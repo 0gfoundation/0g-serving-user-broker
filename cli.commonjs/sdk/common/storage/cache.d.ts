@@ -2,9 +2,10 @@ import type { ServiceStructOutput as InferenceServiceStructOutput } from '../../
 export declare enum CacheValueTypeEnum {
     Service = "service",
     BigInt = "bigint",
-    Other = "other"
+    Other = "other",
+    Session = "session"
 }
-export type CacheValueType = CacheValueTypeEnum.Service | CacheValueTypeEnum.BigInt | CacheValueTypeEnum.Other;
+export type CacheValueType = CacheValueTypeEnum.Service | CacheValueTypeEnum.BigInt | CacheValueTypeEnum.Other | CacheValueTypeEnum.Session;
 export declare class Cache {
     private nodeStorage;
     private initialized;

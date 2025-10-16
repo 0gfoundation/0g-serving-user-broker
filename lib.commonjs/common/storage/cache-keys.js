@@ -22,6 +22,8 @@ exports.CACHE_KEY_PREFIXES = {
     USER_ACK: '_ack',
     // Cached fee
     CACHED_FEE: '_cachedFee',
+    // Session token cache
+    SESSION_TOKEN: 'session_',
 };
 // Metadata key suffixes
 exports.METADATA_KEY_SUFFIXES = {
@@ -50,6 +52,10 @@ exports.CacheKeyHelpers = {
     // Dynamic content key (for inference server)
     getContentKey(id) {
         return id; // Keep as is since it's already unique
+    },
+    // Session token key
+    getSessionTokenKey(providerAddress) {
+        return `${exports.CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`;
     },
 };
 //# sourceMappingURL=cache-keys.js.map

@@ -11,13 +11,27 @@ import {
     CacheKeyHelpers,
 } from '../../common/storage'
 import type { LedgerBroker } from '../../ledger'
-import { ZeroAddress } from 'ethers'
+import { ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
 
 export interface QuoteResponse {
     quote: string
     provider_signer: string
     key: [bigint, bigint]
     nvidia_payload: string
+}
+
+export interface SessionToken {
+    address: string
+    provider: string
+    timestamp: number
+    expiresAt: number
+    nonce: string
+}
+
+export interface CachedSession {
+    token: SessionToken
+    signature: string
+    rawMessage: string
 }
 
 export abstract class ZGServingUserBrokerBase {
@@ -29,6 +43,8 @@ export abstract class ZGServingUserBrokerBase {
     private topUpTriggerThreshold = BigInt(1000000)
     private topUpTargetThreshold = BigInt(2000000)
     protected ledger: LedgerBroker
+
+    private sessionDuration = 24 * 60 * 60 * 1000 // 24 hours validity
 
     constructor(
         contract: InferenceServingContract,
@@ -185,6 +201,81 @@ export abstract class ZGServingUserBrokerBase {
         return Number(integerPart) + decimalPart
     }
 
+    private generateNonce(): string {
+        if (typeof window !== 'undefined' && window.crypto) {
+            // Browser environment - use Web Crypto API
+            const array = new Uint8Array(16)
+            window.crypto.getRandomValues(array)
+            return Array.from(array, (byte) =>
+                byte.toString(16).padStart(2, '0')
+            ).join('')
+        } else {
+            // Node.js or other environment - use timestamp-based nonce
+            const timestamp = Date.now()
+            const random = Math.random()
+            const randomStr = random.toString(36).substring(2, 15)
+            return `${timestamp}-${randomStr}`.padEnd(32, '0')
+        }
+    }
+
+    async generateSessionToken(
+        providerAddress: string
+    ): Promise<CachedSession> {
+        const userAddress = this.contract.getUserAddress()
+        const timestamp = Date.now()
+        const expiresAt = timestamp + this.sessionDuration
+        const nonce = this.generateNonce()
+
+        const token: SessionToken = {
+            address: userAddress,
+            provider: providerAddress,
+            timestamp,
+            expiresAt,
+            nonce,
+        }
+
+        // Create message to be signed
+        const message = JSON.stringify(token)
+        
+        // Create hash using the same method as signRequest in encrypt.ts
+        const messageHash = keccak256(toUtf8Bytes(message))
+        
+        // Sign using the same pattern as signRequest: signMessage with toBeArray
+        const signature = await this.contract.signer.signMessage(
+            Buffer.from(messageHash.slice(2), 'hex')
+        )
+
+        const session: CachedSession = {
+            token,
+            signature,
+            rawMessage: message,
+        }
+
+        // Cache the session using the existing cache with proper TTL
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress)
+        await this.cache.setItem(
+            cacheKey,
+            session,
+            this.sessionDuration,
+            CacheValueTypeEnum.Session
+        )
+
+        return session
+    }
+
+    async getOrCreateSession(providerAddress: string): Promise<CachedSession> {
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress)
+        const cached = await this.cache.getItem(cacheKey) as CachedSession | null
+
+        // Check if cached session exists and is not expired (with 1 hour buffer)
+        if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
+            return cached
+        }
+
+        // Generate new session
+        return await this.generateSessionToken(providerAddress)
+    }
+
     async getHeader(
         providerAddress: string,
         vllmProxy: boolean
@@ -196,10 +287,14 @@ export abstract class ZGServingUserBrokerBase {
             throw new Error('Provider signer is not acknowledged')
         }
 
-        // Simplified: Only return Address and VLLM-Proxy headers
+        // Get or create session token
+        const session = await this.getOrCreateSession(providerAddress)
+
         return {
             Address: userAddress,
             'VLLM-Proxy': `${vllmProxy}`,
+            'Session-Token': session.rawMessage,
+            'Session-Signature': session.signature,
         }
     }
 

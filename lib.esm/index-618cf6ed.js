@@ -1,4 +1,4 @@
-import { ethers, ContractFactory, Interface, Contract, ZeroAddress, Wallet } from 'ethers';
+import { ethers, ContractFactory, Interface, Contract, ZeroAddress, keccak256, toUtf8Bytes, Wallet } from 'ethers';
 import { spawn as spawn$1 } from 'child_process';
 import * as path$1 from 'path';
 import path__default from 'path';
@@ -12115,6 +12115,8 @@ const CACHE_KEY_PREFIXES = {
     USER_ACK: '_ack',
     // Cached fee
     CACHED_FEE: '_cachedFee',
+    // Session token cache
+    SESSION_TOKEN: 'session_',
 };
 // Metadata key suffixes
 const METADATA_KEY_SUFFIXES = {
@@ -12143,6 +12145,10 @@ const CacheKeyHelpers = {
     // Dynamic content key (for inference server)
     getContentKey(id) {
         return id; // Keep as is since it's already unique
+    },
+    // Session token key
+    getSessionTokenKey(providerAddress) {
+        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`;
     },
 };
 
@@ -12211,6 +12217,7 @@ var CacheValueTypeEnum;
     CacheValueTypeEnum["Service"] = "service";
     CacheValueTypeEnum["BigInt"] = "bigint";
     CacheValueTypeEnum["Other"] = "other";
+    CacheValueTypeEnum["Session"] = "session";
 })(CacheValueTypeEnum || (CacheValueTypeEnum = {}));
 class Cache {
     nodeStorage = {};
@@ -12380,6 +12387,7 @@ class ZGServingUserBrokerBase {
     topUpTriggerThreshold = BigInt(1000000);
     topUpTargetThreshold = BigInt(2000000);
     ledger;
+    sessionDuration = 24 * 60 * 60 * 1000; // 24 hours validity
     constructor(contract, ledger, metadata, cache) {
         this.contract = contract;
         this.ledger = ledger;
@@ -12500,16 +12508,72 @@ class ZGServingUserBrokerBase {
         const decimalPart = Number(remainder) / Number(divisor);
         return Number(integerPart) + decimalPart;
     }
+    generateNonce() {
+        if (typeof window !== 'undefined' && window.crypto) {
+            // Browser environment - use Web Crypto API
+            const array = new Uint8Array(16);
+            window.crypto.getRandomValues(array);
+            return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+        else {
+            // Node.js or other environment - use timestamp-based nonce
+            const timestamp = Date.now();
+            const random = Math.random();
+            const randomStr = random.toString(36).substring(2, 15);
+            return `${timestamp}-${randomStr}`.padEnd(32, '0');
+        }
+    }
+    async generateSessionToken(providerAddress) {
+        const userAddress = this.contract.getUserAddress();
+        const timestamp = Date.now();
+        const expiresAt = timestamp + this.sessionDuration;
+        const nonce = this.generateNonce();
+        const token = {
+            address: userAddress,
+            provider: providerAddress,
+            timestamp,
+            expiresAt,
+            nonce,
+        };
+        // Create message to be signed
+        const message = JSON.stringify(token);
+        // Create hash using the same method as signRequest in encrypt.ts
+        const messageHash = keccak256(toUtf8Bytes(message));
+        // Sign using the same pattern as signRequest: signMessage with toBeArray
+        const signature = await this.contract.signer.signMessage(Buffer.from(messageHash.slice(2), 'hex'));
+        const session = {
+            token,
+            signature,
+            rawMessage: message,
+        };
+        // Cache the session using the existing cache with proper TTL
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        await this.cache.setItem(cacheKey, session, this.sessionDuration, CacheValueTypeEnum.Session);
+        return session;
+    }
+    async getOrCreateSession(providerAddress) {
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const cached = await this.cache.getItem(cacheKey);
+        // Check if cached session exists and is not expired (with 1 hour buffer)
+        if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
+            return cached;
+        }
+        // Generate new session
+        return await this.generateSessionToken(providerAddress);
+    }
     async getHeader(providerAddress, vllmProxy) {
         const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
         }
-        // Simplified: Only return Address and VLLM-Proxy headers
+        // Get or create session token
+        const session = await this.getOrCreateSession(providerAddress);
         return {
             Address: userAddress,
             'VLLM-Proxy': `${vllmProxy}`,
+            'Session-Token': session.rawMessage,
+            'Session-Signature': session.signature,
         };
     }
     async calculateInputFees(extractor, content) {
@@ -13866,7 +13930,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-06bae1ed.js');
+    const { download } = await import('./index-3193b5f6.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -19090,4 +19154,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
-//# sourceMappingURL=index-e2f9da35.js.map
+//# sourceMappingURL=index-618cf6ed.js.map

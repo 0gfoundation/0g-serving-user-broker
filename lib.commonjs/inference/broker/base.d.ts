@@ -10,6 +10,18 @@ export interface QuoteResponse {
     key: [bigint, bigint];
     nvidia_payload: string;
 }
+export interface SessionToken {
+    address: string;
+    provider: string;
+    timestamp: number;
+    expiresAt: number;
+    nonce: string;
+}
+export interface CachedSession {
+    token: SessionToken;
+    signature: string;
+    rawMessage: string;
+}
 export declare abstract class ZGServingUserBrokerBase {
     protected contract: InferenceServingContract;
     protected metadata: Metadata;
@@ -18,6 +30,7 @@ export declare abstract class ZGServingUserBrokerBase {
     private topUpTriggerThreshold;
     private topUpTargetThreshold;
     protected ledger: LedgerBroker;
+    private sessionDuration;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput>;
     getQuote(providerAddress: string): Promise<QuoteResponse>;
@@ -27,6 +40,9 @@ export declare abstract class ZGServingUserBrokerBase {
     protected createExtractor(svc: ServiceStructOutput): Extractor;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
+    private generateNonce;
+    generateSessionToken(providerAddress: string): Promise<CachedSession>;
+    getOrCreateSession(providerAddress: string): Promise<CachedSession>;
     getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;

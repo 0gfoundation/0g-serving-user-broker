@@ -6,6 +6,7 @@ var CacheValueTypeEnum;
     CacheValueTypeEnum["Service"] = "service";
     CacheValueTypeEnum["BigInt"] = "bigint";
     CacheValueTypeEnum["Other"] = "other";
+    CacheValueTypeEnum["Session"] = "session";
 })(CacheValueTypeEnum || (exports.CacheValueTypeEnum = CacheValueTypeEnum = {}));
 class Cache {
     nodeStorage = {};

@@ -44,6 +44,14 @@ export interface ServingRequestHeaders {
      * Broker service use a proxy for chat signature
      */
     'VLLM-Proxy': string
+    /**
+     * Session token containing user info and expiry
+     */
+    'Session-Token': string
+    /**
+     * Signature of the session token
+     */
+    'Session-Signature': string
 }
 
 /**

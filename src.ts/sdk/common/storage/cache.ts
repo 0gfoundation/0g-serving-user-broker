@@ -4,12 +4,14 @@ export enum CacheValueTypeEnum {
     Service = 'service',
     BigInt = 'bigint',
     Other = 'other',
+    Session = 'session',
 }
 
 export type CacheValueType =
     | CacheValueTypeEnum.Service
     | CacheValueTypeEnum.BigInt
     | CacheValueTypeEnum.Other
+    | CacheValueTypeEnum.Session
 
 export class Cache {
     private nodeStorage: { [key: string]: string } = {}

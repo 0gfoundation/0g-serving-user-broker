@@ -746,9 +746,10 @@ declare class Metadata {
 declare enum CacheValueTypeEnum {
     Service = "service",
     BigInt = "bigint",
-    Other = "other"
+    Other = "other",
+    Session = "session"
 }
-type CacheValueType = CacheValueTypeEnum.Service | CacheValueTypeEnum.BigInt | CacheValueTypeEnum.Other;
+type CacheValueType = CacheValueTypeEnum.Service | CacheValueTypeEnum.BigInt | CacheValueTypeEnum.Other | CacheValueTypeEnum.Session;
 declare class Cache {
     private nodeStorage;
     private initialized;
@@ -1978,6 +1979,14 @@ interface ServingRequestHeaders {
      * Broker service use a proxy for chat signature
      */
     'VLLM-Proxy': string;
+    /**
+     * Session token containing user info and expiry
+     */
+    'Session-Token': string;
+    /**
+     * Signature of the session token
+     */
+    'Session-Signature': string;
 }
 /**
  * RequestProcessor is a subclass of ZGServingUserBroker.
@@ -2001,6 +2010,18 @@ interface QuoteResponse {
     key: [bigint, bigint];
     nvidia_payload: string;
 }
+interface SessionToken {
+    address: string;
+    provider: string;
+    timestamp: number;
+    expiresAt: number;
+    nonce: string;
+}
+interface CachedSession {
+    token: SessionToken;
+    signature: string;
+    rawMessage: string;
+}
 declare abstract class ZGServingUserBrokerBase {
     protected contract: InferenceServingContract;
     protected metadata: Metadata;
@@ -2009,6 +2030,7 @@ declare abstract class ZGServingUserBrokerBase {
     private topUpTriggerThreshold;
     private topUpTargetThreshold;
     protected ledger: LedgerBroker;
+    private sessionDuration;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
     getQuote(providerAddress: string): Promise<QuoteResponse>;
@@ -2018,6 +2040,9 @@ declare abstract class ZGServingUserBrokerBase {
     protected createExtractor(svc: ServiceStructOutput$1): Extractor;
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
+    private generateNonce;
+    generateSessionToken(providerAddress: string): Promise<CachedSession>;
+    getOrCreateSession(providerAddress: string): Promise<CachedSession>;
     getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;

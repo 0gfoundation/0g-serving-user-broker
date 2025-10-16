@@ -24,6 +24,9 @@ export const CACHE_KEY_PREFIXES = {
 
     // Cached fee
     CACHED_FEE: '_cachedFee',
+    
+    // Session token cache
+    SESSION_TOKEN: 'session_',
 } as const
 
 // Metadata key suffixes
@@ -59,6 +62,11 @@ export const CacheKeyHelpers = {
     // Dynamic content key (for inference server)
     getContentKey(id: string): string {
         return id // Keep as is since it's already unique
+    },
+    
+    // Session token key
+    getSessionTokenKey(providerAddress: string): string {
+        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`
     },
 }
 

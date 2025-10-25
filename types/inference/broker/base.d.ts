@@ -4,11 +4,9 @@ import type { ServiceStructOutput } from '../contract';
 import type { ServingRequestHeaders } from './request';
 import type { Cache, Metadata } from '../../common/storage';
 import type { LedgerBroker } from '../../ledger';
-export interface QuoteResponse {
-    quote: string;
-    provider_signer: string;
-    key: [bigint, bigint];
-    nvidia_payload: string;
+export interface TdxQuoteResponse {
+    rawReport: string;
+    signingAddress: string;
 }
 export interface SessionToken {
     address: string;
@@ -33,7 +31,8 @@ export declare abstract class ZGServingUserBrokerBase {
     private sessionDuration;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput>;
-    getQuote(providerAddress: string): Promise<QuoteResponse>;
+    getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
+    downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
     userAcknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;

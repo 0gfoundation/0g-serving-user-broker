@@ -2004,11 +2004,9 @@ declare class RequestProcessor extends ZGServingUserBrokerBase {
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
 }
 
-interface QuoteResponse {
-    quote: string;
-    provider_signer: string;
-    key: [bigint, bigint];
-    nvidia_payload: string;
+interface TdxQuoteResponse {
+    rawReport: string;
+    signingAddress: string;
 }
 interface SessionToken {
     address: string;
@@ -2033,7 +2031,8 @@ declare abstract class ZGServingUserBrokerBase {
     private sessionDuration;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
-    getQuote(providerAddress: string): Promise<QuoteResponse>;
+    getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
+    downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
     userAcknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
@@ -2090,11 +2089,6 @@ interface ResponseSignature {
     text: string;
     signature: string;
 }
-interface SignerRA {
-    signing_address: string;
-    nvidia_payload: string;
-    intel_quote: string;
-}
 interface SingerRAVerificationResult {
     /**
      * Whether the signer RA is valid
@@ -2129,7 +2123,7 @@ declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
+    getQuoteInLLMServer(providerBrokerURL: string, model: string): Promise<TdxQuoteResponse>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }
@@ -2188,6 +2182,15 @@ declare class InferenceBroker {
      * @throws Will throw an error if failed to acknowledge.
      */
     acknowledgeProviderSigner: (providerAddress: string, gasPrice?: number) => Promise<void>;
+    /**
+     * Downloads quote report data from the provider service to a specified file.
+     *
+     * @param {string} providerAddress - The address of the provider.
+     * @param {string} outputPath - The file path where the quote report will be saved.
+     *
+     * @throws Will throw an error if failed to download the quote report.
+     */
+    downloadQuoteReport: (providerAddress: string, outputPath: string) => Promise<void>;
     /**
      * Generates request metadata for the provider service.
      * Includes:

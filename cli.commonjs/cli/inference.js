@@ -53,6 +53,22 @@ function inference(program) {
         });
     });
     program
+        .command('download-report')
+        .description('Download quote data to a specified file')
+        .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--output <path>', 'Output file path for the quote report')
+        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--gas-price <price>', 'Gas price for transactions')
+        .action((options) => {
+        (0, util_1.withBroker)(options, async (broker) => {
+            await broker.inference.downloadQuoteReport(options.provider, options.output);
+            console.log(`Quote report downloaded to: ${options.output}`);
+        });
+    });
+    program
         .command('serve')
         .description('Start local inference service')
         .requiredOption('--provider <address>', 'Provider address')

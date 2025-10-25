@@ -57,6 +57,15 @@ export declare class InferenceBroker {
      */
     acknowledgeProviderSigner: (providerAddress: string, gasPrice?: number) => Promise<void>;
     /**
+     * Downloads quote report data from the provider service to a specified file.
+     *
+     * @param {string} providerAddress - The address of the provider.
+     * @param {string} outputPath - The file path where the quote report will be saved.
+     *
+     * @throws Will throw an error if failed to download the quote report.
+     */
+    downloadQuoteReport: (providerAddress: string, outputPath: string) => Promise<void>;
+    /**
      * Generates request metadata for the provider service.
      * Includes:
      * 1. Request endpoint for the provider service

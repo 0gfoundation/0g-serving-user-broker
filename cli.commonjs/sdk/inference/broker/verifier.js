@@ -47,38 +47,15 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
         try {
             const extractor = await this.getExtractor(providerAddress, false);
             const svc = await extractor.getSvcInfo();
-            let signerRA = {
-                signing_address: '',
-                nvidia_payload: '',
-                intel_quote: '',
-            };
-            // if (vllmProxy) {
-            //     const quoteString = await this.fetSignerRA(svc.url, svc.model)
-            //     signerRA = JSON.parse(quoteString)
-            //     if (!signerRA?.signing_address) {
-            //         throw new Error('signing address does not exist')
-            //     }
-            // } else {
-            //     const { quote } = await this.getQuote(providerAddress)
-            //     signerRA = JSON.parse(quote)
-            // }
-            if (vllmProxy) {
-                signerRA = await Verifier.fetSignerRA(svc.url, svc.model);
-                if (!signerRA?.signing_address) {
-                    throw new Error('signing address does not exist');
-                }
-            }
-            else {
-                const { quote, provider_signer, nvidia_payload } = await this.getQuote(providerAddress);
-                signerRA = {
-                    signing_address: provider_signer,
-                    nvidia_payload: nvidia_payload,
-                    intel_quote: quote,
-                };
+            const { signingAddress } = vllmProxy
+                ? await this.getQuoteInLLMServer(svc.url, svc.model)
+                : await this.getQuote(providerAddress);
+            if (!signingAddress) {
+                throw new Error('signing address does not exist');
             }
             signingKey = `${this.contract.getUserAddress()}_${providerAddress}`;
-            await this.metadata.storeSigningKey(signingKey, signerRA.signing_address);
-            let valid = false;
+            await this.metadata.storeSigningKey(signingKey, signingAddress);
+            // Verification of RA should be separated from fetching signing address
             // const rpc = process.env.RPC_ENDPOINT
             // // bypass quote verification if testing on localhost
             // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
@@ -102,10 +79,10 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             //     // }
             // }
             // TODO: use intel_quote to verify signing address
-            valid = await Verifier.verifyRA(svc.url, signerRA.nvidia_payload);
+            // valid = await Verifier.verifyRA(svc.url, signerRA.nvidia_payload)
             return {
-                valid,
-                signingAddress: signerRA.signing_address,
+                valid: true,
+                signingAddress,
             };
         }
         catch (error) {
@@ -169,40 +146,20 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
     //     await fs.promises.writeFile('/tmp/del', quoteString)
     //     return quoteString
     // }
-    static async fetSignerRA(providerBrokerURL, model) {
-        return fetch(`${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then((response) => {
-            return response.json();
-        })
-            .then((data) => {
-            if (data.nvidia_payload) {
-                try {
-                    data.nvidia_payload = JSON.parse(data.nvidia_payload);
-                }
-                catch (error) {
-                    throw Error('parsing nvidia_payload error');
-                }
-            }
-            if (data.intel_quote) {
-                try {
-                    data.intel_quote =
-                        '0x' +
-                            Buffer.from(data.intel_quote, 'base64').toString('hex');
-                }
-                catch (error) {
-                    throw Error('parsing intel_quote error');
-                }
-            }
-            return data;
-        })
-            .catch((error) => {
+    async getQuoteInLLMServer(providerBrokerURL, model) {
+        try {
+            const rawReport = await this.fetchText(`${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`, {
+                method: 'GET',
+            });
+            const ret = JSON.parse(rawReport);
+            return {
+                rawReport,
+                signingAddress: ret['signing_address'],
+            };
+        }
+        catch (error) {
             (0, utils_1.throwFormattedError)(error);
-        });
+        }
     }
     static async fetSignatureByChatID(providerBrokerURL, chatID, model, vllmProxy) {
         return fetch(`${providerBrokerURL}/v1/proxy/signature/${chatID}?model=${model}`, {

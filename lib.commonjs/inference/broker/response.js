@@ -32,7 +32,6 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
                 vllmProxy = true;
             }
             let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress);
-            console.log('singerRAVerificationResult', singerRAVerificationResult);
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(providerAddress, true, vllmProxy);

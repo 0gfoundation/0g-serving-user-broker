@@ -1,3 +1,4 @@
+import type { TdxQuoteResponse } from './base';
 import { ZGServingUserBrokerBase } from './base';
 import { Automata } from '../../common/automata ';
 import type { InferenceServingContract } from '../contract';
@@ -6,11 +7,6 @@ import type { Cache, Metadata } from '../../common/storage';
 export interface ResponseSignature {
     text: string;
     signature: string;
-}
-export interface SignerRA {
-    signing_address: string;
-    nvidia_payload: string;
-    intel_quote: string;
 }
 export interface SingerRAVerificationResult {
     /**
@@ -46,7 +42,7 @@ export declare class Verifier extends ZGServingUserBrokerBase {
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
-    static fetSignerRA(providerBrokerURL: string, model: string): Promise<SignerRA>;
+    getQuoteInLLMServer(providerBrokerURL: string, model: string): Promise<TdxQuoteResponse>;
     static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }

@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ZGServingUserBrokerBase = void 0;
+const tslib_1 = require("tslib");
 const extractor_1 = require("../extractor");
 const utils_1 = require("../../common/utils");
+const fs = tslib_1.__importStar(require("fs/promises"));
 const storage_1 = require("../../common/storage");
 const ethers_1 = require("ethers");
 class ZGServingUserBrokerBase {
@@ -40,16 +42,31 @@ class ZGServingUserBrokerBase {
             const service = await this.getService(providerAddress);
             const url = service.url;
             const endpoint = `${url}/v1/quote`;
+            const rawReport = await this.fetchText(endpoint, {
+                method: 'GET',
+            });
+            const ret = JSON.parse(rawReport);
+            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8');
+            // Remove NULL characters that pad the address
+            const signingAddress = decodedData.replace(/\0/g, '');
+            return {
+                rawReport,
+                signingAddress: signingAddress,
+            };
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    async downloadQuoteReport(providerAddress, outputPath) {
+        try {
+            const service = await this.getService(providerAddress);
+            const url = service.url;
+            const endpoint = `${url}/v1/quote`;
             const quoteString = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(quoteString, (_, value) => {
-                if (typeof value === 'string' && /^\d+$/.test(value)) {
-                    return BigInt(value);
-                }
-                return value;
-            });
-            return ret;
+            await fs.writeFile(outputPath, quoteString);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -179,7 +196,7 @@ class ZGServingUserBrokerBase {
     }
     async getOrCreateSession(providerAddress) {
         const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(providerAddress);
-        const cached = await this.cache.getItem(cacheKey);
+        const cached = (await this.cache.getItem(cacheKey));
         // Check if cached session exists and is not expired (with 1 hour buffer)
         if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
             return cached;

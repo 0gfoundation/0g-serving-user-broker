@@ -151,14 +151,6 @@ export function formatError(error: unknown): string {
             return 'Transaction was rejected by the user.'
         }
 
-        // Check for network errors
-        if (
-            errorWithMessage.message.includes('network') ||
-            errorWithMessage.message.includes('timeout')
-        ) {
-            return 'Network error. Please check your connection and try again.'
-        }
-
         // Check for additional specific patterns
         if (
             errorWithMessage.message.includes(

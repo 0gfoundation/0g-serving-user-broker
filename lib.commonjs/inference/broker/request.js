@@ -66,42 +66,20 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
             catch {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
             }
-            let { quote, provider_signer } = await this.getQuote(providerAddress);
-            if (!quote || !provider_signer) {
-                throw new Error('Invalid quote');
+            const { rawReport, signingAddress } = await this.getQuote(providerAddress);
+            if (!rawReport || !signingAddress) {
+                throw new Error('Invalid intel_quote');
             }
-            if (!quote.startsWith('0x')) {
-                quote = '0x' + quote;
-            }
-            // const rpc = process.env.RPC_ENDPOINT
-            // // bypass quote verification if testing on localhost
-            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-            //     const isVerified = await this.automata.verifyQuote(quote)
-            //     console.log('Quote verification:', isVerified)
-            //     if (!isVerified) {
-            //         throw new Error('Quote verification failed')
-            //     }
-            //     // if (nvidia_payload) {
-            //     //     const svc = await this.getService(providerAddress)
-            //     //     const valid = await Verifier.verifyRA(
-            //     //         svc.url,
-            //     //         nvidia_payload
-            //     //     )
-            //     //     console.log('nvidia payload verification:', valid)
-            //     //     if (!valid) {
-            //     //         throw new Error('nvidia payload verify failed')
-            //     //     }
-            //     // }
-            // }
+            // TODO: Verify the quote here
             const account = await this.contract.getAccount(providerAddress);
-            if (account.teeSignerAddress === provider_signer) {
+            if (account.teeSignerAddress === signingAddress) {
                 console.log('Provider signer already acknowledged');
                 return;
             }
-            await this.contract.acknowledgeTEESigner(providerAddress, provider_signer);
+            await this.contract.acknowledgeTEESigner(providerAddress, signingAddress);
             const userAddress = this.contract.getUserAddress();
             const cacheKey = storage_1.CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
-            this.cache.setItem(cacheKey, provider_signer, 1 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
+            this.cache.setItem(cacheKey, signingAddress, 1 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

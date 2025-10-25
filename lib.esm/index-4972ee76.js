@@ -1,8 +1,8 @@
 import { ethers, ContractFactory, Interface, Contract, ZeroAddress, keccak256, toUtf8Bytes, Wallet } from 'ethers';
+import * as fs$1 from 'fs/promises';
 import { spawn as spawn$1 } from 'child_process';
 import * as path$1 from 'path';
 import path__default from 'path';
-import * as fs$1 from 'fs/promises';
 
 class Extractor {
 }
@@ -12066,11 +12066,6 @@ function formatError(error) {
             errorWithMessage.message.includes('User denied')) {
             return 'Transaction was rejected by the user.';
         }
-        // Check for network errors
-        if (errorWithMessage.message.includes('network') ||
-            errorWithMessage.message.includes('timeout')) {
-            return 'Network error. Please check your connection and try again.';
-        }
         // Check for additional specific patterns
         if (errorWithMessage.message.includes('Deliverable not acknowledged yet')) {
             return "Deliverable not acknowledged yet. Please use 'acknowledge-model' to acknowledge the deliverable.";
@@ -12414,16 +12409,31 @@ class ZGServingUserBrokerBase {
             const service = await this.getService(providerAddress);
             const url = service.url;
             const endpoint = `${url}/v1/quote`;
+            const rawReport = await this.fetchText(endpoint, {
+                method: 'GET',
+            });
+            const ret = JSON.parse(rawReport);
+            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8');
+            // Remove NULL characters that pad the address
+            const signingAddress = decodedData.replace(/\0/g, '');
+            return {
+                rawReport,
+                signingAddress: signingAddress,
+            };
+        }
+        catch (error) {
+            throwFormattedError(error);
+        }
+    }
+    async downloadQuoteReport(providerAddress, outputPath) {
+        try {
+            const service = await this.getService(providerAddress);
+            const url = service.url;
+            const endpoint = `${url}/v1/quote`;
             const quoteString = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(quoteString, (_, value) => {
-                if (typeof value === 'string' && /^\d+$/.test(value)) {
-                    return BigInt(value);
-                }
-                return value;
-            });
-            return ret;
+            await fs$1.writeFile(outputPath, quoteString);
         }
         catch (error) {
             throwFormattedError(error);
@@ -12553,7 +12563,7 @@ class ZGServingUserBrokerBase {
     }
     async getOrCreateSession(providerAddress) {
         const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress);
-        const cached = await this.cache.getItem(cacheKey);
+        const cached = (await this.cache.getItem(cacheKey));
         // Check if cached session exists and is not expired (with 1 hour buffer)
         if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
             return cached;
@@ -12984,42 +12994,20 @@ class RequestProcessor extends ZGServingUserBrokerBase {
             catch {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
             }
-            let { quote, provider_signer } = await this.getQuote(providerAddress);
-            if (!quote || !provider_signer) {
-                throw new Error('Invalid quote');
+            const { rawReport, signingAddress } = await this.getQuote(providerAddress);
+            if (!rawReport || !signingAddress) {
+                throw new Error('Invalid intel_quote');
             }
-            if (!quote.startsWith('0x')) {
-                quote = '0x' + quote;
-            }
-            // const rpc = process.env.RPC_ENDPOINT
-            // // bypass quote verification if testing on localhost
-            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-            //     const isVerified = await this.automata.verifyQuote(quote)
-            //     console.log('Quote verification:', isVerified)
-            //     if (!isVerified) {
-            //         throw new Error('Quote verification failed')
-            //     }
-            //     // if (nvidia_payload) {
-            //     //     const svc = await this.getService(providerAddress)
-            //     //     const valid = await Verifier.verifyRA(
-            //     //         svc.url,
-            //     //         nvidia_payload
-            //     //     )
-            //     //     console.log('nvidia payload verification:', valid)
-            //     //     if (!valid) {
-            //     //         throw new Error('nvidia payload verify failed')
-            //     //     }
-            //     // }
-            // }
+            // TODO: Verify the quote here
             const account = await this.contract.getAccount(providerAddress);
-            if (account.teeSignerAddress === provider_signer) {
+            if (account.teeSignerAddress === signingAddress) {
                 console.log('Provider signer already acknowledged');
                 return;
             }
-            await this.contract.acknowledgeTEESigner(providerAddress, provider_signer);
+            await this.contract.acknowledgeTEESigner(providerAddress, signingAddress);
             const userAddress = this.contract.getUserAddress();
             const cacheKey = CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
-            this.cache.setItem(cacheKey, provider_signer, 1 * 60 * 1000, CacheValueTypeEnum.Other);
+            this.cache.setItem(cacheKey, signingAddress, 1 * 60 * 1000, CacheValueTypeEnum.Other);
         }
         catch (error) {
             throwFormattedError(error);
@@ -13090,38 +13078,15 @@ class Verifier extends ZGServingUserBrokerBase {
         try {
             const extractor = await this.getExtractor(providerAddress, false);
             const svc = await extractor.getSvcInfo();
-            let signerRA = {
-                signing_address: '',
-                nvidia_payload: '',
-                intel_quote: '',
-            };
-            // if (vllmProxy) {
-            //     const quoteString = await this.fetSignerRA(svc.url, svc.model)
-            //     signerRA = JSON.parse(quoteString)
-            //     if (!signerRA?.signing_address) {
-            //         throw new Error('signing address does not exist')
-            //     }
-            // } else {
-            //     const { quote } = await this.getQuote(providerAddress)
-            //     signerRA = JSON.parse(quote)
-            // }
-            if (vllmProxy) {
-                signerRA = await Verifier.fetSignerRA(svc.url, svc.model);
-                if (!signerRA?.signing_address) {
-                    throw new Error('signing address does not exist');
-                }
-            }
-            else {
-                const { quote, provider_signer, nvidia_payload } = await this.getQuote(providerAddress);
-                signerRA = {
-                    signing_address: provider_signer,
-                    nvidia_payload: nvidia_payload,
-                    intel_quote: quote,
-                };
+            const { signingAddress } = vllmProxy
+                ? await this.getQuoteInLLMServer(svc.url, svc.model)
+                : await this.getQuote(providerAddress);
+            if (!signingAddress) {
+                throw new Error('signing address does not exist');
             }
             signingKey = `${this.contract.getUserAddress()}_${providerAddress}`;
-            await this.metadata.storeSigningKey(signingKey, signerRA.signing_address);
-            let valid = false;
+            await this.metadata.storeSigningKey(signingKey, signingAddress);
+            // Verification of RA should be separated from fetching signing address
             // const rpc = process.env.RPC_ENDPOINT
             // // bypass quote verification if testing on localhost
             // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
@@ -13145,10 +13110,10 @@ class Verifier extends ZGServingUserBrokerBase {
             //     // }
             // }
             // TODO: use intel_quote to verify signing address
-            valid = await Verifier.verifyRA(svc.url, signerRA.nvidia_payload);
+            // valid = await Verifier.verifyRA(svc.url, signerRA.nvidia_payload)
             return {
-                valid,
-                signingAddress: signerRA.signing_address,
+                valid: true,
+                signingAddress,
             };
         }
         catch (error) {
@@ -13212,40 +13177,20 @@ class Verifier extends ZGServingUserBrokerBase {
     //     await fs.promises.writeFile('/tmp/del', quoteString)
     //     return quoteString
     // }
-    static async fetSignerRA(providerBrokerURL, model) {
-        return fetch(`${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then((response) => {
-            return response.json();
-        })
-            .then((data) => {
-            if (data.nvidia_payload) {
-                try {
-                    data.nvidia_payload = JSON.parse(data.nvidia_payload);
-                }
-                catch (error) {
-                    throw Error('parsing nvidia_payload error');
-                }
-            }
-            if (data.intel_quote) {
-                try {
-                    data.intel_quote =
-                        '0x' +
-                            Buffer.from(data.intel_quote, 'base64').toString('hex');
-                }
-                catch (error) {
-                    throw Error('parsing intel_quote error');
-                }
-            }
-            return data;
-        })
-            .catch((error) => {
+    async getQuoteInLLMServer(providerBrokerURL, model) {
+        try {
+            const rawReport = await this.fetchText(`${providerBrokerURL}/v1/proxy/attestation/report?model=${model}`, {
+                method: 'GET',
+            });
+            const ret = JSON.parse(rawReport);
+            return {
+                rawReport,
+                signingAddress: ret['signing_address'],
+            };
+        }
+        catch (error) {
             throwFormattedError(error);
-        });
+        }
     }
     static async fetSignatureByChatID(providerBrokerURL, chatID, model, vllmProxy) {
         return fetch(`${providerBrokerURL}/v1/proxy/signature/${chatID}?model=${model}`, {
@@ -13302,7 +13247,6 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
                 vllmProxy = true;
             }
             let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress);
-            console.log('singerRAVerificationResult', singerRAVerificationResult);
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(providerAddress, true, vllmProxy);
@@ -13421,6 +13365,22 @@ class InferenceBroker {
     acknowledgeProviderSigner = async (providerAddress, gasPrice) => {
         try {
             return await this.requestProcessor.acknowledgeProviderSigner(providerAddress, gasPrice);
+        }
+        catch (error) {
+            throwFormattedError(error);
+        }
+    };
+    /**
+     * Downloads quote report data from the provider service to a specified file.
+     *
+     * @param {string} providerAddress - The address of the provider.
+     * @param {string} outputPath - The file path where the quote report will be saved.
+     *
+     * @throws Will throw an error if failed to download the quote report.
+     */
+    downloadQuoteReport = async (providerAddress, outputPath) => {
+        try {
+            return await this.requestProcessor.downloadQuoteReport(providerAddress, outputPath);
         }
         catch (error) {
             throwFormattedError(error);
@@ -13930,7 +13890,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-3193b5f6.js');
+    const { download } = await import('./index-c3e54842.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -14335,28 +14295,26 @@ class ServiceProcessor extends BrokerBase {
             catch {
                 await this.ledger.transferFund(providerAddress, 'fine-tuning', BigInt(0), gasPrice);
             }
-            let { quote, provider_signer } = await this.servingProvider.getQuote(providerAddress);
-            if (!quote || !provider_signer) {
+            const { rawReport, signingAddress } = await this.servingProvider.getQuote(providerAddress);
+            if (!rawReport || !signingAddress) {
                 throw new Error('Invalid quote');
             }
-            if (!quote.startsWith('0x')) {
-                quote = '0x' + quote;
-            }
-            const rpc = process.env.RPC_ENDPOINT;
-            // bypass quote verification if testing on localhost
-            if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-                const isVerified = await this.automata.verifyQuote(quote);
-                console.log('Quote verification:', isVerified);
-                if (!isVerified) {
-                    throw new Error('Quote verification failed');
-                }
-            }
+            // TODO: separate automata verification logic
+            // const rpc = process.env.RPC_ENDPOINT
+            // // bypass quote verification if testing on localhost
+            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
+            //     const isVerified = await this.automata.verifyQuote(intel_quote)
+            //     console.log('Quote verification:', isVerified)
+            //     if (!isVerified) {
+            //         throw new Error('Quote verification failed')
+            //     }
+            // }
             const account = await this.contract.getAccount(providerAddress);
-            if (account.providerSigner === provider_signer) {
+            if (account.providerSigner === signingAddress) {
                 console.log('Provider signer already acknowledged');
                 return;
             }
-            await this.contract.acknowledgeProviderSigner(providerAddress, provider_signer, gasPrice);
+            await this.contract.acknowledgeProviderSigner(providerAddress, signingAddress, gasPrice);
         }
         catch (error) {
             throwFormattedError(error);
@@ -18245,11 +18203,14 @@ class Provider {
         try {
             const url = await this.getProviderUrl(providerAddress);
             const endpoint = `${url}/v1/quote`;
-            const quoteString = await this.fetchText(endpoint, {
+            const rawReport = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(quoteString);
-            return ret;
+            const ret = JSON.parse(rawReport);
+            return {
+                rawReport,
+                signingAddress: ret['report_data'],
+            };
         }
         catch (error) {
             throwFormattedError(error);
@@ -19154,4 +19115,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
-//# sourceMappingURL=index-618cf6ed.js.map
+//# sourceMappingURL=index-4972ee76.js.map

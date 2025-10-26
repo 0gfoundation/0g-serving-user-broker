@@ -20,9 +20,9 @@ export interface Task {
     wait?: boolean
 }
 
-export interface QuoteResponse {
-    quote: string
-    provider_signer: string
+export interface TdxQuoteResponse {
+    rawReport: string
+    signingAddress: string
 }
 
 export interface CustomizedModel {
@@ -83,16 +83,19 @@ export class Provider {
         }
     }
 
-    async getQuote(providerAddress: string): Promise<QuoteResponse> {
+    async getQuote(providerAddress: string): Promise<TdxQuoteResponse> {
         try {
             const url = await this.getProviderUrl(providerAddress)
             const endpoint = `${url}/v1/quote`
 
-            const quoteString = await this.fetchText(endpoint, {
+            const rawReport = await this.fetchText(endpoint, {
                 method: 'GET',
             })
-            const ret = JSON.parse(quoteString)
-            return ret
+            const ret = JSON.parse(rawReport)
+            return {
+                rawReport,
+                signingAddress: ret['report_data'],
+            } as TdxQuoteResponse
         } catch (error) {
             throwFormattedError(error)
         }

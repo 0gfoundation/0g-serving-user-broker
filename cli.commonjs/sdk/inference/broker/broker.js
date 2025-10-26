@@ -113,6 +113,22 @@ class InferenceBroker {
         }
     };
     /**
+     * Downloads quote report data from the provider service to a specified file.
+     *
+     * @param {string} providerAddress - The address of the provider.
+     * @param {string} outputPath - The file path where the quote report will be saved.
+     *
+     * @throws Will throw an error if failed to download the quote report.
+     */
+    downloadQuoteReport = async (providerAddress, outputPath) => {
+        try {
+            return await this.requestProcessor.downloadQuoteReport(providerAddress, outputPath);
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    };
+    /**
      * Generates request metadata for the provider service.
      * Includes:
      * 1. Request endpoint for the provider service

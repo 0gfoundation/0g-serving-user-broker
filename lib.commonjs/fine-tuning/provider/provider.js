@@ -50,11 +50,14 @@ class Provider {
         try {
             const url = await this.getProviderUrl(providerAddress);
             const endpoint = `${url}/v1/quote`;
-            const quoteString = await this.fetchText(endpoint, {
+            const rawReport = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(quoteString);
-            return ret;
+            const ret = JSON.parse(rawReport);
+            return {
+                rawReport,
+                signingAddress: ret['report_data'],
+            };
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

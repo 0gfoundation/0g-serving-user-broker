@@ -144,34 +144,33 @@ export class ServiceProcessor extends BrokerBase {
                 )
             }
 
-            let { quote, provider_signer } =
+            const { rawReport, signingAddress } =
                 await this.servingProvider.getQuote(providerAddress)
-            if (!quote || !provider_signer) {
+            if (!rawReport || !signingAddress) {
                 throw new Error('Invalid quote')
             }
-            if (!quote.startsWith('0x')) {
-                quote = '0x' + quote
-            }
 
-            const rpc = process.env.RPC_ENDPOINT
-            // bypass quote verification if testing on localhost
-            if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
-                const isVerified = await this.automata.verifyQuote(quote)
-                console.log('Quote verification:', isVerified)
-                if (!isVerified) {
-                    throw new Error('Quote verification failed')
-                }
-            }
+            // TODO: separate automata verification logic
+
+            // const rpc = process.env.RPC_ENDPOINT
+            // // bypass quote verification if testing on localhost
+            // if (!rpc || !/localhost|127\.0\.0\.1/.test(rpc)) {
+            //     const isVerified = await this.automata.verifyQuote(intel_quote)
+            //     console.log('Quote verification:', isVerified)
+            //     if (!isVerified) {
+            //         throw new Error('Quote verification failed')
+            //     }
+            // }
 
             const account = await this.contract.getAccount(providerAddress)
-            if (account.providerSigner === provider_signer) {
+            if (account.providerSigner === signingAddress) {
                 console.log('Provider signer already acknowledged')
                 return
             }
 
             await this.contract.acknowledgeProviderSigner(
                 providerAddress,
-                provider_signer,
+                signingAddress,
                 gasPrice
             )
         } catch (error) {

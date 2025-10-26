@@ -14,9 +14,9 @@ export interface Task {
     readonly deliverIndex?: string;
     wait?: boolean;
 }
-export interface QuoteResponse {
-    quote: string;
-    provider_signer: string;
+export interface TdxQuoteResponse {
+    rawReport: string;
+    signingAddress: string;
 }
 export interface CustomizedModel {
     name: string;
@@ -33,7 +33,7 @@ export declare class Provider {
     private fetchJSON;
     private fetchText;
     getProviderUrl(providerAddress: string): Promise<string>;
-    getQuote(providerAddress: string): Promise<QuoteResponse>;
+    getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
     createTask(providerAddress: string, task: Task): Promise<string>;
     cancelTask(providerAddress: string, signature: string, taskID: string): Promise<string>;
     getTask(providerAddress: string, userAddress: string, taskID: string): Promise<Task>;

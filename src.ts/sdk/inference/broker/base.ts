@@ -4,6 +4,7 @@ import type { Extractor } from '../extractor'
 import type { ServiceStructOutput } from '../contract'
 import type { ServingRequestHeaders } from './request'
 import { throwFormattedError } from '../../common/utils'
+import * as fs from 'fs/promises'
 import type { Cache, Metadata } from '../../common/storage'
 import {
     CacheValueTypeEnum,
@@ -13,11 +14,9 @@ import {
 import type { LedgerBroker } from '../../ledger'
 import { ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
 
-export interface QuoteResponse {
-    quote: string
-    provider_signer: string
-    key: [bigint, bigint]
-    nvidia_payload: string
+export interface TdxQuoteResponse {
+    rawReport: string
+    signingAddress: string
 }
 
 export interface SessionToken {
@@ -82,7 +81,34 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    async getQuote(providerAddress: string): Promise<QuoteResponse> {
+    async getQuote(providerAddress: string): Promise<TdxQuoteResponse> {
+        try {
+            const service = await this.getService(providerAddress)
+            const url = service.url
+
+            const endpoint = `${url}/v1/quote`
+
+            const rawReport = await this.fetchText(endpoint, {
+                method: 'GET',
+            })
+
+            const ret = JSON.parse(rawReport)
+            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8')
+            // Remove NULL characters that pad the address
+            const signingAddress = decodedData.replace(/\0/g, '')
+            return {
+                rawReport,
+                signingAddress: signingAddress,
+            } as TdxQuoteResponse
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    async downloadQuoteReport(
+        providerAddress: string,
+        outputPath: string
+    ): Promise<void> {
         try {
             const service = await this.getService(providerAddress)
 
@@ -93,14 +119,7 @@ export abstract class ZGServingUserBrokerBase {
                 method: 'GET',
             })
 
-            const ret = JSON.parse(quoteString, (_, value) => {
-                if (typeof value === 'string' && /^\d+$/.test(value)) {
-                    return BigInt(value)
-                }
-
-                return value
-            })
-            return ret
+            await fs.writeFile(outputPath, quoteString)
         } catch (error) {
             throwFormattedError(error)
         }
@@ -236,10 +255,10 @@ export abstract class ZGServingUserBrokerBase {
 
         // Create message to be signed
         const message = JSON.stringify(token)
-        
+
         // Create hash using the same method as signRequest in encrypt.ts
         const messageHash = keccak256(toUtf8Bytes(message))
-        
+
         // Sign using the same pattern as signRequest: signMessage with toBeArray
         const signature = await this.contract.signer.signMessage(
             Buffer.from(messageHash.slice(2), 'hex')
@@ -265,7 +284,9 @@ export abstract class ZGServingUserBrokerBase {
 
     async getOrCreateSession(providerAddress: string): Promise<CachedSession> {
         const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress)
-        const cached = await this.cache.getItem(cacheKey) as CachedSession | null
+        const cached = (await this.cache.getItem(
+            cacheKey
+        )) as CachedSession | null
 
         // Check if cached session exists and is not expired (with 1 hour buffer)
         if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {

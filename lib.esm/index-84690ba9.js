@@ -13221,6 +13221,70 @@ class Verifier extends ZGServingUserBrokerBase {
 }
 
 /**
+ * Simple logger utility that supports debug mode
+ * Set DEBUG=true or NODE_ENV=development to enable debug logs
+ */
+class Logger {
+    static instance;
+    debugMode;
+    constructor() {
+        // Check multiple environment variables for debug mode
+        this.debugMode =
+            process.env.DEBUG === 'true' ||
+                process.env.DEBUG === '1' ||
+                process.env.NODE_ENV === 'development' ||
+                process.env.ZG_DEBUG === 'true' ||
+                process.env.ZG_DEBUG === '1';
+    }
+    static getInstance() {
+        if (!Logger.instance) {
+            Logger.instance = new Logger();
+        }
+        return Logger.instance;
+    }
+    /**
+     * Enable or disable debug mode programmatically
+     */
+    setDebugMode(enabled) {
+        this.debugMode = enabled;
+    }
+    /**
+     * Check if debug mode is enabled
+     */
+    isDebugMode() {
+        return this.debugMode;
+    }
+    /**
+     * Log debug messages (only in debug mode)
+     */
+    debug(message, ...args) {
+        if (this.debugMode) {
+            console.log(`[DEBUG] ${new Date().toISOString()} - ${message}`, ...args);
+        }
+    }
+    /**
+     * Log info messages (always)
+     */
+    info(message, ...args) {
+        console.log(`[INFO] ${new Date().toISOString()} - ${message}`, ...args);
+    }
+    /**
+     * Log warning messages (always)
+     */
+    warn(message, ...args) {
+        console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, ...args);
+    }
+    /**
+     * Log error messages (always)
+     */
+    error(message, ...args) {
+        console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, ...args);
+    }
+}
+// Export singleton instance
+const logger = Logger.getInstance();
+
+/**
  * ResponseProcessor is a subclass of ZGServingUserBroker.
  * It needs to be initialized with createZGServingUserBroker
  * before use.
@@ -13243,10 +13307,12 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
             if (!chatID) {
                 throw new Error('Chat ID does not exist');
             }
+            logger.debug('Chat ID:', chatID);
             if (vllmProxy === undefined) {
                 vllmProxy = true;
             }
-            let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress);
+            let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress, false, vllmProxy);
+            logger.debug('Singer RA Verification Result:', singerRAVerificationResult);
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(providerAddress, true, vllmProxy);
@@ -13254,6 +13320,9 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
             if (!singerRAVerificationResult.valid) {
                 throw new Error('Signing address is invalid');
             }
+            logger.debug('Fetching signature from provider broker URL:', svc.url, vllmProxy
+                ? 'with proxied LLM server'
+                : 'with original LLM server');
             const ResponseSignature = await Verifier.fetSignatureByChatID(svc.url, chatID, svc.model, vllmProxy);
             return Verifier.verifySignature(ResponseSignature.text, ResponseSignature.signature, singerRAVerificationResult.signingAddress);
         }
@@ -13263,6 +13332,7 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
     }
     async calculateOutputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
+        logger.debug('Service Info:', svc);
         const outputCount = await extractor.getOutputCount(content);
         return BigInt(outputCount) * BigInt(svc.outputPrice);
     }
@@ -13890,7 +13960,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-c3e54842.js');
+    const { download } = await import('./index-1bc8a24c.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -19115,4 +19185,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0x09D00A2B31067d
 }
 
 export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
-//# sourceMappingURL=index-4972ee76.js.map
+//# sourceMappingURL=index-84690ba9.js.map

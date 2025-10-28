@@ -5,6 +5,7 @@ const base_1 = require("./base");
 const model_1 = require("./model");
 const verifier_1 = require("./verifier");
 const utils_1 = require("../../common/utils");
+const logger_1 = require("../../common/logger");
 /**
  * ResponseProcessor is a subclass of ZGServingUserBroker.
  * It needs to be initialized with createZGServingUserBroker
@@ -28,10 +29,12 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
             if (!chatID) {
                 throw new Error('Chat ID does not exist');
             }
+            logger_1.logger.debug('Chat ID:', chatID);
             if (vllmProxy === undefined) {
                 vllmProxy = true;
             }
-            let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress);
+            let singerRAVerificationResult = await this.verifier.getSigningAddress(providerAddress, false, vllmProxy);
+            logger_1.logger.debug('Singer RA Verification Result:', singerRAVerificationResult);
             if (!singerRAVerificationResult.valid) {
                 singerRAVerificationResult =
                     await this.verifier.getSigningAddress(providerAddress, true, vllmProxy);
@@ -39,6 +42,9 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
             if (!singerRAVerificationResult.valid) {
                 throw new Error('Signing address is invalid');
             }
+            logger_1.logger.debug('Fetching signature from provider broker URL:', svc.url, vllmProxy
+                ? 'with proxied LLM server'
+                : 'with original LLM server');
             const ResponseSignature = await verifier_1.Verifier.fetSignatureByChatID(svc.url, chatID, svc.model, vllmProxy);
             return verifier_1.Verifier.verifySignature(ResponseSignature.text, ResponseSignature.signature, singerRAVerificationResult.signingAddress);
         }
@@ -48,6 +54,7 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
     }
     async calculateOutputFees(extractor, content) {
         const svc = await extractor.getSvcInfo();
+        logger_1.logger.debug('Service Info:', svc);
         const outputCount = await extractor.getOutputCount(content);
         return BigInt(outputCount) * BigInt(svc.outputPrice);
     }

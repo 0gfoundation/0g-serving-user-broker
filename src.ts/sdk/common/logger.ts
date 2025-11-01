@@ -9,8 +9,8 @@ export class Logger {
 
     private constructor() {
         // Check multiple environment variables for debug mode
-        this.debugMode = 
-            process.env.DEBUG === 'true' || 
+        this.debugMode =
+            process.env.DEBUG === 'true' ||
             process.env.DEBUG === '1' ||
             process.env.NODE_ENV === 'development' ||
             process.env.ZG_DEBUG === 'true' ||
@@ -43,7 +43,10 @@ export class Logger {
      */
     public debug(message: string, ...args: any[]): void {
         if (this.debugMode) {
-            console.log(`[DEBUG] ${new Date().toISOString()} - ${message}`, ...args)
+            console.log(
+                `[DEBUG] ${new Date().toISOString()} - ${message}`,
+                ...args
+            )
         }
     }
 
@@ -65,7 +68,10 @@ export class Logger {
      * Log error messages (always)
      */
     public error(message: string, ...args: any[]): void {
-        console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, ...args)
+        console.error(
+            `[ERROR] ${new Date().toISOString()} - ${message}`,
+            ...args
+        )
     }
 }
 

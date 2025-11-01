@@ -142,7 +142,6 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
                 providerAddress
             )
 
-
             if (!rawReport || !signingAddress) {
                 throw new Error('Invalid intel_quote')
             }

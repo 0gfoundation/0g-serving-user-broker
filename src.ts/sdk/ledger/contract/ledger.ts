@@ -133,7 +133,6 @@ export class LedgerManagerContract {
     }
 
     async addLedger(
-        signer: [BigNumberish, BigNumberish],
         balance: bigint,
         settleSignerEncryptedPrivateKey: string,
         gasPrice?: number
@@ -146,7 +145,7 @@ export class LedgerManagerContract {
 
             await this.sendTx(
                 'addLedger',
-                [signer, settleSignerEncryptedPrivateKey],
+                [ settleSignerEncryptedPrivateKey],
                 txOptions
             )
         } catch (error) {
@@ -168,6 +167,27 @@ export class LedgerManagerContract {
             const user = this.getUserAddress()
             const ledger = await this.ledger.getLedger(user)
             return ledger
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    async getLedgerProviders(user: string, serviceName: string) {
+        try {
+            const providers = await this.ledger.getLedgerProviders(
+                user,
+                serviceName
+            )
+            return providers
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    async getServiceInfo(serviceAddress: string) {
+        try {
+            const serviceInfo = await this.ledger.getServiceInfo(serviceAddress)
+            return serviceInfo
         } catch (error) {
             throwFormattedError(error)
         }
@@ -199,7 +219,7 @@ export class LedgerManagerContract {
 
     async transferFund(
         provider: AddressLike,
-        serviceTypeStr: 'inference' | 'fine-tuning',
+        serviceName: string,
         amount: BigNumberish,
         gasPrice?: number
     ) {
@@ -210,7 +230,7 @@ export class LedgerManagerContract {
             }
             await this.sendTx(
                 'transferFund',
-                [provider, serviceTypeStr, amount],
+                [provider, serviceName, amount],
                 txOptions
             )
         } catch (error) {
@@ -220,7 +240,7 @@ export class LedgerManagerContract {
 
     async retrieveFund(
         providers: AddressLike[],
-        serviceTypeStr: 'inference' | 'fine-tuning',
+        serviceName: string,
         gasPrice?: number
     ) {
         try {
@@ -230,7 +250,7 @@ export class LedgerManagerContract {
             }
             await this.sendTx(
                 'retrieveFund',
-                [providers, serviceTypeStr],
+                [providers, serviceName],
                 txOptions
             )
         } catch (error) {

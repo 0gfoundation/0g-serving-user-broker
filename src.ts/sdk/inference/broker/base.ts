@@ -93,7 +93,10 @@ export abstract class ZGServingUserBrokerBase {
             })
 
             const ret = JSON.parse(rawReport)
-            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8')
+            const decodedData = Buffer.from(
+                ret['report_data'],
+                'base64'
+            ).toString('utf-8')
             // Remove NULL characters that pad the address
             const signingAddress = decodedData.replace(/\0/g, '')
             return {

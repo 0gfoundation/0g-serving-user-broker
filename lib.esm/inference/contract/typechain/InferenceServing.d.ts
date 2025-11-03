@@ -49,7 +49,6 @@ export type AccountStruct = {
     nonce: BigNumberish;
     balance: BigNumberish;
     pendingRefund: BigNumberish;
-    signer: [BigNumberish, BigNumberish];
     refunds: RefundStruct[];
     additionalInfo: string;
     providerPubKey: [BigNumberish, BigNumberish];
@@ -62,7 +61,6 @@ export type AccountStructOutput = [
     nonce: bigint,
     balance: bigint,
     pendingRefund: bigint,
-    signer: [bigint, bigint],
     refunds: RefundStructOutput[],
     additionalInfo: string,
     providerPubKey: [bigint, bigint],
@@ -74,7 +72,6 @@ export type AccountStructOutput = [
     nonce: bigint;
     balance: bigint;
     pendingRefund: bigint;
-    signer: [bigint, bigint];
     refunds: RefundStructOutput[];
     additionalInfo: string;
     providerPubKey: [bigint, bigint];
@@ -137,12 +134,12 @@ export type TEESettlementDataStructOutput = [
     signature: string;
 };
 export interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'acknowledgeProviderSigner', values: [AddressLike, [BigNumberish, BigNumberish]]): string;
     encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, [BigNumberish, BigNumberish], string]): string;
+    encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addOrUpdateService', values: [ServiceParamsStruct]): string;
     encodeFunctionData(functionFragment: 'deleteAccount', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'depositFund', values: [AddressLike, AddressLike, BigNumberish]): string;
@@ -165,6 +162,7 @@ export interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
     encodeFunctionData(functionFragment: 'requestRefundAll', values: [AddressLike, AddressLike]): string;
     encodeFunctionData(functionFragment: 'settleFeesWithTEE', values: [TEESettlementDataStruct[]]): string;
+    encodeFunctionData(functionFragment: 'supportsInterface', values: [BytesLike]): string;
     encodeFunctionData(functionFragment: 'transferOwnership', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
@@ -193,6 +191,7 @@ export interface InferenceServingInterface extends Interface {
     decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'requestRefundAll', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'settleFeesWithTEE', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'supportsInterface', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'updateLockTime', data: BytesLike): Result;
 }
@@ -379,7 +378,6 @@ export interface InferenceServing extends BaseContract {
     addAccount: TypedContractMethod<[
         user: AddressLike,
         provider: AddressLike,
-        signer: [BigNumberish, BigNumberish],
         additionalInfo: string
     ], [
         void
@@ -526,6 +524,11 @@ export interface InferenceServing extends BaseContract {
             partialAmounts: bigint[];
         }
     ], 'nonpayable'>;
+    supportsInterface: TypedContractMethod<[
+        interfaceId: BytesLike
+    ], [
+        boolean
+    ], 'view'>;
     transferOwnership: TypedContractMethod<[
         newOwner: AddressLike
     ], [
@@ -558,7 +561,6 @@ export interface InferenceServing extends BaseContract {
     getFunction(nameOrSignature: 'addAccount'): TypedContractMethod<[
         user: AddressLike,
         provider: AddressLike,
-        signer: [BigNumberish, BigNumberish],
         additionalInfo: string
     ], [
         void
@@ -701,6 +703,7 @@ export interface InferenceServing extends BaseContract {
             partialAmounts: bigint[];
         }
     ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'supportsInterface'): TypedContractMethod<[interfaceId: BytesLike], [boolean], 'view'>;
     getFunction(nameOrSignature: 'transferOwnership'): TypedContractMethod<[newOwner: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'updateLockTime'): TypedContractMethod<[_locktime: BigNumberish], [void], 'nonpayable'>;
     getEvent(key: 'BalanceUpdated'): TypedContractEvent<BalanceUpdatedEvent.InputTuple, BalanceUpdatedEvent.OutputTuple, BalanceUpdatedEvent.OutputObject>;

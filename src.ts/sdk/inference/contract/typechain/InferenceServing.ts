@@ -71,7 +71,6 @@ export type AccountStruct = {
     nonce: BigNumberish
     balance: BigNumberish
     pendingRefund: BigNumberish
-    signer: [BigNumberish, BigNumberish]
     refunds: RefundStruct[]
     additionalInfo: string
     providerPubKey: [BigNumberish, BigNumberish]
@@ -85,7 +84,6 @@ export type AccountStructOutput = [
     nonce: bigint,
     balance: bigint,
     pendingRefund: bigint,
-    signer: [bigint, bigint],
     refunds: RefundStructOutput[],
     additionalInfo: string,
     providerPubKey: [bigint, bigint],
@@ -97,7 +95,6 @@ export type AccountStructOutput = [
     nonce: bigint
     balance: bigint
     pendingRefund: bigint
-    signer: [bigint, bigint]
     refunds: RefundStructOutput[]
     additionalInfo: string
     providerPubKey: [bigint, bigint]
@@ -193,6 +190,7 @@ export interface InferenceServingInterface extends Interface {
             | 'renounceOwnership'
             | 'requestRefundAll'
             | 'settleFeesWithTEE'
+            | 'supportsInterface'
             | 'transferOwnership'
             | 'updateLockTime'
     ): FunctionFragment
@@ -222,7 +220,7 @@ export interface InferenceServingInterface extends Interface {
     ): string
     encodeFunctionData(
         functionFragment: 'addAccount',
-        values: [AddressLike, AddressLike, [BigNumberish, BigNumberish], string]
+        values: [AddressLike, AddressLike, string]
     ): string
     encodeFunctionData(
         functionFragment: 'addOrUpdateService',
@@ -305,6 +303,10 @@ export interface InferenceServingInterface extends Interface {
     encodeFunctionData(
         functionFragment: 'settleFeesWithTEE',
         values: [TEESettlementDataStruct[]]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'supportsInterface',
+        values: [BytesLike]
     ): string
     encodeFunctionData(
         functionFragment: 'transferOwnership',
@@ -411,6 +413,10 @@ export interface InferenceServingInterface extends Interface {
     ): Result
     decodeFunctionResult(
         functionFragment: 'settleFeesWithTEE',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'supportsInterface',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -669,12 +675,7 @@ export interface InferenceServing extends BaseContract {
     >
 
     addAccount: TypedContractMethod<
-        [
-            user: AddressLike,
-            provider: AddressLike,
-            signer: [BigNumberish, BigNumberish],
-            additionalInfo: string
-        ],
+        [user: AddressLike, provider: AddressLike, additionalInfo: string],
         [void],
         'payable'
     >
@@ -826,6 +827,12 @@ export interface InferenceServing extends BaseContract {
         'nonpayable'
     >
 
+    supportsInterface: TypedContractMethod<
+        [interfaceId: BytesLike],
+        [boolean],
+        'view'
+    >
+
     transferOwnership: TypedContractMethod<
         [newOwner: AddressLike],
         [void],
@@ -866,12 +873,7 @@ export interface InferenceServing extends BaseContract {
     getFunction(
         nameOrSignature: 'addAccount'
     ): TypedContractMethod<
-        [
-            user: AddressLike,
-            provider: AddressLike,
-            signer: [BigNumberish, BigNumberish],
-            additionalInfo: string
-        ],
+        [user: AddressLike, provider: AddressLike, additionalInfo: string],
         [void],
         'payable'
     >
@@ -1030,6 +1032,9 @@ export interface InferenceServing extends BaseContract {
         ],
         'nonpayable'
     >
+    getFunction(
+        nameOrSignature: 'supportsInterface'
+    ): TypedContractMethod<[interfaceId: BytesLike], [boolean], 'view'>
     getFunction(
         nameOrSignature: 'transferOwnership'
     ): TypedContractMethod<[newOwner: AddressLike], [void], 'nonpayable'>

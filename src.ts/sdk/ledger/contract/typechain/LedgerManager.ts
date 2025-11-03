@@ -23,32 +23,54 @@ import type {
     TypedContractMethod,
 } from './common.js'
 
+export type ServiceInfoStruct = {
+    serviceAddress: AddressLike
+    serviceContract: AddressLike
+    serviceType: string
+    version: string
+    fullName: string
+    description: string
+    isRecommended: boolean
+    registeredAt: BigNumberish
+}
+
+export type ServiceInfoStructOutput = [
+    serviceAddress: string,
+    serviceContract: string,
+    serviceType: string,
+    version: string,
+    fullName: string,
+    description: string,
+    isRecommended: boolean,
+    registeredAt: bigint
+] & {
+    serviceAddress: string
+    serviceContract: string
+    serviceType: string
+    version: string
+    fullName: string
+    description: string
+    isRecommended: boolean
+    registeredAt: bigint
+}
+
 export type LedgerStruct = {
     user: AddressLike
     availableBalance: BigNumberish
     totalBalance: BigNumberish
-    inferenceSigner: [BigNumberish, BigNumberish]
     additionalInfo: string
-    inferenceProviders: AddressLike[]
-    fineTuningProviders: AddressLike[]
 }
 
 export type LedgerStructOutput = [
     user: string,
     availableBalance: bigint,
     totalBalance: bigint,
-    inferenceSigner: [bigint, bigint],
-    additionalInfo: string,
-    inferenceProviders: string[],
-    fineTuningProviders: string[]
+    additionalInfo: string
 ] & {
     user: string
     availableBalance: bigint
     totalBalance: bigint
-    inferenceSigner: [bigint, bigint]
     additionalInfo: string
-    inferenceProviders: string[]
-    fineTuningProviders: string[]
 }
 
 export interface LedgerManagerInterface extends Interface {
@@ -58,31 +80,40 @@ export interface LedgerManagerInterface extends Interface {
             | 'addLedger'
             | 'deleteLedger'
             | 'depositFund'
-            | 'fineTuningAddress'
+            | 'getAllActiveServices'
             | 'getAllLedgers'
+            | 'getAllVersions'
             | 'getLedger'
-            | 'inferenceAddress'
+            | 'getLedgerProviders'
+            | 'getRecommendedService'
+            | 'getServiceAddressByName'
+            | 'getServiceInfo'
             | 'initialize'
             | 'initialized'
+            | 'isRecommendedVersion'
             | 'owner'
             | 'refund'
+            | 'registerService'
             | 'renounceOwnership'
             | 'retrieveFund'
+            | 'setRecommendedService'
             | 'spendFund'
             | 'transferFund'
             | 'transferOwnership'
     ): FunctionFragment
 
-    getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment
+    getEvent(
+        nameOrSignatureOrTopic:
+            | 'OwnershipTransferred'
+            | 'RecommendedServiceUpdated'
+            | 'ServiceRegistered'
+    ): EventFragment
 
     encodeFunctionData(
         functionFragment: 'MAX_PROVIDERS_PER_BATCH',
         values?: undefined
     ): string
-    encodeFunctionData(
-        functionFragment: 'addLedger',
-        values: [[BigNumberish, BigNumberish], string]
-    ): string
+    encodeFunctionData(functionFragment: 'addLedger', values: [string]): string
     encodeFunctionData(
         functionFragment: 'deleteLedger',
         values?: undefined
@@ -92,7 +123,7 @@ export interface LedgerManagerInterface extends Interface {
         values?: undefined
     ): string
     encodeFunctionData(
-        functionFragment: 'fineTuningAddress',
+        functionFragment: 'getAllActiveServices',
         values?: undefined
     ): string
     encodeFunctionData(
@@ -100,25 +131,49 @@ export interface LedgerManagerInterface extends Interface {
         values: [BigNumberish, BigNumberish]
     ): string
     encodeFunctionData(
+        functionFragment: 'getAllVersions',
+        values: [string]
+    ): string
+    encodeFunctionData(
         functionFragment: 'getLedger',
         values: [AddressLike]
     ): string
     encodeFunctionData(
-        functionFragment: 'inferenceAddress',
-        values?: undefined
+        functionFragment: 'getLedgerProviders',
+        values: [AddressLike, string]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'getRecommendedService',
+        values: [string]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'getServiceAddressByName',
+        values: [string]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'getServiceInfo',
+        values: [AddressLike]
     ): string
     encodeFunctionData(
         functionFragment: 'initialize',
-        values: [AddressLike, AddressLike, AddressLike]
+        values: [AddressLike]
     ): string
     encodeFunctionData(
         functionFragment: 'initialized',
         values?: undefined
     ): string
+    encodeFunctionData(
+        functionFragment: 'isRecommendedVersion',
+        values: [string, string]
+    ): string
     encodeFunctionData(functionFragment: 'owner', values?: undefined): string
     encodeFunctionData(
         functionFragment: 'refund',
         values: [BigNumberish]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'registerService',
+        values: [string, string, AddressLike, string]
     ): string
     encodeFunctionData(
         functionFragment: 'renounceOwnership',
@@ -127,6 +182,10 @@ export interface LedgerManagerInterface extends Interface {
     encodeFunctionData(
         functionFragment: 'retrieveFund',
         values: [AddressLike[], string]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'setRecommendedService',
+        values: [string, string]
     ): string
     encodeFunctionData(
         functionFragment: 'spendFund',
@@ -155,16 +214,32 @@ export interface LedgerManagerInterface extends Interface {
         data: BytesLike
     ): Result
     decodeFunctionResult(
-        functionFragment: 'fineTuningAddress',
+        functionFragment: 'getAllActiveServices',
         data: BytesLike
     ): Result
     decodeFunctionResult(
         functionFragment: 'getAllLedgers',
         data: BytesLike
     ): Result
+    decodeFunctionResult(
+        functionFragment: 'getAllVersions',
+        data: BytesLike
+    ): Result
     decodeFunctionResult(functionFragment: 'getLedger', data: BytesLike): Result
     decodeFunctionResult(
-        functionFragment: 'inferenceAddress',
+        functionFragment: 'getLedgerProviders',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'getRecommendedService',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'getServiceAddressByName',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'getServiceInfo',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -175,14 +250,26 @@ export interface LedgerManagerInterface extends Interface {
         functionFragment: 'initialized',
         data: BytesLike
     ): Result
+    decodeFunctionResult(
+        functionFragment: 'isRecommendedVersion',
+        data: BytesLike
+    ): Result
     decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result
     decodeFunctionResult(functionFragment: 'refund', data: BytesLike): Result
+    decodeFunctionResult(
+        functionFragment: 'registerService',
+        data: BytesLike
+    ): Result
     decodeFunctionResult(
         functionFragment: 'renounceOwnership',
         data: BytesLike
     ): Result
     decodeFunctionResult(
         functionFragment: 'retrieveFund',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'setRecommendedService',
         data: BytesLike
     ): Result
     decodeFunctionResult(functionFragment: 'spendFund', data: BytesLike): Result
@@ -202,6 +289,49 @@ export namespace OwnershipTransferredEvent {
     export interface OutputObject {
         previousOwner: string
         newOwner: string
+    }
+    export type Event = TypedContractEvent<
+        InputTuple,
+        OutputTuple,
+        OutputObject
+    >
+    export type Filter = TypedDeferredTopicFilter<Event>
+    export type Log = TypedEventLog<Event>
+    export type LogDescription = TypedLogDescription<Event>
+}
+
+export namespace RecommendedServiceUpdatedEvent {
+    export type InputTuple = [
+        serviceType: string,
+        version: string,
+        serviceAddress: AddressLike
+    ]
+    export type OutputTuple = [
+        serviceType: string,
+        version: string,
+        serviceAddress: string
+    ]
+    export interface OutputObject {
+        serviceType: string
+        version: string
+        serviceAddress: string
+    }
+    export type Event = TypedContractEvent<
+        InputTuple,
+        OutputTuple,
+        OutputObject
+    >
+    export type Filter = TypedDeferredTopicFilter<Event>
+    export type Log = TypedEventLog<Event>
+    export type LogDescription = TypedLogDescription<Event>
+}
+
+export namespace ServiceRegisteredEvent {
+    export type InputTuple = [serviceAddress: AddressLike, serviceName: string]
+    export type OutputTuple = [serviceAddress: string, serviceName: string]
+    export interface OutputObject {
+        serviceAddress: string
+        serviceName: string
     }
     export type Event = TypedContractEvent<
         InputTuple,
@@ -259,7 +389,7 @@ export interface LedgerManager extends BaseContract {
     MAX_PROVIDERS_PER_BATCH: TypedContractMethod<[], [bigint], 'view'>
 
     addLedger: TypedContractMethod<
-        [inferenceSigner: [BigNumberish, BigNumberish], additionalInfo: string],
+        [additionalInfo: string],
         [[bigint, bigint]],
         'payable'
     >
@@ -268,7 +398,11 @@ export interface LedgerManager extends BaseContract {
 
     depositFund: TypedContractMethod<[], [void], 'payable'>
 
-    fineTuningAddress: TypedContractMethod<[], [string], 'view'>
+    getAllActiveServices: TypedContractMethod<
+        [],
+        [ServiceInfoStructOutput[]],
+        'view'
+    >
 
     getAllLedgers: TypedContractMethod<
         [offset: BigNumberish, limit: BigNumberish],
@@ -281,34 +415,83 @@ export interface LedgerManager extends BaseContract {
         'view'
     >
 
+    getAllVersions: TypedContractMethod<
+        [serviceType: string],
+        [
+            [string[], string[], boolean[]] & {
+                versions: string[]
+                addresses: string[]
+                isRecommendedFlags: boolean[]
+            }
+        ],
+        'view'
+    >
+
     getLedger: TypedContractMethod<
         [user: AddressLike],
         [LedgerStructOutput],
         'view'
     >
 
-    inferenceAddress: TypedContractMethod<[], [string], 'view'>
-
-    initialize: TypedContractMethod<
-        [
-            _inferenceAddress: AddressLike,
-            _fineTuningAddress: AddressLike,
-            owner: AddressLike
-        ],
-        [void],
-        'nonpayable'
+    getLedgerProviders: TypedContractMethod<
+        [user: AddressLike, serviceName: string],
+        [string[]],
+        'view'
     >
 
+    getRecommendedService: TypedContractMethod<
+        [serviceType: string],
+        [[string, string] & { version: string; serviceAddress: string }],
+        'view'
+    >
+
+    getServiceAddressByName: TypedContractMethod<
+        [serviceName: string],
+        [string],
+        'view'
+    >
+
+    getServiceInfo: TypedContractMethod<
+        [serviceAddress: AddressLike],
+        [ServiceInfoStructOutput],
+        'view'
+    >
+
+    initialize: TypedContractMethod<[owner: AddressLike], [void], 'nonpayable'>
+
     initialized: TypedContractMethod<[], [boolean], 'view'>
+
+    isRecommendedVersion: TypedContractMethod<
+        [serviceType: string, version: string],
+        [boolean],
+        'view'
+    >
 
     owner: TypedContractMethod<[], [string], 'view'>
 
     refund: TypedContractMethod<[amount: BigNumberish], [void], 'nonpayable'>
 
+    registerService: TypedContractMethod<
+        [
+            serviceType: string,
+            version: string,
+            serviceAddress: AddressLike,
+            description: string
+        ],
+        [void],
+        'nonpayable'
+    >
+
     renounceOwnership: TypedContractMethod<[], [void], 'nonpayable'>
 
     retrieveFund: TypedContractMethod<
         [providers: AddressLike[], serviceType: string],
+        [void],
+        'nonpayable'
+    >
+
+    setRecommendedService: TypedContractMethod<
+        [serviceType: string, version: string],
         [void],
         'nonpayable'
     >
@@ -320,7 +503,7 @@ export interface LedgerManager extends BaseContract {
     >
 
     transferFund: TypedContractMethod<
-        [provider: AddressLike, serviceTypeStr: string, amount: BigNumberish],
+        [provider: AddressLike, serviceName: string, amount: BigNumberish],
         [void],
         'nonpayable'
     >
@@ -341,7 +524,7 @@ export interface LedgerManager extends BaseContract {
     getFunction(
         nameOrSignature: 'addLedger'
     ): TypedContractMethod<
-        [inferenceSigner: [BigNumberish, BigNumberish], additionalInfo: string],
+        [additionalInfo: string],
         [[bigint, bigint]],
         'payable'
     >
@@ -352,8 +535,8 @@ export interface LedgerManager extends BaseContract {
         nameOrSignature: 'depositFund'
     ): TypedContractMethod<[], [void], 'payable'>
     getFunction(
-        nameOrSignature: 'fineTuningAddress'
-    ): TypedContractMethod<[], [string], 'view'>
+        nameOrSignature: 'getAllActiveServices'
+    ): TypedContractMethod<[], [ServiceInfoStructOutput[]], 'view'>
     getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod<
         [offset: BigNumberish, limit: BigNumberish],
         [
@@ -364,26 +547,57 @@ export interface LedgerManager extends BaseContract {
         ],
         'view'
     >
+    getFunction(nameOrSignature: 'getAllVersions'): TypedContractMethod<
+        [serviceType: string],
+        [
+            [string[], string[], boolean[]] & {
+                versions: string[]
+                addresses: string[]
+                isRecommendedFlags: boolean[]
+            }
+        ],
+        'view'
+    >
     getFunction(
         nameOrSignature: 'getLedger'
     ): TypedContractMethod<[user: AddressLike], [LedgerStructOutput], 'view'>
     getFunction(
-        nameOrSignature: 'inferenceAddress'
-    ): TypedContractMethod<[], [string], 'view'>
+        nameOrSignature: 'getLedgerProviders'
+    ): TypedContractMethod<
+        [user: AddressLike, serviceName: string],
+        [string[]],
+        'view'
+    >
+    getFunction(
+        nameOrSignature: 'getRecommendedService'
+    ): TypedContractMethod<
+        [serviceType: string],
+        [[string, string] & { version: string; serviceAddress: string }],
+        'view'
+    >
+    getFunction(
+        nameOrSignature: 'getServiceAddressByName'
+    ): TypedContractMethod<[serviceName: string], [string], 'view'>
+    getFunction(
+        nameOrSignature: 'getServiceInfo'
+    ): TypedContractMethod<
+        [serviceAddress: AddressLike],
+        [ServiceInfoStructOutput],
+        'view'
+    >
     getFunction(
         nameOrSignature: 'initialize'
-    ): TypedContractMethod<
-        [
-            _inferenceAddress: AddressLike,
-            _fineTuningAddress: AddressLike,
-            owner: AddressLike
-        ],
-        [void],
-        'nonpayable'
-    >
+    ): TypedContractMethod<[owner: AddressLike], [void], 'nonpayable'>
     getFunction(
         nameOrSignature: 'initialized'
     ): TypedContractMethod<[], [boolean], 'view'>
+    getFunction(
+        nameOrSignature: 'isRecommendedVersion'
+    ): TypedContractMethod<
+        [serviceType: string, version: string],
+        [boolean],
+        'view'
+    >
     getFunction(
         nameOrSignature: 'owner'
     ): TypedContractMethod<[], [string], 'view'>
@@ -391,12 +605,31 @@ export interface LedgerManager extends BaseContract {
         nameOrSignature: 'refund'
     ): TypedContractMethod<[amount: BigNumberish], [void], 'nonpayable'>
     getFunction(
+        nameOrSignature: 'registerService'
+    ): TypedContractMethod<
+        [
+            serviceType: string,
+            version: string,
+            serviceAddress: AddressLike,
+            description: string
+        ],
+        [void],
+        'nonpayable'
+    >
+    getFunction(
         nameOrSignature: 'renounceOwnership'
     ): TypedContractMethod<[], [void], 'nonpayable'>
     getFunction(
         nameOrSignature: 'retrieveFund'
     ): TypedContractMethod<
         [providers: AddressLike[], serviceType: string],
+        [void],
+        'nonpayable'
+    >
+    getFunction(
+        nameOrSignature: 'setRecommendedService'
+    ): TypedContractMethod<
+        [serviceType: string, version: string],
         [void],
         'nonpayable'
     >
@@ -410,7 +643,7 @@ export interface LedgerManager extends BaseContract {
     getFunction(
         nameOrSignature: 'transferFund'
     ): TypedContractMethod<
-        [provider: AddressLike, serviceTypeStr: string, amount: BigNumberish],
+        [provider: AddressLike, serviceName: string, amount: BigNumberish],
         [void],
         'nonpayable'
     >
@@ -425,6 +658,20 @@ export interface LedgerManager extends BaseContract {
         OwnershipTransferredEvent.OutputTuple,
         OwnershipTransferredEvent.OutputObject
     >
+    getEvent(
+        key: 'RecommendedServiceUpdated'
+    ): TypedContractEvent<
+        RecommendedServiceUpdatedEvent.InputTuple,
+        RecommendedServiceUpdatedEvent.OutputTuple,
+        RecommendedServiceUpdatedEvent.OutputObject
+    >
+    getEvent(
+        key: 'ServiceRegistered'
+    ): TypedContractEvent<
+        ServiceRegisteredEvent.InputTuple,
+        ServiceRegisteredEvent.OutputTuple,
+        ServiceRegisteredEvent.OutputObject
+    >
 
     filters: {
         'OwnershipTransferred(address,address)': TypedContractEvent<
@@ -436,6 +683,28 @@ export interface LedgerManager extends BaseContract {
             OwnershipTransferredEvent.InputTuple,
             OwnershipTransferredEvent.OutputTuple,
             OwnershipTransferredEvent.OutputObject
+        >
+
+        'RecommendedServiceUpdated(string,string,address)': TypedContractEvent<
+            RecommendedServiceUpdatedEvent.InputTuple,
+            RecommendedServiceUpdatedEvent.OutputTuple,
+            RecommendedServiceUpdatedEvent.OutputObject
+        >
+        RecommendedServiceUpdated: TypedContractEvent<
+            RecommendedServiceUpdatedEvent.InputTuple,
+            RecommendedServiceUpdatedEvent.OutputTuple,
+            RecommendedServiceUpdatedEvent.OutputObject
+        >
+
+        'ServiceRegistered(address,string)': TypedContractEvent<
+            ServiceRegisteredEvent.InputTuple,
+            ServiceRegisteredEvent.OutputTuple,
+            ServiceRegisteredEvent.OutputObject
+        >
+        ServiceRegistered: TypedContractEvent<
+            ServiceRegisteredEvent.InputTuple,
+            ServiceRegisteredEvent.OutputTuple,
+            ServiceRegisteredEvent.OutputObject
         >
     }
 }

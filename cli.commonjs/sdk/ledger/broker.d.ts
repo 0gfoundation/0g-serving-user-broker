@@ -13,6 +13,7 @@ export declare class LedgerBroker {
     private step;
     constructor(signer: JsonRpcSigner | Wallet, ledgerCA: string, inferenceCA: string, fineTuningCA: string, gasPrice?: number, maxGasPrice?: number, step?: number);
     initialize(): Promise<void>;
+    private getServiceNames;
     /**
      * Adds a new ledger to the contract.
      *

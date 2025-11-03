@@ -2,6 +2,7 @@ import type { AddressLike, JsonRpcSigner } from 'ethers'
 import { Wallet } from 'ethers'
 import type { LedgerStructOutput } from './contract/typechain/LedgerManager'
 import { LedgerProcessor } from './ledger'
+import type { ServiceNames } from './ledger'
 import { LedgerManagerContract } from './contract'
 import { InferenceServingContract } from '../inference/contract'
 import { FineTuningServingContract } from '../fine-tuning/contract'
@@ -66,6 +67,14 @@ export class LedgerBroker {
                 userAddress
             )
         }
+
+        // Get service names from contract using getServiceInfo
+        const serviceNames: ServiceNames = await this.getServiceNames(
+            ledgerContract,
+            this.inferenceCA,
+            this.fineTuningCA
+        )
+
         const metadata = new Metadata()
         const cache = new Cache()
 
@@ -74,8 +83,45 @@ export class LedgerBroker {
             cache,
             ledgerContract,
             inferenceContract,
-            fineTuningContract
+            fineTuningContract,
+            serviceNames
         )
+    }
+
+    private async getServiceNames(
+        ledgerContract: LedgerManagerContract,
+        inferenceCA: string,
+        fineTuningCA: string
+    ): Promise<ServiceNames> {
+        try {
+            // Get service info for inference contract
+            const inferenceServiceInfo = await ledgerContract.getServiceInfo(
+                inferenceCA
+            )
+            const inferenceServiceName = inferenceServiceInfo.fullName
+
+            // Get service info for fine-tuning contract if using Wallet
+            let fineTuningServiceName: string | undefined
+            if (this.signer instanceof Wallet) {
+                try {
+                    const fineTuningServiceInfo =
+                        await ledgerContract.getServiceInfo(fineTuningCA)
+                    fineTuningServiceName = fineTuningServiceInfo.fullName
+                } catch (error) {
+                    // Fine-tuning service might not be registered
+                    console.warn(
+                        'Fine-tuning service not registered in LedgerManager'
+                    )
+                }
+            }
+
+            return {
+                inference: inferenceServiceName,
+                fineTuning: fineTuningServiceName,
+            }
+        } catch (error) {
+            throwFormattedError(error)
+        }
     }
 
     /**

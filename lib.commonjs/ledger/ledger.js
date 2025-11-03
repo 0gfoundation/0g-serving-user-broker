@@ -12,12 +12,14 @@ class LedgerProcessor {
     ledgerContract;
     inferenceContract;
     fineTuningContract;
-    constructor(metadata, cache, ledgerContract, inferenceContract, fineTuningContract) {
+    serviceNames;
+    constructor(metadata, cache, ledgerContract, inferenceContract, fineTuningContract, serviceNames) {
         this.metadata = metadata;
         this.ledgerContract = ledgerContract;
         this.inferenceContract = inferenceContract;
         this.fineTuningContract = fineTuningContract;
         this.cache = cache;
+        this.serviceNames = serviceNames;
     }
     async getLedger() {
         try {
@@ -35,14 +37,19 @@ class LedgerProcessor {
                 ledger.totalBalance,
                 ledger.totalBalance - ledger.availableBalance,
             ];
-            const infers = await Promise.all(ledger.inferenceProviders.map(async (provider) => {
+            // Get providers using the new getLedgerProviders method with service names
+            const userAddress = this.ledgerContract.getUserAddress();
+            const inferenceProviders = await this.ledgerContract.getLedgerProviders(userAddress, this.serviceNames.inference);
+            const infers = await Promise.all(inferenceProviders.map(async (provider) => {
                 const account = await this.inferenceContract.getAccount(provider);
                 return [provider, account.balance, account.pendingRefund];
             }));
-            if (typeof this.fineTuningContract == 'undefined') {
+            if (typeof this.fineTuningContract == 'undefined' ||
+                !this.serviceNames.fineTuning) {
                 return { ledgerInfo, infers, fines: [] };
             }
-            const fines = await Promise.all(ledger.fineTuningProviders.map(async (provider) => {
+            const fineTuningProviders = await this.ledgerContract.getLedgerProviders(userAddress, this.serviceNames.fineTuning);
+            const fines = await Promise.all(fineTuningProviders.map(async (provider) => {
                 const account = await this.fineTuningContract?.getAccount(provider);
                 return [provider, account.balance, account.pendingRefund];
             }));
@@ -73,9 +80,8 @@ class LedgerProcessor {
             }
             catch (error) { }
             // Use placeholders since Inference contract doesn't use these values
-            const placeholderSigner = [BigInt(0), BigInt(0)];
             const placeholderInfo = '';
-            await this.ledgerContract.addLedger(placeholderSigner, this.a0giToNeuron(balance), placeholderInfo, gasPrice);
+            await this.ledgerContract.addLedger(this.a0giToNeuron(balance), placeholderInfo, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -110,7 +116,14 @@ class LedgerProcessor {
     async transferFund(to, serviceTypeStr, balance, gasPrice) {
         try {
             const amount = balance.toString();
-            await this.ledgerContract.transferFund(to, serviceTypeStr, amount, gasPrice);
+            // Map service type to service name
+            const serviceName = serviceTypeStr === 'inference'
+                ? this.serviceNames.inference
+                : this.serviceNames.fineTuning;
+            if (!serviceName) {
+                throw new Error(`Service name not available for ${serviceTypeStr}`);
+            }
+            await this.ledgerContract.transferFund(to, serviceName, amount, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -126,7 +139,14 @@ class LedgerProcessor {
             const providerAddresses = providers
                 .filter((x) => x[1] - x[2] >= 0n)
                 .map((x) => x[0]);
-            await this.ledgerContract.retrieveFund(providerAddresses, serviceTypeStr, gasPrice);
+            // Map service type to service name
+            const serviceName = serviceTypeStr === 'inference'
+                ? this.serviceNames.inference
+                : this.serviceNames.fineTuning;
+            if (!serviceName) {
+                throw new Error(`Service name not available for ${serviceTypeStr}`);
+            }
+            await this.ledgerContract.retrieveFund(providerAddresses, serviceName, gasPrice);
             if (serviceTypeStr == 'inference') {
                 await this.cache.setItem(storage_1.CACHE_KEYS.FIRST_ROUND, 'true', 10000000 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
             }

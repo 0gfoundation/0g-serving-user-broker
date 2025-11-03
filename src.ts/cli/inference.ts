@@ -31,7 +31,10 @@ export default function inference(program: Command) {
         .command('download-report')
         .description('Download quote data to a specified file')
         .requiredOption('--provider <address>', 'Provider address')
-        .requiredOption('--output <path>', 'Output file path for the quote report')
+        .requiredOption(
+            '--output <path>',
+            'Output file path for the quote report'
+        )
         .option(
             '--key <key>',
             'Wallet private key, if not provided, ensure the default key is set in the environment',

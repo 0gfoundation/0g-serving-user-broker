@@ -8,6 +8,10 @@ export interface LedgerDetailStructOutput {
     infers: [string, bigint, bigint][];
     fines: [string, bigint, bigint][] | null;
 }
+export interface ServiceNames {
+    inference: string;
+    fineTuning?: string;
+}
 /**
  * LedgerProcessor contains methods for creating, depositing funds, and retrieving 0G Compute Network Ledgers.
  */
@@ -17,7 +21,8 @@ export declare class LedgerProcessor {
     protected ledgerContract: LedgerManagerContract;
     protected inferenceContract: InferenceServingContract;
     protected fineTuningContract: FineTuningServingContract | undefined;
-    constructor(metadata: Metadata, cache: Cache, ledgerContract: LedgerManagerContract, inferenceContract: InferenceServingContract, fineTuningContract?: FineTuningServingContract);
+    protected serviceNames: ServiceNames;
+    constructor(metadata: Metadata, cache: Cache, ledgerContract: LedgerManagerContract, inferenceContract: InferenceServingContract, fineTuningContract: FineTuningServingContract | undefined, serviceNames: ServiceNames);
     getLedger(): Promise<import("./contract").LedgerStructOutput>;
     getLedgerWithDetail(): Promise<LedgerDetailStructOutput>;
     listLedger(): Promise<import("./contract").LedgerStructOutput[]>;

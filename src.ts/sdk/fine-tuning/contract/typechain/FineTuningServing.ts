@@ -249,6 +249,7 @@ export interface FineTuningServingInterface extends Interface {
             | 'renounceOwnership'
             | 'requestRefundAll'
             | 'settleFees'
+            | 'supportsInterface'
             | 'transferOwnership'
             | 'updateLockTime'
             | 'updatePenaltyPercentage'
@@ -381,6 +382,10 @@ export interface FineTuningServingInterface extends Interface {
         values: [VerifierInputStruct]
     ): string
     encodeFunctionData(
+        functionFragment: 'supportsInterface',
+        values: [BytesLike]
+    ): string
+    encodeFunctionData(
         functionFragment: 'transferOwnership',
         values: [AddressLike]
     ): string
@@ -501,6 +506,10 @@ export interface FineTuningServingInterface extends Interface {
     ): Result
     decodeFunctionResult(
         functionFragment: 'settleFees',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'supportsInterface',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -865,6 +874,12 @@ export interface FineTuningServing extends BaseContract {
         'nonpayable'
     >
 
+    supportsInterface: TypedContractMethod<
+        [interfaceId: BytesLike],
+        [boolean],
+        'view'
+    >
+
     transferOwnership: TypedContractMethod<
         [newOwner: AddressLike],
         [void],
@@ -1087,6 +1102,9 @@ export interface FineTuningServing extends BaseContract {
         [void],
         'nonpayable'
     >
+    getFunction(
+        nameOrSignature: 'supportsInterface'
+    ): TypedContractMethod<[interfaceId: BytesLike], [boolean], 'view'>
     getFunction(
         nameOrSignature: 'transferOwnership'
     ): TypedContractMethod<[newOwner: AddressLike], [void], 'nonpayable'>

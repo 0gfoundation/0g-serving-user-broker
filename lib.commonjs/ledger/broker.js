@@ -41,9 +41,37 @@ class LedgerBroker {
         if (this.signer instanceof ethers_1.Wallet) {
             fineTuningContract = new contract_3.FineTuningServingContract(this.signer, this.fineTuningCA, userAddress);
         }
+        // Get service names from contract using getServiceInfo
+        const serviceNames = await this.getServiceNames(ledgerContract, this.inferenceCA, this.fineTuningCA);
         const metadata = new storage_1.Metadata();
         const cache = new storage_1.Cache();
-        this.ledger = new ledger_1.LedgerProcessor(metadata, cache, ledgerContract, inferenceContract, fineTuningContract);
+        this.ledger = new ledger_1.LedgerProcessor(metadata, cache, ledgerContract, inferenceContract, fineTuningContract, serviceNames);
+    }
+    async getServiceNames(ledgerContract, inferenceCA, fineTuningCA) {
+        try {
+            // Get service info for inference contract
+            const inferenceServiceInfo = await ledgerContract.getServiceInfo(inferenceCA);
+            const inferenceServiceName = inferenceServiceInfo.fullName;
+            // Get service info for fine-tuning contract if using Wallet
+            let fineTuningServiceName;
+            if (this.signer instanceof ethers_1.Wallet) {
+                try {
+                    const fineTuningServiceInfo = await ledgerContract.getServiceInfo(fineTuningCA);
+                    fineTuningServiceName = fineTuningServiceInfo.fullName;
+                }
+                catch (error) {
+                    // Fine-tuning service might not be registered
+                    console.warn('Fine-tuning service not registered in LedgerManager');
+                }
+            }
+            return {
+                inference: inferenceServiceName,
+                fineTuning: fineTuningServiceName,
+            };
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
     }
     /**
      * Adds a new ledger to the contract.

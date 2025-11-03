@@ -81,13 +81,13 @@ class LedgerManagerContract {
             }
         }
     }
-    async addLedger(signer, balance, settleSignerEncryptedPrivateKey, gasPrice) {
+    async addLedger(balance, settleSignerEncryptedPrivateKey, gasPrice) {
         try {
             const txOptions = { value: balance };
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('addLedger', [signer, settleSignerEncryptedPrivateKey], txOptions);
+            await this.sendTx('addLedger', [settleSignerEncryptedPrivateKey], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -107,6 +107,24 @@ class LedgerManagerContract {
             const user = this.getUserAddress();
             const ledger = await this.ledger.getLedger(user);
             return ledger;
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    async getLedgerProviders(user, serviceName) {
+        try {
+            const providers = await this.ledger.getLedgerProviders(user, serviceName);
+            return providers;
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    async getServiceInfo(serviceAddress) {
+        try {
+            const serviceInfo = await this.ledger.getServiceInfo(serviceAddress);
+            return serviceInfo;
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
@@ -136,25 +154,25 @@ class LedgerManagerContract {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async transferFund(provider, serviceTypeStr, amount, gasPrice) {
+    async transferFund(provider, serviceName, amount, gasPrice) {
         try {
             const txOptions = {};
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('transferFund', [provider, serviceTypeStr, amount], txOptions);
+            await this.sendTx('transferFund', [provider, serviceName, amount], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async retrieveFund(providers, serviceTypeStr, gasPrice) {
+    async retrieveFund(providers, serviceName, gasPrice) {
         try {
             const txOptions = {};
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('retrieveFund', [providers, serviceTypeStr], txOptions);
+            await this.sendTx('retrieveFund', [providers, serviceName], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

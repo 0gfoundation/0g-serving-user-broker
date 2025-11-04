@@ -8,6 +8,7 @@ export type ServiceParamsStruct = {
     inputPrice: BigNumberish;
     outputPrice: BigNumberish;
     additionalInfo: string;
+    teeSignerAddress: AddressLike;
 };
 export type ServiceParamsStructOutput = [
     serviceType: string,
@@ -16,7 +17,8 @@ export type ServiceParamsStructOutput = [
     verifiability: string,
     inputPrice: bigint,
     outputPrice: bigint,
-    additionalInfo: string
+    additionalInfo: string,
+    teeSignerAddress: string
 ] & {
     serviceType: string;
     url: string;
@@ -25,6 +27,7 @@ export type ServiceParamsStructOutput = [
     inputPrice: bigint;
     outputPrice: bigint;
     additionalInfo: string;
+    teeSignerAddress: string;
 };
 export type RefundStruct = {
     index: BigNumberish;
@@ -51,7 +54,6 @@ export type AccountStruct = {
     pendingRefund: BigNumberish;
     refunds: RefundStruct[];
     additionalInfo: string;
-    providerPubKey: [BigNumberish, BigNumberish];
     teeSignerAddress: AddressLike;
     validRefundsLength: BigNumberish;
 };
@@ -63,7 +65,6 @@ export type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput[],
     additionalInfo: string,
-    providerPubKey: [bigint, bigint],
     teeSignerAddress: string,
     validRefundsLength: bigint
 ] & {
@@ -74,7 +75,6 @@ export type AccountStructOutput = [
     pendingRefund: bigint;
     refunds: RefundStructOutput[];
     additionalInfo: string;
-    providerPubKey: [bigint, bigint];
     teeSignerAddress: string;
     validRefundsLength: bigint;
 };
@@ -88,6 +88,8 @@ export type ServiceStruct = {
     model: string;
     verifiability: string;
     additionalInfo: string;
+    teeSignerAddress: AddressLike;
+    teeSignerAcknowledged: boolean;
 };
 export type ServiceStructOutput = [
     provider: string,
@@ -98,7 +100,9 @@ export type ServiceStructOutput = [
     updatedAt: bigint,
     model: string,
     verifiability: string,
-    additionalInfo: string
+    additionalInfo: string,
+    teeSignerAddress: string,
+    teeSignerAcknowledged: boolean
 ] & {
     provider: string;
     serviceType: string;
@@ -109,6 +113,8 @@ export type ServiceStructOutput = [
     model: string;
     verifiability: string;
     additionalInfo: string;
+    teeSignerAddress: string;
+    teeSignerAcknowledged: boolean;
 };
 export type TEESettlementDataStruct = {
     user: AddressLike;
@@ -134,11 +140,10 @@ export type TEESettlementDataStructOutput = [
     signature: string;
 };
 export interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
-    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'ProviderTEESignerAcknowledged' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeProviderSigner', values: [AddressLike, [BigNumberish, BigNumberish]]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, AddressLike]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addOrUpdateService', values: [ServiceParamsStruct]): string;
     encodeFunctionData(functionFragment: 'deleteAccount', values: [AddressLike, AddressLike]): string;
@@ -161,12 +166,12 @@ export interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'removeService', values?: undefined): string;
     encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
     encodeFunctionData(functionFragment: 'requestRefundAll', values: [AddressLike, AddressLike]): string;
+    encodeFunctionData(functionFragment: 'revokeTEESignerAcknowledgement', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'settleFeesWithTEE', values: [TEESettlementDataStruct[]]): string;
     encodeFunctionData(functionFragment: 'supportsInterface', values: [BytesLike]): string;
     encodeFunctionData(functionFragment: 'transferOwnership', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: 'acknowledgeProviderSigner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'acknowledgeTEESigner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addAccount', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addOrUpdateService', data: BytesLike): Result;
@@ -190,6 +195,7 @@ export interface InferenceServingInterface extends Interface {
     decodeFunctionResult(functionFragment: 'removeService', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'requestRefundAll', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'revokeTEESignerAcknowledgement', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'settleFeesWithTEE', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'supportsInterface', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
@@ -246,6 +252,27 @@ export declare namespace OwnershipTransferredEvent {
     interface OutputObject {
         previousOwner: string;
         newOwner: string;
+    }
+    type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+    type Filter = TypedDeferredTopicFilter<Event>;
+    type Log = TypedEventLog<Event>;
+    type LogDescription = TypedLogDescription<Event>;
+}
+export declare namespace ProviderTEESignerAcknowledgedEvent {
+    type InputTuple = [
+        provider: AddressLike,
+        teeSignerAddress: AddressLike,
+        acknowledged: boolean
+    ];
+    type OutputTuple = [
+        provider: string,
+        teeSignerAddress: string,
+        acknowledged: boolean
+    ];
+    interface OutputObject {
+        provider: string;
+        teeSignerAddress: string;
+        acknowledged: boolean;
     }
     type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
     type Filter = TypedDeferredTopicFilter<Event>;
@@ -363,15 +390,8 @@ export interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    acknowledgeProviderSigner: TypedContractMethod<[
-        provider: AddressLike,
-        providerPubKey: [BigNumberish, BigNumberish]
-    ], [
-        void
-    ], 'nonpayable'>;
     acknowledgeTEESigner: TypedContractMethod<[
-        provider: AddressLike,
-        teeSignerAddress: AddressLike
+        provider: AddressLike
     ], [
         void
     ], 'nonpayable'>;
@@ -509,6 +529,11 @@ export interface InferenceServing extends BaseContract {
     ], [
         void
     ], 'nonpayable'>;
+    revokeTEESignerAcknowledgement: TypedContractMethod<[
+        provider: AddressLike
+    ], [
+        void
+    ], 'nonpayable'>;
     settleFeesWithTEE: TypedContractMethod<[
         settlements: TEESettlementDataStruct[]
     ], [
@@ -546,18 +571,7 @@ export interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    getFunction(nameOrSignature: 'acknowledgeProviderSigner'): TypedContractMethod<[
-        provider: AddressLike,
-        providerPubKey: [BigNumberish, BigNumberish]
-    ], [
-        void
-    ], 'nonpayable'>;
-    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod<[
-        provider: AddressLike,
-        teeSignerAddress: AddressLike
-    ], [
-        void
-    ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'addAccount'): TypedContractMethod<[
         user: AddressLike,
         provider: AddressLike,
@@ -688,6 +702,7 @@ export interface InferenceServing extends BaseContract {
     ], [
         void
     ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'revokeTEESignerAcknowledgement'): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'settleFeesWithTEE'): TypedContractMethod<[
         settlements: TEESettlementDataStruct[]
     ], [
@@ -709,6 +724,7 @@ export interface InferenceServing extends BaseContract {
     getEvent(key: 'BalanceUpdated'): TypedContractEvent<BalanceUpdatedEvent.InputTuple, BalanceUpdatedEvent.OutputTuple, BalanceUpdatedEvent.OutputObject>;
     getEvent(key: 'BatchBalanceUpdated'): TypedContractEvent<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
     getEvent(key: 'OwnershipTransferred'): TypedContractEvent<OwnershipTransferredEvent.InputTuple, OwnershipTransferredEvent.OutputTuple, OwnershipTransferredEvent.OutputObject>;
+    getEvent(key: 'ProviderTEESignerAcknowledged'): TypedContractEvent<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
     getEvent(key: 'RefundRequested'): TypedContractEvent<RefundRequestedEvent.InputTuple, RefundRequestedEvent.OutputTuple, RefundRequestedEvent.OutputObject>;
     getEvent(key: 'ServiceRemoved'): TypedContractEvent<ServiceRemovedEvent.InputTuple, ServiceRemovedEvent.OutputTuple, ServiceRemovedEvent.OutputObject>;
     getEvent(key: 'ServiceUpdated'): TypedContractEvent<ServiceUpdatedEvent.InputTuple, ServiceUpdatedEvent.OutputTuple, ServiceUpdatedEvent.OutputObject>;
@@ -720,6 +736,8 @@ export interface InferenceServing extends BaseContract {
         BatchBalanceUpdated: TypedContractEvent<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
         'OwnershipTransferred(address,address)': TypedContractEvent<OwnershipTransferredEvent.InputTuple, OwnershipTransferredEvent.OutputTuple, OwnershipTransferredEvent.OutputObject>;
         OwnershipTransferred: TypedContractEvent<OwnershipTransferredEvent.InputTuple, OwnershipTransferredEvent.OutputTuple, OwnershipTransferredEvent.OutputObject>;
+        'ProviderTEESignerAcknowledged(address,address,bool)': TypedContractEvent<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
+        ProviderTEESignerAcknowledged: TypedContractEvent<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
         'RefundRequested(address,address,uint256,uint256)': TypedContractEvent<RefundRequestedEvent.InputTuple, RefundRequestedEvent.OutputTuple, RefundRequestedEvent.OutputObject>;
         RefundRequested: TypedContractEvent<RefundRequestedEvent.InputTuple, RefundRequestedEvent.OutputTuple, RefundRequestedEvent.OutputObject>;
         'ServiceRemoved(address)': TypedContractEvent<ServiceRemovedEvent.InputTuple, ServiceRemovedEvent.OutputTuple, ServiceRemovedEvent.OutputObject>;

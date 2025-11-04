@@ -37,10 +37,6 @@ export interface ServingRequestHeaders {
      */
     Signature?: string;
     /**
-     * Broker service use a proxy for chat signature
-     */
-    'VLLM-Proxy': string;
-    /**
      * Session token containing user info and expiry
      */
     'Session-Token': string;
@@ -61,7 +57,32 @@ export declare class RequestProcessor extends ZGServingUserBrokerBase {
         endpoint: string;
         model: string;
     }>;
-    getRequestHeaders(providerAddress: string, content: string, vllmProxy?: boolean): Promise<ServingRequestHeaders>;
+    getRequestHeaders(providerAddress: string, content: string): Promise<ServingRequestHeaders>;
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * This method no longer performs acknowledgement (which is owner-only),
+     * but verifies if the provider is ready for use.
+     */
+    checkProviderSignerStatus(providerAddress: string, gasPrice?: number): Promise<{
+        isAcknowledged: boolean;
+        teeSignerAddress: string;
+    }>;
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     * TEE signer acknowledgement is now handled by contract owner only.
+     */
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    ownerAcknowledgeTEESigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    ownerRevokeTEESignerAcknowledgement(providerAddress: string, gasPrice?: number): Promise<void>;
 }
 //# sourceMappingURL=request.d.ts.map

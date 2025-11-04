@@ -14,7 +14,6 @@ import { logger } from '../../common/logger'
  * before use.
  */
 export class ResponseProcessor extends ZGServingUserBrokerBase {
-    private verifier: Verifier
 
     constructor(
         contract: InferenceServingContract,
@@ -23,14 +22,12 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
         cache: Cache
     ) {
         super(contract, ledger, metadata, cache)
-        this.verifier = new Verifier(contract, ledger, metadata, cache)
     }
 
     async processResponse(
         providerAddress: string,
         content: string,
-        chatID?: string,
-        vllmProxy?: boolean
+        chatID?: string
     ): Promise<boolean | null> {
         try {
             const extractor = await this.getExtractor(providerAddress)
@@ -39,60 +36,59 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
 
             const svc = await extractor.getSvcInfo()
             if (!isVerifiability(svc.verifiability)) {
+                console.warn('this service is not verifiable')
+                return false
+            }
+
+            if (!svc.teeSignerAcknowledged) {
+                console.warn('TEE Signer is not acknowledged')
                 return false
             }
 
             if (!chatID) {
                 throw new Error('Chat ID does not exist')
             }
+
+            if (!svc.additionalInfo) {
+                console.warn('Service additionalInfo does not exist')
+                return false
+            }
+
             logger.debug('Chat ID:', chatID)
 
-            if (vllmProxy === undefined) {
-                vllmProxy = true
-            }
+            // Parse additionalInfo JSON to determine signing address
+            // based on https://github.com/0gfoundation/0g-serving-broker/api/inference/internal/contract/service.go
+            let signingAddress = svc.teeSignerAddress
 
-            let singerRAVerificationResult =
-                await this.verifier.getSigningAddress(
-                    providerAddress,
-                    false,
-                    vllmProxy
+            try {
+                const additionalInfo = JSON.parse(svc.additionalInfo)
+                if (
+                    additionalInfo.TargetSeparated === true &&
+                    additionalInfo.TargetTeeAddress
+                ) {
+                    signingAddress = additionalInfo.TargetTeeAddress
+                }
+            } catch (error) {
+                // If JSON parsing fails, fall back to using additionalInfo as the address directly (backward compatibility)
+                logger.warn(
+                    'Failed to parse additionalInfo as JSON',
+                    error
                 )
-
-            logger.debug(
-                'Singer RA Verification Result:',
-                singerRAVerificationResult
-            )
-            if (!singerRAVerificationResult.valid) {
-                singerRAVerificationResult =
-                    await this.verifier.getSigningAddress(
-                        providerAddress,
-                        true,
-                        vllmProxy
-                    )
+                return false
             }
 
-            if (!singerRAVerificationResult.valid) {
-                throw new Error('Signing address is invalid')
-            }
+            logger.debug('signing address:', signingAddress)
 
-            logger.debug(
-                'Fetching signature from provider broker URL:',
-                svc.url,
-                vllmProxy
-                    ? 'with proxied LLM server'
-                    : 'with original LLM server'
-            )
-            const ResponseSignature = await Verifier.fetSignatureByChatID(
+            const ResponseSignature = await Verifier.fetchSignatureByChatID(
                 svc.url,
                 chatID,
-                svc.model,
-                vllmProxy
+                svc.model
             )
 
             return Verifier.verifySignature(
                 ResponseSignature.text,
                 ResponseSignature.signature,
-                singerRAVerificationResult.signingAddress
+                signingAddress
             )
         } catch (error) {
             throwFormattedError(error)

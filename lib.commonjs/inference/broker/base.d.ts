@@ -33,7 +33,11 @@ export declare abstract class ZGServingUserBrokerBase {
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput>;
     getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
     downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
-    userAcknowledged(providerAddress: string): Promise<boolean>;
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * Note: This now checks the service-level acknowledgement instead of user-level.
+     */
+    acknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput): Extractor;
@@ -42,7 +46,7 @@ export declare abstract class ZGServingUserBrokerBase {
     private generateNonce;
     generateSessionToken(providerAddress: string): Promise<CachedSession>;
     getOrCreateSession(providerAddress: string): Promise<CachedSession>;
-    getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
+    getHeader(providerAddress: string): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
     clearCacheFee(provider: string, fee: bigint): Promise<void>;

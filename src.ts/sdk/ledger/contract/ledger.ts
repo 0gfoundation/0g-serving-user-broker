@@ -134,7 +134,7 @@ export class LedgerManagerContract {
 
     async addLedger(
         balance: bigint,
-        settleSignerEncryptedPrivateKey: string,
+        additionalInfo?: string,
         gasPrice?: number
     ) {
         try {
@@ -145,7 +145,7 @@ export class LedgerManagerContract {
 
             await this.sendTx(
                 'addLedger',
-                [ settleSignerEncryptedPrivateKey],
+                [additionalInfo || ''],
                 txOptions
             )
         } catch (error) {

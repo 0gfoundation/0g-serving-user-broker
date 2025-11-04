@@ -32,7 +32,9 @@ export declare class Cache {
         bigint,
         string,
         string,
-        string
+        string,
+        string,
+        boolean
     ]): InferenceServiceStructOutput;
 }
 //# sourceMappingURL=cache.d.ts.map

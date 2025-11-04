@@ -45,41 +45,88 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
      *
      * ps: The units for 500 and 1000 can be (service.inputPricePerToken + service.outputPricePerToken).
      */
-    async getRequestHeaders(providerAddress, content, vllmProxy) {
+    async getRequestHeaders(providerAddress, content) {
         try {
             await this.topUpAccountIfNeeded(providerAddress, content);
-            if (vllmProxy === undefined) {
-                vllmProxy = true;
-            }
             // Simplified call - only pass required parameters
-            return await this.getHeader(providerAddress, vllmProxy);
+            return await this.getHeader(providerAddress);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async acknowledgeProviderSigner(providerAddress, gasPrice) {
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * This method no longer performs acknowledgement (which is owner-only),
+     * but verifies if the provider is ready for use.
+     */
+    async checkProviderSignerStatus(providerAddress, gasPrice) {
         try {
+            // Ensure user has an account with the provider
             try {
                 await this.contract.getAccount(providerAddress);
             }
             catch {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
             }
-            const { rawReport, signingAddress } = await this.getQuote(providerAddress);
-            if (!rawReport || !signingAddress) {
-                throw new Error('Invalid intel_quote');
-            }
-            // TODO: Verify the quote here
-            const account = await this.contract.getAccount(providerAddress);
-            if (account.teeSignerAddress === signingAddress) {
-                console.log('Provider signer already acknowledged');
-                return;
-            }
-            await this.contract.acknowledgeTEESigner(providerAddress, signingAddress);
+            // Get service information (now contains TEE signer info)
+            const service = await this.getService(providerAddress);
             const userAddress = this.contract.getUserAddress();
             const cacheKey = storage_1.CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
-            this.cache.setItem(cacheKey, signingAddress, 1 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
+            if (service.teeSignerAcknowledged &&
+                service.teeSignerAddress !==
+                    '0x0000000000000000000000000000000000000000') {
+                // Cache the acknowledgement status
+                this.cache.setItem(cacheKey, service.teeSignerAddress, 10 * 60 * 1000, // 10 minutes cache
+                storage_1.CacheValueTypeEnum.Other);
+                return {
+                    isAcknowledged: true,
+                    teeSignerAddress: service.teeSignerAddress,
+                };
+            }
+            else {
+                return {
+                    isAcknowledged: false,
+                    teeSignerAddress: service.teeSignerAddress || '',
+                };
+            }
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     * TEE signer acknowledgement is now handled by contract owner only.
+     */
+    async acknowledgeProviderSigner(providerAddress, gasPrice) {
+        console.warn('acknowledgeProviderSigner is deprecated. Use checkProviderSignerStatus instead.');
+        const status = await this.checkProviderSignerStatus(providerAddress, gasPrice);
+        if (!status.isAcknowledged) {
+            throw new Error(`Provider ${providerAddress} TEE signer is not acknowledged by contract owner. Contact the service administrator.`);
+        }
+    }
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async ownerAcknowledgeTEESigner(providerAddress, gasPrice) {
+        try {
+            await this.contract.acknowledgeTEESigner(providerAddress, gasPrice);
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async ownerRevokeTEESignerAcknowledgement(providerAddress, gasPrice) {
+        try {
+            await this.contract.revokeTEESignerAcknowledgement(providerAddress, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

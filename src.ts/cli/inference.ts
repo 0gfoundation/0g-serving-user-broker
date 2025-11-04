@@ -19,7 +19,7 @@ export default function inference(program: Command) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .action((options) => {
             withBroker(options, async (broker) => {
-                await broker.inference.acknowledgeProviderSigner(
+                await broker.inference.acknowledgeProviderTEESigner(
                     options.provider,
                     options.gasPrice
                 )

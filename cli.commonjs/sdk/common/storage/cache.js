@@ -163,6 +163,8 @@ class Cache {
             model: fields[6],
             verifiability: fields[7],
             additionalInfo: fields[8],
+            teeSignerAddress: fields[9],
+            teeSignerAcknowledged: fields[10],
         };
         return Object.assign(tuple, object);
     }

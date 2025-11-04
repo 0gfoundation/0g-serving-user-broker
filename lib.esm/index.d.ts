@@ -52,6 +52,7 @@ type ServiceParamsStruct = {
     inputPrice: BigNumberish;
     outputPrice: BigNumberish;
     additionalInfo: string;
+    teeSignerAddress: AddressLike;
 };
 type RefundStructOutput$1 = [
     index: bigint,
@@ -72,7 +73,6 @@ type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput$1[],
     additionalInfo: string,
-    providerPubKey: [bigint, bigint],
     teeSignerAddress: string,
     validRefundsLength: bigint
 ] & {
@@ -83,7 +83,6 @@ type AccountStructOutput = [
     pendingRefund: bigint;
     refunds: RefundStructOutput$1[];
     additionalInfo: string;
-    providerPubKey: [bigint, bigint];
     teeSignerAddress: string;
     validRefundsLength: bigint;
 };
@@ -96,7 +95,9 @@ type ServiceStructOutput$1 = [
     updatedAt: bigint,
     model: string,
     verifiability: string,
-    additionalInfo: string
+    additionalInfo: string,
+    teeSignerAddress: string,
+    teeSignerAcknowledged: boolean
 ] & {
     provider: string;
     serviceType: string;
@@ -107,6 +108,8 @@ type ServiceStructOutput$1 = [
     model: string;
     verifiability: string;
     additionalInfo: string;
+    teeSignerAddress: string;
+    teeSignerAcknowledged: boolean;
 };
 type TEESettlementDataStruct = {
     user: AddressLike;
@@ -117,11 +120,10 @@ type TEESettlementDataStruct = {
     signature: BytesLike;
 };
 interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeProviderSigner' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
-    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'ProviderTEESignerAcknowledged' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeProviderSigner', values: [AddressLike, [BigNumberish, BigNumberish]]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, AddressLike]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addOrUpdateService', values: [ServiceParamsStruct]): string;
     encodeFunctionData(functionFragment: 'deleteAccount', values: [AddressLike, AddressLike]): string;
@@ -144,12 +146,12 @@ interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'removeService', values?: undefined): string;
     encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
     encodeFunctionData(functionFragment: 'requestRefundAll', values: [AddressLike, AddressLike]): string;
+    encodeFunctionData(functionFragment: 'revokeTEESignerAcknowledgement', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'settleFeesWithTEE', values: [TEESettlementDataStruct[]]): string;
     encodeFunctionData(functionFragment: 'supportsInterface', values: [BytesLike]): string;
     encodeFunctionData(functionFragment: 'transferOwnership', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: 'acknowledgeProviderSigner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'acknowledgeTEESigner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addAccount', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addOrUpdateService', data: BytesLike): Result;
@@ -173,6 +175,7 @@ interface InferenceServingInterface extends Interface {
     decodeFunctionResult(functionFragment: 'removeService', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'requestRefundAll', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'revokeTEESignerAcknowledgement', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'settleFeesWithTEE', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'supportsInterface', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
@@ -229,6 +232,27 @@ declare namespace OwnershipTransferredEvent$2 {
     interface OutputObject {
         previousOwner: string;
         newOwner: string;
+    }
+    type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
+    type Filter = TypedDeferredTopicFilter$2<Event>;
+    type Log = TypedEventLog$2<Event>;
+    type LogDescription = TypedLogDescription$2<Event>;
+}
+declare namespace ProviderTEESignerAcknowledgedEvent {
+    type InputTuple = [
+        provider: AddressLike,
+        teeSignerAddress: AddressLike,
+        acknowledged: boolean
+    ];
+    type OutputTuple = [
+        provider: string,
+        teeSignerAddress: string,
+        acknowledged: boolean
+    ];
+    interface OutputObject {
+        provider: string;
+        teeSignerAddress: string;
+        acknowledged: boolean;
     }
     type Event = TypedContractEvent$2<InputTuple, OutputTuple, OutputObject>;
     type Filter = TypedDeferredTopicFilter$2<Event>;
@@ -346,15 +370,8 @@ interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    acknowledgeProviderSigner: TypedContractMethod$2<[
-        provider: AddressLike,
-        providerPubKey: [BigNumberish, BigNumberish]
-    ], [
-        void
-    ], 'nonpayable'>;
     acknowledgeTEESigner: TypedContractMethod$2<[
-        provider: AddressLike,
-        teeSignerAddress: AddressLike
+        provider: AddressLike
     ], [
         void
     ], 'nonpayable'>;
@@ -492,6 +509,11 @@ interface InferenceServing extends BaseContract {
     ], [
         void
     ], 'nonpayable'>;
+    revokeTEESignerAcknowledgement: TypedContractMethod$2<[
+        provider: AddressLike
+    ], [
+        void
+    ], 'nonpayable'>;
     settleFeesWithTEE: TypedContractMethod$2<[
         settlements: TEESettlementDataStruct[]
     ], [
@@ -529,18 +551,7 @@ interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    getFunction(nameOrSignature: 'acknowledgeProviderSigner'): TypedContractMethod$2<[
-        provider: AddressLike,
-        providerPubKey: [BigNumberish, BigNumberish]
-    ], [
-        void
-    ], 'nonpayable'>;
-    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod$2<[
-        provider: AddressLike,
-        teeSignerAddress: AddressLike
-    ], [
-        void
-    ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod$2<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'addAccount'): TypedContractMethod$2<[
         user: AddressLike,
         provider: AddressLike,
@@ -671,6 +682,7 @@ interface InferenceServing extends BaseContract {
     ], [
         void
     ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'revokeTEESignerAcknowledgement'): TypedContractMethod$2<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'settleFeesWithTEE'): TypedContractMethod$2<[
         settlements: TEESettlementDataStruct[]
     ], [
@@ -692,6 +704,7 @@ interface InferenceServing extends BaseContract {
     getEvent(key: 'BalanceUpdated'): TypedContractEvent$2<BalanceUpdatedEvent$1.InputTuple, BalanceUpdatedEvent$1.OutputTuple, BalanceUpdatedEvent$1.OutputObject>;
     getEvent(key: 'BatchBalanceUpdated'): TypedContractEvent$2<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
     getEvent(key: 'OwnershipTransferred'): TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
+    getEvent(key: 'ProviderTEESignerAcknowledged'): TypedContractEvent$2<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
     getEvent(key: 'RefundRequested'): TypedContractEvent$2<RefundRequestedEvent$1.InputTuple, RefundRequestedEvent$1.OutputTuple, RefundRequestedEvent$1.OutputObject>;
     getEvent(key: 'ServiceRemoved'): TypedContractEvent$2<ServiceRemovedEvent$1.InputTuple, ServiceRemovedEvent$1.OutputTuple, ServiceRemovedEvent$1.OutputObject>;
     getEvent(key: 'ServiceUpdated'): TypedContractEvent$2<ServiceUpdatedEvent$1.InputTuple, ServiceUpdatedEvent$1.OutputTuple, ServiceUpdatedEvent$1.OutputObject>;
@@ -703,6 +716,8 @@ interface InferenceServing extends BaseContract {
         BatchBalanceUpdated: TypedContractEvent$2<BatchBalanceUpdatedEvent.InputTuple, BatchBalanceUpdatedEvent.OutputTuple, BatchBalanceUpdatedEvent.OutputObject>;
         'OwnershipTransferred(address,address)': TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
         OwnershipTransferred: TypedContractEvent$2<OwnershipTransferredEvent$2.InputTuple, OwnershipTransferredEvent$2.OutputTuple, OwnershipTransferredEvent$2.OutputObject>;
+        'ProviderTEESignerAcknowledged(address,address,bool)': TypedContractEvent$2<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
+        ProviderTEESignerAcknowledged: TypedContractEvent$2<ProviderTEESignerAcknowledgedEvent.InputTuple, ProviderTEESignerAcknowledgedEvent.OutputTuple, ProviderTEESignerAcknowledgedEvent.OutputObject>;
         'RefundRequested(address,address,uint256,uint256)': TypedContractEvent$2<RefundRequestedEvent$1.InputTuple, RefundRequestedEvent$1.OutputTuple, RefundRequestedEvent$1.OutputObject>;
         RefundRequested: TypedContractEvent$2<RefundRequestedEvent$1.InputTuple, RefundRequestedEvent$1.OutputTuple, RefundRequestedEvent$1.OutputObject>;
         'ServiceRemoved(address)': TypedContractEvent$2<ServiceRemovedEvent$1.InputTuple, ServiceRemovedEvent$1.OutputTuple, ServiceRemovedEvent$1.OutputObject>;
@@ -718,14 +733,30 @@ declare class InferenceServingContract {
     serving: InferenceServing;
     signer: JsonRpcSigner | Wallet;
     private _userAddress;
-    constructor(signer: JsonRpcSigner | Wallet, contractAddress: string, userAddress: string);
+    private _gasPrice?;
+    private _maxGasPrice?;
+    private _step;
+    constructor(signer: JsonRpcSigner | Wallet, contractAddress: string, userAddress: string, gasPrice?: number, maxGasPrice?: number, step?: number);
+    sendTx(name: string, txArgs: ContractMethodArgs$3<any[]>, txOptions: any): Promise<void>;
     lockTime(): Promise<bigint>;
     listService(): Promise<ServiceStructOutput$1[]>;
     listAccount(offset?: number, limit?: number): Promise<AccountStructOutput[]>;
     getAccount(provider: AddressLike): Promise<AccountStructOutput>;
-    acknowledgeTEESigner(providerAddress: AddressLike, providerSigner: AddressLike): Promise<void>;
+    /**
+     * Acknowledge TEE signer for a provider (Contract owner only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    acknowledgeTEESigner(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
+    /**
+     * Revoke TEE signer acknowledgement for a provider (Contract owner only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    revokeTEESignerAcknowledgement(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
     getService(providerAddress: string): Promise<ServiceStructOutput$1>;
     getUserAddress(): string;
+    checkReceipt(receipt: ContractTransactionReceipt | null): void;
 }
 
 declare abstract class Extractor {
@@ -780,7 +811,9 @@ declare class Cache {
         bigint,
         string,
         string,
-        string
+        string,
+        string,
+        boolean
     ]): ServiceStructOutput$1;
 }
 
@@ -1206,7 +1239,7 @@ declare class LedgerManagerContract {
     private _step;
     constructor(signer: JsonRpcSigner | Wallet, contractAddress: string, userAddress: string, gasPrice?: number, maxGasPrice?: number, step?: number);
     sendTx(name: string, txArgs: ContractMethodArgs$3<any[]>, txOptions: any): Promise<void>;
-    addLedger(balance: bigint, settleSignerEncryptedPrivateKey: string, gasPrice?: number): Promise<void>;
+    addLedger(balance: bigint, additionalInfo?: string, gasPrice?: number): Promise<void>;
     listLedger(offset?: number, limit?: number): Promise<LedgerStructOutput[]>;
     getLedger(): Promise<LedgerStructOutput>;
     getLedgerProviders(user: string, serviceName: string): Promise<string[]>;
@@ -2159,10 +2192,6 @@ interface ServingRequestHeaders {
      */
     Signature?: string;
     /**
-     * Broker service use a proxy for chat signature
-     */
-    'VLLM-Proxy': string;
-    /**
      * Session token containing user info and expiry
      */
     'Session-Token': string;
@@ -2183,8 +2212,33 @@ declare class RequestProcessor extends ZGServingUserBrokerBase {
         endpoint: string;
         model: string;
     }>;
-    getRequestHeaders(providerAddress: string, content: string, vllmProxy?: boolean): Promise<ServingRequestHeaders>;
+    getRequestHeaders(providerAddress: string, content: string): Promise<ServingRequestHeaders>;
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * This method no longer performs acknowledgement (which is owner-only),
+     * but verifies if the provider is ready for use.
+     */
+    checkProviderSignerStatus(providerAddress: string, gasPrice?: number): Promise<{
+        isAcknowledged: boolean;
+        teeSignerAddress: string;
+    }>;
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     * TEE signer acknowledgement is now handled by contract owner only.
+     */
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    ownerAcknowledgeTEESigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    ownerRevokeTEESignerAcknowledgement(providerAddress: string, gasPrice?: number): Promise<void>;
 }
 
 interface TdxQuoteResponse {
@@ -2216,7 +2270,11 @@ declare abstract class ZGServingUserBrokerBase {
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
     getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
     downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
-    userAcknowledged(providerAddress: string): Promise<boolean>;
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * Note: This now checks the service-level acknowledgement instead of user-level.
+     */
+    acknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput$1): Extractor;
@@ -2225,7 +2283,7 @@ declare abstract class ZGServingUserBrokerBase {
     private generateNonce;
     generateSessionToken(providerAddress: string): Promise<CachedSession>;
     getOrCreateSession(providerAddress: string): Promise<CachedSession>;
-    getHeader(providerAddress: string, vllmProxy: boolean): Promise<ServingRequestHeaders>;
+    getHeader(providerAddress: string): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
     clearCacheFee(provider: string, fee: bigint): Promise<void>;
@@ -2262,9 +2320,8 @@ declare class AccountProcessor extends ZGServingUserBrokerBase {
  * before use.
  */
 declare class ResponseProcessor extends ZGServingUserBrokerBase {
-    private verifier;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    processResponse(providerAddress: string, content: string, chatID?: string, vllmProxy?: boolean): Promise<boolean | null>;
+    processResponse(providerAddress: string, content: string, chatID?: string): Promise<boolean | null>;
     private calculateOutputFees;
 }
 
@@ -2307,7 +2364,7 @@ declare class Verifier extends ZGServingUserBrokerBase {
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
     static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
     getQuoteInLLMServer(providerBrokerURL: string, model: string): Promise<TdxQuoteResponse>;
-    static fetSignatureByChatID(providerBrokerURL: string, chatID: string, model: string, vllmProxy: boolean): Promise<ResponseSignature>;
+    static fetchSignatureByChatID(providerBrokerURL: string, chatID: string, model: string): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
 }
 
@@ -2355,8 +2412,45 @@ declare class InferenceBroker {
      * has acknowledged the provider signer.
      * @throws Will throw an error if the acknowledgment check fails.
      */
-    userAcknowledged: (providerAddress: string) => Promise<boolean>;
+    acknowledged: (providerAddress: string) => Promise<boolean>;
     /**
+     * Check Provider Signer Status
+     *
+     * Checks if the provider's TEE signer has been acknowledged by the contract owner.
+     * This replaces the old user-level acknowledgement system.
+     *
+     * @param {string} providerAddress - The address of the provider identifying the account.
+     * @param {number} gasPrice - Optional gas price for the transaction.
+     * @returns Promise<{isAcknowledged: boolean, teeSignerAddress: string, needsAccount: boolean}>
+     *
+     * @throws Will throw an error if failed to check status.
+     */
+    checkProviderSignerStatus: (providerAddress: string, gasPrice?: number) => Promise<{
+        isAcknowledged: boolean;
+        teeSignerAddress: string;
+    }>;
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * This function allows the contract owner to acknowledge a provider's TEE signer.
+     * The TEE signer address should already be set in the service registration.
+     *
+     * @param {string} providerAddress - The address of the provider
+     * @throws Will throw an error if caller is not the contract owner or if acknowledgement fails.
+     */
+    acknowledgeProviderTEESigner: (providerAddress: string, gasPrice?: number) => Promise<void>;
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * This function allows the contract owner to revoke a provider's TEE signer acknowledgement.
+     *
+     * @param {string} providerAddress - The address of the provider
+     * @throws Will throw an error if caller is not the contract owner or if revocation fails.
+     */
+    revokeProviderTEESignerAcknowledgement: (providerAddress: string, gasPrice?: number) => Promise<void>;
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     *
      * Acknowledge the given provider address.
      *
      * @param {string} providerAddress - The address of the provider identifying the account.
@@ -2400,7 +2494,6 @@ declare class InferenceBroker {
      *
      * @param {string} providerAddress - The address of the provider.
      * @param {string} content - The content being billed. For example, in a chatbot service, it is the text input by the user.
-     * @param {boolean} vllmProxy - Chat signature proxy, default is false
      *
      * @returns headers. Records information such as the request fee and user signature.
      *
@@ -2434,7 +2527,7 @@ declare class InferenceBroker {
      *
      * @throws An error if errors occur during the processing of the request.
      */
-    getRequestHeaders: (providerAddress: string, content: string, vllmProxy?: boolean) => Promise<ServingRequestHeaders>;
+    getRequestHeaders: (providerAddress: string, content: string) => Promise<ServingRequestHeaders>;
     /**
      * processResponse is used after the user successfully obtains a response from the provider service.
      *
@@ -2449,13 +2542,12 @@ declare class InferenceBroker {
      * @param {string} chatID - Only for verifiable services. You can provide the chat ID obtained from the response to
      * automatically download the response signature. The function will verify the reliability of the response
      * using the service's signing address.
-     * @param {boolean} vllmProxy - Chat signature proxy, default is true
      *
      * @returns A boolean value. True indicates the returned content is valid, otherwise it is invalid.
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse: (providerAddress: string, content: string, chatID?: string, vllmProxy?: boolean) => Promise<boolean | null>;
+    processResponse: (providerAddress: string, content: string, chatID?: string) => Promise<boolean | null>;
     /**
      * verifyService is used to verify the reliability of the service.
      *

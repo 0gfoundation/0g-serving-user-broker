@@ -48,7 +48,7 @@ function inference(program) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .action((options) => {
         (0, util_1.withBroker)(options, async (broker) => {
-            await broker.inference.acknowledgeProviderSigner(options.provider, options.gasPrice);
+            await broker.inference.acknowledgeProviderTEESigner(options.provider, options.gasPrice);
             console.log('Provider acknowledged successfully!');
         });
     });

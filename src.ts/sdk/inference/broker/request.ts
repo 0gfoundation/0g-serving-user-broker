@@ -41,10 +41,6 @@ export interface ServingRequestHeaders {
      */
     Signature?: string
     /**
-     * Broker service use a proxy for chat signature
-     */
-    'VLLM-Proxy': string
-    /**
      * Session token containing user info and expiry
      */
     'Session-Token': string
@@ -107,26 +103,31 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
      */
     async getRequestHeaders(
         providerAddress: string,
-        content: string,
-        vllmProxy?: boolean
+        content: string
     ): Promise<ServingRequestHeaders> {
         try {
             await this.topUpAccountIfNeeded(providerAddress, content)
-            if (vllmProxy === undefined) {
-                vllmProxy = true
-            }
             // Simplified call - only pass required parameters
-            return await this.getHeader(providerAddress, vllmProxy)
+            return await this.getHeader(providerAddress)
         } catch (error) {
             throwFormattedError(error)
         }
     }
 
-    async acknowledgeProviderSigner(
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * This method no longer performs acknowledgement (which is owner-only),
+     * but verifies if the provider is ready for use.
+     */
+    async checkProviderSignerStatus(
         providerAddress: string,
         gasPrice?: number
-    ): Promise<void> {
+    ): Promise<{
+        isAcknowledged: boolean
+        teeSignerAddress: string
+    }> {
         try {
+            // Ensure user has an account with the provider
             try {
                 await this.contract.getAccount(providerAddress)
             } catch {
@@ -138,37 +139,93 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
                 )
             }
 
-            const { rawReport, signingAddress } = await this.getQuote(
-                providerAddress
-            )
-
-            if (!rawReport || !signingAddress) {
-                throw new Error('Invalid intel_quote')
-            }
-
-            // TODO: Verify the quote here
-
-            const account = await this.contract.getAccount(providerAddress)
-            if (account.teeSignerAddress === signingAddress) {
-                console.log('Provider signer already acknowledged')
-                return
-            }
-            await this.contract.acknowledgeTEESigner(
-                providerAddress,
-                signingAddress
-            )
+            // Get service information (now contains TEE signer info)
+            const service = await this.getService(providerAddress)
 
             const userAddress = this.contract.getUserAddress()
             const cacheKey = CacheKeyHelpers.getUserAckKey(
                 userAddress,
                 providerAddress
             )
-            this.cache.setItem(
-                cacheKey,
-                signingAddress,
-                1 * 60 * 1000,
-                CacheValueTypeEnum.Other
+            
+            if (
+                service.teeSignerAcknowledged &&
+                service.teeSignerAddress !==
+                    '0x0000000000000000000000000000000000000000'
+            ) {
+                // Cache the acknowledgement status
+                this.cache.setItem(
+                    cacheKey,
+                    service.teeSignerAddress,
+                    10 * 60 * 1000, // 10 minutes cache
+                    CacheValueTypeEnum.Other
+                )
+
+                return {
+                    isAcknowledged: true,
+                    teeSignerAddress: service.teeSignerAddress,
+                }
+            } else {
+                return {
+                    isAcknowledged: false,
+                    teeSignerAddress: service.teeSignerAddress || '',
+                }
+            }
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     * TEE signer acknowledgement is now handled by contract owner only.
+     */
+    async acknowledgeProviderSigner(
+        providerAddress: string,
+        gasPrice?: number
+    ): Promise<void> {
+        console.warn(
+            'acknowledgeProviderSigner is deprecated. Use checkProviderSignerStatus instead.'
+        )
+        const status = await this.checkProviderSignerStatus(
+            providerAddress,
+            gasPrice
+        )
+
+        if (!status.isAcknowledged) {
+            throw new Error(
+                `Provider ${providerAddress} TEE signer is not acknowledged by contract owner. Contact the service administrator.`
             )
+        }
+    }
+
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async ownerAcknowledgeTEESigner(
+        providerAddress: string,
+        gasPrice?: number
+    ): Promise<void> {
+        try {
+            await this.contract.acknowledgeTEESigner(providerAddress, gasPrice)
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async ownerRevokeTEESignerAcknowledgement(
+        providerAddress: string,
+        gasPrice?: number
+    ): Promise<void> {
+        try {
+            await this.contract.revokeTEESignerAcknowledgement(providerAddress, gasPrice)
         } catch (error) {
             throwFormattedError(error)
         }

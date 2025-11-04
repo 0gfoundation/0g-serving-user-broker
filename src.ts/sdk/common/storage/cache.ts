@@ -180,7 +180,9 @@ export class Cache {
             bigint,
             string,
             string,
-            string
+            string,
+            string,
+            boolean
         ]
     ): InferenceServiceStructOutput {
         const tuple: [
@@ -192,7 +194,9 @@ export class Cache {
             bigint,
             string,
             string,
-            string
+            string,
+            string,
+            boolean
         ] = fields
 
         const object = {
@@ -205,6 +209,8 @@ export class Cache {
             model: fields[6],
             verifiability: fields[7],
             additionalInfo: fields[8],
+            teeSignerAddress: fields[9],
+            teeSignerAcknowledged: fields[10],
         }
 
         return Object.assign(tuple, object)

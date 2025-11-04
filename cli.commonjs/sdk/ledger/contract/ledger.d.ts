@@ -9,7 +9,7 @@ export declare class LedgerManagerContract {
     private _step;
     constructor(signer: JsonRpcSigner | Wallet, contractAddress: string, userAddress: string, gasPrice?: number, maxGasPrice?: number, step?: number);
     sendTx(name: string, txArgs: ContractMethodArgs<any[]>, txOptions: any): Promise<void>;
-    addLedger(balance: bigint, settleSignerEncryptedPrivateKey: string, gasPrice?: number): Promise<void>;
+    addLedger(balance: bigint, additionalInfo?: string, gasPrice?: number): Promise<void>;
     listLedger(offset?: number, limit?: number): Promise<import(".").LedgerStructOutput[]>;
     getLedger(): Promise<import(".").LedgerStructOutput>;
     getLedgerProviders(user: string, serviceName: string): Promise<string[]>;

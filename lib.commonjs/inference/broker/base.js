@@ -7,6 +7,7 @@ const utils_1 = require("../../common/utils");
 const fs = tslib_1.__importStar(require("fs/promises"));
 const storage_1 = require("../../common/storage");
 const ethers_1 = require("ethers");
+const logger_1 = require("../../common/logger");
 class ZGServingUserBrokerBase {
     contract;
     metadata;
@@ -30,6 +31,7 @@ class ZGServingUserBrokerBase {
         }
         try {
             const svc = await this.contract.getService(providerAddress);
+            logger_1.logger.debug('Fetched service info from contract:', svc);
             await this.cache.setItem(key, svc, 10 * 60 * 1000, storage_1.CacheValueTypeEnum.Service);
             return svc;
         }
@@ -72,7 +74,11 @@ class ZGServingUserBrokerBase {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    async userAcknowledged(providerAddress) {
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * Note: This now checks the service-level acknowledgement instead of user-level.
+     */
+    async acknowledged(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         const key = storage_1.CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
         const cachedSvc = await this.cache.getItem(key);
@@ -80,9 +86,11 @@ class ZGServingUserBrokerBase {
             return true;
         }
         try {
-            const account = await this.contract.getAccount(providerAddress);
-            if (account.teeSignerAddress !== ethers_1.ZeroAddress) {
-                await this.cache.setItem(key, account.providerPubKey, 10 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
+            // Get service information instead of account
+            const service = await this.getService(providerAddress);
+            if (service.teeSignerAcknowledged &&
+                service.teeSignerAddress !== ethers_1.ZeroAddress) {
+                await this.cache.setItem(key, service.teeSignerAddress, 10 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
                 return true;
             }
             else {
@@ -204,17 +212,16 @@ class ZGServingUserBrokerBase {
         // Generate new session
         return await this.generateSessionToken(providerAddress);
     }
-    async getHeader(providerAddress, vllmProxy) {
+    async getHeader(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
-        if (!(await this.userAcknowledged(providerAddress))) {
+        if (!(await this.acknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
         }
         // Get or create session token
         const session = await this.getOrCreateSession(providerAddress);
         return {
             Address: userAddress,
-            'VLLM-Proxy': `${vllmProxy}`,
             'Session-Token': session.rawMessage,
             'Session-Signature': session.signature,
         };

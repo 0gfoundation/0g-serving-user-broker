@@ -81,13 +81,13 @@ class LedgerManagerContract {
             }
         }
     }
-    async addLedger(balance, settleSignerEncryptedPrivateKey, gasPrice) {
+    async addLedger(balance, additionalInfo, gasPrice) {
         try {
             const txOptions = { value: balance };
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('addLedger', [settleSignerEncryptedPrivateKey], txOptions);
+            await this.sendTx('addLedger', [additionalInfo || ''], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

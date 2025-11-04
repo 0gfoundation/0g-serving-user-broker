@@ -46,8 +46,45 @@ export declare class InferenceBroker {
      * has acknowledged the provider signer.
      * @throws Will throw an error if the acknowledgment check fails.
      */
-    userAcknowledged: (providerAddress: string) => Promise<boolean>;
+    acknowledged: (providerAddress: string) => Promise<boolean>;
     /**
+     * Check Provider Signer Status
+     *
+     * Checks if the provider's TEE signer has been acknowledged by the contract owner.
+     * This replaces the old user-level acknowledgement system.
+     *
+     * @param {string} providerAddress - The address of the provider identifying the account.
+     * @param {number} gasPrice - Optional gas price for the transaction.
+     * @returns Promise<{isAcknowledged: boolean, teeSignerAddress: string, needsAccount: boolean}>
+     *
+     * @throws Will throw an error if failed to check status.
+     */
+    checkProviderSignerStatus: (providerAddress: string, gasPrice?: number) => Promise<{
+        isAcknowledged: boolean;
+        teeSignerAddress: string;
+    }>;
+    /**
+     * Acknowledge TEE Signer (Contract Owner Only)
+     *
+     * This function allows the contract owner to acknowledge a provider's TEE signer.
+     * The TEE signer address should already be set in the service registration.
+     *
+     * @param {string} providerAddress - The address of the provider
+     * @throws Will throw an error if caller is not the contract owner or if acknowledgement fails.
+     */
+    acknowledgeProviderTEESigner: (providerAddress: string, gasPrice?: number) => Promise<void>;
+    /**
+     * Revoke TEE Signer Acknowledgement (Contract Owner Only)
+     *
+     * This function allows the contract owner to revoke a provider's TEE signer acknowledgement.
+     *
+     * @param {string} providerAddress - The address of the provider
+     * @throws Will throw an error if caller is not the contract owner or if revocation fails.
+     */
+    revokeProviderTEESignerAcknowledgement: (providerAddress: string, gasPrice?: number) => Promise<void>;
+    /**
+     * @deprecated Use checkProviderSignerStatus instead.
+     *
      * Acknowledge the given provider address.
      *
      * @param {string} providerAddress - The address of the provider identifying the account.
@@ -91,7 +128,6 @@ export declare class InferenceBroker {
      *
      * @param {string} providerAddress - The address of the provider.
      * @param {string} content - The content being billed. For example, in a chatbot service, it is the text input by the user.
-     * @param {boolean} vllmProxy - Chat signature proxy, default is false
      *
      * @returns headers. Records information such as the request fee and user signature.
      *
@@ -125,7 +161,7 @@ export declare class InferenceBroker {
      *
      * @throws An error if errors occur during the processing of the request.
      */
-    getRequestHeaders: (providerAddress: string, content: string, vllmProxy?: boolean) => Promise<import("./request").ServingRequestHeaders>;
+    getRequestHeaders: (providerAddress: string, content: string) => Promise<import("./request").ServingRequestHeaders>;
     /**
      * processResponse is used after the user successfully obtains a response from the provider service.
      *
@@ -140,13 +176,12 @@ export declare class InferenceBroker {
      * @param {string} chatID - Only for verifiable services. You can provide the chat ID obtained from the response to
      * automatically download the response signature. The function will verify the reliability of the response
      * using the service's signing address.
-     * @param {boolean} vllmProxy - Chat signature proxy, default is true
      *
      * @returns A boolean value. True indicates the returned content is valid, otherwise it is invalid.
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse: (providerAddress: string, content: string, chatID?: string, vllmProxy?: boolean) => Promise<boolean | null>;
+    processResponse: (providerAddress: string, content: string, chatID?: string) => Promise<boolean | null>;
     /**
      * verifyService is used to verify the reliability of the service.
      *

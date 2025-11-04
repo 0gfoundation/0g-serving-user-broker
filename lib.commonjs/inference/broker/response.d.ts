@@ -8,9 +8,8 @@ import type { LedgerBroker } from '../../ledger';
  * before use.
  */
 export declare class ResponseProcessor extends ZGServingUserBrokerBase {
-    private verifier;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    processResponse(providerAddress: string, content: string, chatID?: string, vllmProxy?: boolean): Promise<boolean | null>;
+    processResponse(providerAddress: string, content: string, chatID?: string): Promise<boolean | null>;
     private calculateOutputFees;
 }
 //# sourceMappingURL=response.d.ts.map

@@ -13,6 +13,7 @@ import {
 } from '../../common/storage'
 import type { LedgerBroker } from '../../ledger'
 import { ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
+import { logger } from '../../common/logger'
 
 export interface TdxQuoteResponse {
     rawReport: string
@@ -69,6 +70,7 @@ export abstract class ZGServingUserBrokerBase {
 
         try {
             const svc = await this.contract.getService(providerAddress)
+            logger.debug('Fetched service info from contract:', svc)
             await this.cache.setItem(
                 key,
                 svc,
@@ -128,7 +130,11 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    async userAcknowledged(providerAddress: string): Promise<boolean> {
+    /**
+     * Check if provider's TEE signer is acknowledged by the contract owner.
+     * Note: This now checks the service-level acknowledgement instead of user-level.
+     */
+    async acknowledged(providerAddress: string): Promise<boolean> {
         const userAddress = this.contract.getUserAddress()
         const key = CacheKeyHelpers.getUserAckKey(userAddress, providerAddress)
         const cachedSvc = await this.cache.getItem(key)
@@ -137,11 +143,16 @@ export abstract class ZGServingUserBrokerBase {
         }
 
         try {
-            const account = await this.contract.getAccount(providerAddress)
-            if (account.teeSignerAddress !== ZeroAddress) {
+            // Get service information instead of account
+            const service = await this.getService(providerAddress)
+
+            if (
+                service.teeSignerAcknowledged &&
+                service.teeSignerAddress !== ZeroAddress
+            ) {
                 await this.cache.setItem(
                     key,
-                    account.providerPubKey,
+                    service.teeSignerAddress,
                     10 * 60 * 1000,
                     CacheValueTypeEnum.Other
                 )
@@ -302,12 +313,11 @@ export abstract class ZGServingUserBrokerBase {
 
     async getHeader(
         providerAddress: string,
-        vllmProxy: boolean
     ): Promise<ServingRequestHeaders> {
         const userAddress = this.contract.getUserAddress()
 
         // Check if provider is acknowledged - this is still necessary
-        if (!(await this.userAcknowledged(providerAddress))) {
+        if (!(await this.acknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged')
         }
 
@@ -316,7 +326,6 @@ export abstract class ZGServingUserBrokerBase {
 
         return {
             Address: userAddress,
-            'VLLM-Proxy': `${vllmProxy}`,
             'Session-Token': session.rawMessage,
             'Session-Signature': session.signature,
         }

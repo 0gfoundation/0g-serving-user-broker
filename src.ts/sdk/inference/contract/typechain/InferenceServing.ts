@@ -31,6 +31,7 @@ export type ServiceParamsStruct = {
     inputPrice: BigNumberish
     outputPrice: BigNumberish
     additionalInfo: string
+    teeSignerAddress: AddressLike
 }
 
 export type ServiceParamsStructOutput = [
@@ -40,7 +41,8 @@ export type ServiceParamsStructOutput = [
     verifiability: string,
     inputPrice: bigint,
     outputPrice: bigint,
-    additionalInfo: string
+    additionalInfo: string,
+    teeSignerAddress: string
 ] & {
     serviceType: string
     url: string
@@ -49,6 +51,7 @@ export type ServiceParamsStructOutput = [
     inputPrice: bigint
     outputPrice: bigint
     additionalInfo: string
+    teeSignerAddress: string
 }
 
 export type RefundStruct = {
@@ -73,7 +76,6 @@ export type AccountStruct = {
     pendingRefund: BigNumberish
     refunds: RefundStruct[]
     additionalInfo: string
-    providerPubKey: [BigNumberish, BigNumberish]
     teeSignerAddress: AddressLike
     validRefundsLength: BigNumberish
 }
@@ -86,7 +88,6 @@ export type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput[],
     additionalInfo: string,
-    providerPubKey: [bigint, bigint],
     teeSignerAddress: string,
     validRefundsLength: bigint
 ] & {
@@ -97,7 +98,6 @@ export type AccountStructOutput = [
     pendingRefund: bigint
     refunds: RefundStructOutput[]
     additionalInfo: string
-    providerPubKey: [bigint, bigint]
     teeSignerAddress: string
     validRefundsLength: bigint
 }
@@ -112,6 +112,8 @@ export type ServiceStruct = {
     model: string
     verifiability: string
     additionalInfo: string
+    teeSignerAddress: AddressLike
+    teeSignerAcknowledged: boolean
 }
 
 export type ServiceStructOutput = [
@@ -123,7 +125,9 @@ export type ServiceStructOutput = [
     updatedAt: bigint,
     model: string,
     verifiability: string,
-    additionalInfo: string
+    additionalInfo: string,
+    teeSignerAddress: string,
+    teeSignerAcknowledged: boolean
 ] & {
     provider: string
     serviceType: string
@@ -134,6 +138,8 @@ export type ServiceStructOutput = [
     model: string
     verifiability: string
     additionalInfo: string
+    teeSignerAddress: string
+    teeSignerAcknowledged: boolean
 }
 
 export type TEESettlementDataStruct = {
@@ -165,7 +171,6 @@ export interface InferenceServingInterface extends Interface {
     getFunction(
         nameOrSignature:
             | 'accountExists'
-            | 'acknowledgeProviderSigner'
             | 'acknowledgeTEESigner'
             | 'addAccount'
             | 'addOrUpdateService'
@@ -189,6 +194,7 @@ export interface InferenceServingInterface extends Interface {
             | 'removeService'
             | 'renounceOwnership'
             | 'requestRefundAll'
+            | 'revokeTEESignerAcknowledgement'
             | 'settleFeesWithTEE'
             | 'supportsInterface'
             | 'transferOwnership'
@@ -200,6 +206,7 @@ export interface InferenceServingInterface extends Interface {
             | 'BalanceUpdated'
             | 'BatchBalanceUpdated'
             | 'OwnershipTransferred'
+            | 'ProviderTEESignerAcknowledged'
             | 'RefundRequested'
             | 'ServiceRemoved'
             | 'ServiceUpdated'
@@ -211,12 +218,8 @@ export interface InferenceServingInterface extends Interface {
         values: [AddressLike, AddressLike]
     ): string
     encodeFunctionData(
-        functionFragment: 'acknowledgeProviderSigner',
-        values: [AddressLike, [BigNumberish, BigNumberish]]
-    ): string
-    encodeFunctionData(
         functionFragment: 'acknowledgeTEESigner',
-        values: [AddressLike, AddressLike]
+        values: [AddressLike]
     ): string
     encodeFunctionData(
         functionFragment: 'addAccount',
@@ -301,6 +304,10 @@ export interface InferenceServingInterface extends Interface {
         values: [AddressLike, AddressLike]
     ): string
     encodeFunctionData(
+        functionFragment: 'revokeTEESignerAcknowledgement',
+        values: [AddressLike]
+    ): string
+    encodeFunctionData(
         functionFragment: 'settleFeesWithTEE',
         values: [TEESettlementDataStruct[]]
     ): string
@@ -319,10 +326,6 @@ export interface InferenceServingInterface extends Interface {
 
     decodeFunctionResult(
         functionFragment: 'accountExists',
-        data: BytesLike
-    ): Result
-    decodeFunctionResult(
-        functionFragment: 'acknowledgeProviderSigner',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -412,6 +415,10 @@ export interface InferenceServingInterface extends Interface {
         data: BytesLike
     ): Result
     decodeFunctionResult(
+        functionFragment: 'revokeTEESignerAcknowledgement',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
         functionFragment: 'settleFeesWithTEE',
         data: BytesLike
     ): Result
@@ -490,6 +497,32 @@ export namespace OwnershipTransferredEvent {
     export interface OutputObject {
         previousOwner: string
         newOwner: string
+    }
+    export type Event = TypedContractEvent<
+        InputTuple,
+        OutputTuple,
+        OutputObject
+    >
+    export type Filter = TypedDeferredTopicFilter<Event>
+    export type Log = TypedEventLog<Event>
+    export type LogDescription = TypedLogDescription<Event>
+}
+
+export namespace ProviderTEESignerAcknowledgedEvent {
+    export type InputTuple = [
+        provider: AddressLike,
+        teeSignerAddress: AddressLike,
+        acknowledged: boolean
+    ]
+    export type OutputTuple = [
+        provider: string,
+        teeSignerAddress: string,
+        acknowledged: boolean
+    ]
+    export interface OutputObject {
+        provider: string
+        teeSignerAddress: string
+        acknowledged: boolean
     }
     export type Event = TypedContractEvent<
         InputTuple,
@@ -662,14 +695,8 @@ export interface InferenceServing extends BaseContract {
         'view'
     >
 
-    acknowledgeProviderSigner: TypedContractMethod<
-        [provider: AddressLike, providerPubKey: [BigNumberish, BigNumberish]],
-        [void],
-        'nonpayable'
-    >
-
     acknowledgeTEESigner: TypedContractMethod<
-        [provider: AddressLike, teeSignerAddress: AddressLike],
+        [provider: AddressLike],
         [void],
         'nonpayable'
     >
@@ -814,6 +841,12 @@ export interface InferenceServing extends BaseContract {
         'nonpayable'
     >
 
+    revokeTEESignerAcknowledgement: TypedContractMethod<
+        [provider: AddressLike],
+        [void],
+        'nonpayable'
+    >
+
     settleFeesWithTEE: TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
         [
@@ -857,19 +890,8 @@ export interface InferenceServing extends BaseContract {
         'view'
     >
     getFunction(
-        nameOrSignature: 'acknowledgeProviderSigner'
-    ): TypedContractMethod<
-        [provider: AddressLike, providerPubKey: [BigNumberish, BigNumberish]],
-        [void],
-        'nonpayable'
-    >
-    getFunction(
         nameOrSignature: 'acknowledgeTEESigner'
-    ): TypedContractMethod<
-        [provider: AddressLike, teeSignerAddress: AddressLike],
-        [void],
-        'nonpayable'
-    >
+    ): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>
     getFunction(
         nameOrSignature: 'addAccount'
     ): TypedContractMethod<
@@ -1020,6 +1042,9 @@ export interface InferenceServing extends BaseContract {
         [void],
         'nonpayable'
     >
+    getFunction(
+        nameOrSignature: 'revokeTEESignerAcknowledgement'
+    ): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>
     getFunction(nameOrSignature: 'settleFeesWithTEE'): TypedContractMethod<
         [settlements: TEESettlementDataStruct[]],
         [
@@ -1062,6 +1087,13 @@ export interface InferenceServing extends BaseContract {
         OwnershipTransferredEvent.InputTuple,
         OwnershipTransferredEvent.OutputTuple,
         OwnershipTransferredEvent.OutputObject
+    >
+    getEvent(
+        key: 'ProviderTEESignerAcknowledged'
+    ): TypedContractEvent<
+        ProviderTEESignerAcknowledgedEvent.InputTuple,
+        ProviderTEESignerAcknowledgedEvent.OutputTuple,
+        ProviderTEESignerAcknowledgedEvent.OutputObject
     >
     getEvent(
         key: 'RefundRequested'
@@ -1124,6 +1156,17 @@ export interface InferenceServing extends BaseContract {
             OwnershipTransferredEvent.InputTuple,
             OwnershipTransferredEvent.OutputTuple,
             OwnershipTransferredEvent.OutputObject
+        >
+
+        'ProviderTEESignerAcknowledged(address,address,bool)': TypedContractEvent<
+            ProviderTEESignerAcknowledgedEvent.InputTuple,
+            ProviderTEESignerAcknowledgedEvent.OutputTuple,
+            ProviderTEESignerAcknowledgedEvent.OutputObject
+        >
+        ProviderTEESignerAcknowledged: TypedContractEvent<
+            ProviderTEESignerAcknowledgedEvent.InputTuple,
+            ProviderTEESignerAcknowledgedEvent.OutputTuple,
+            ProviderTEESignerAcknowledgedEvent.OutputObject
         >
 
         'RefundRequested(address,address,uint256,uint256)': TypedContractEvent<

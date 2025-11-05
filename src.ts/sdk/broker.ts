@@ -38,9 +38,9 @@ export class ZGComputeNetworkBroker {
  */
 export async function createZGComputeNetworkBroker(
     signer: JsonRpcSigner | Wallet,
-    ledgerCA = '0x09D00A2B31067da09bf0e873E58746d1285174Cc',
-    inferenceCA = '0x4f850eb2abc036096999882b54e92ecd63aec13d',
-    fineTuningCA = '0x677AB02CA1DAffEf7521858d3264E4574BEf7aA7',
+    ledgerCA = '0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5',
+    inferenceCA = '0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da',
+    fineTuningCA = '0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a',
     gasPrice?: number,
     maxGasPrice?: number,
     step?: number

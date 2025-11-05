@@ -3,6 +3,7 @@ import { InferenceServingContract } from '../contract'
 import type { JsonRpcSigner, Wallet } from 'ethers'
 import { RequestProcessor } from './request'
 import { ResponseProcessor } from './response'
+import type { VerificationResult } from './verifier'
 import { Verifier } from './verifier'
 import { AccountProcessor } from './account'
 import { ModelProcessor } from './model'
@@ -166,7 +167,7 @@ export class InferenceBroker {
 
     /**
      * Acknowledge TEE Signer (Contract Owner Only)
-     * 
+     *
      * This function allows the contract owner to acknowledge a provider's TEE signer.
      * The TEE signer address should already be set in the service registration.
      *
@@ -178,7 +179,10 @@ export class InferenceBroker {
         gasPrice?: number
     ) => {
         try {
-            return await this.requestProcessor.ownerAcknowledgeTEESigner(providerAddress, gasPrice)
+            return await this.requestProcessor.ownerAcknowledgeTEESigner(
+                providerAddress,
+                gasPrice
+            )
         } catch (error) {
             throwFormattedError(error)
         }
@@ -186,7 +190,7 @@ export class InferenceBroker {
 
     /**
      * Revoke TEE Signer Acknowledgement (Contract Owner Only)
-     * 
+     *
      * This function allows the contract owner to revoke a provider's TEE signer acknowledgement.
      *
      * @param {string} providerAddress - The address of the provider
@@ -197,7 +201,10 @@ export class InferenceBroker {
         gasPrice?: number
     ) => {
         try {
-            return await this.requestProcessor.ownerRevokeTEESignerAcknowledgement(providerAddress, gasPrice)
+            return await this.requestProcessor.ownerRevokeTEESignerAcknowledgement(
+                providerAddress,
+                gasPrice
+            )
         } catch (error) {
             throwFormattedError(error)
         }
@@ -321,12 +328,12 @@ export class InferenceBroker {
      */
     public getRequestHeaders = async (
         providerAddress: string,
-        content: string,
+        content: string
     ) => {
         try {
             return await this.requestProcessor.getRequestHeaders(
                 providerAddress,
-                content,
+                content
             )
         } catch (error) {
             throwFormattedError(error)
@@ -355,13 +362,13 @@ export class InferenceBroker {
     public processResponse = async (
         providerAddress: string,
         content: string,
-        chatID?: string,
+        chatID?: string
     ): Promise<boolean | null> => {
         try {
             return await this.responseProcessor.processResponse(
                 providerAddress,
                 content,
-                chatID,
+                chatID
             )
         } catch (error) {
             throwFormattedError(error)
@@ -378,10 +385,11 @@ export class InferenceBroker {
      * @throws An error if errors occur during the verification process.
      */
     public verifyService = async (
-        providerAddress: string
-    ): Promise<boolean | null> => {
+        providerAddress: string,
+        outputDir: string = '.'
+    ): Promise<VerificationResult | null> => {
         try {
-            return await this.verifier.verifyService(providerAddress)
+            return await this.verifier.verifyService(providerAddress, outputDir)
         } catch (error) {
             throwFormattedError(error)
         }

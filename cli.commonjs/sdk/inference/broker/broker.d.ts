@@ -2,6 +2,7 @@ import type { AccountStructOutput } from '../contract';
 import type { JsonRpcSigner, Wallet } from 'ethers';
 import { RequestProcessor } from './request';
 import { ResponseProcessor } from './response';
+import type { VerificationResult } from './verifier';
 import { Verifier } from './verifier';
 import { AccountProcessor } from './account';
 import { ModelProcessor } from './model';
@@ -191,7 +192,7 @@ export declare class InferenceBroker {
      *
      * @throws An error if errors occur during the verification process.
      */
-    verifyService: (providerAddress: string) => Promise<boolean | null>;
+    verifyService: (providerAddress: string, outputDir?: string) => Promise<VerificationResult | null>;
     /**
      * getSignerRaDownloadLink returns the download link for the Signer RA.
      *

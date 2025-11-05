@@ -55,6 +55,39 @@ export default function inference(program: Command) {
         })
 
     program
+        .command('verify-tee')
+        .description('Verify the reliability of a service')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option(
+            '--output-dir <path>',
+            'Output directory for verification reports',
+            '.'
+        )
+        .option(
+            '--key <key>',
+            'Wallet private key, if not provided, ensure the default key is set in the environment',
+            process.env.ZG_PRIVATE_KEY
+        )
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action((options) => {
+            withBroker(options, async (broker) => {
+                const result = await broker.inference.verifyService(
+                    options.provider,
+                    options.outputDir
+                )
+                if (result) {
+                    if (!result.success) {
+                        console.log('❌ Service verification failed')
+                    }
+                } else {
+                    console.log('Verification result is null')
+                }
+            })
+        })
+
+    program
         .command('serve')
         .description('Start local inference service')
         .requiredOption('--provider <address>', 'Provider address')

@@ -167,25 +167,6 @@ function inference(program) {
         await runRouterServer(routerOptions);
     });
     program
-        .command('get-sub-account')
-        .description('Retrieve sub account information for inference')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
-        .requiredOption('--provider <address>', 'Provider address')
-        .option('--rpc <url>', '0G Chain RPC endpoint')
-        .option('--ledger-ca <address>', 'Account (ledger) contract address')
-        .option('--inference-ca <address>', 'Inference contract address')
-        .action((options) => {
-        (0, util_1.withBroker)(options, async (broker) => {
-            const [account, refunds] = await broker.inference.getAccountWithDetail(options.provider);
-            renderOverview({
-                provider: account.provider,
-                balance: account.balance,
-                pendingRefund: account.pendingRefund,
-            });
-            renderRefunds(refunds);
-        });
-    });
-    program
         .command('list-providers')
         .description('List inference providers')
         .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
@@ -224,38 +205,5 @@ function inference(program) {
             console.log(table.toString());
         });
     });
-}
-function renderOverview(account) {
-    const table = new cli_table3_1.default({
-        head: [chalk_1.default.blue('Field'), chalk_1.default.blue('Value')],
-        colWidths: [50, 50],
-    });
-    table.push(['Provider', account.provider]);
-    table.push(['Balance (A0GI)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
-    table.push([
-        'Funds Applied for Return to Main Account (A0GI)',
-        (0, util_1.neuronToA0gi)(account.pendingRefund).toFixed(18),
-    ]);
-    (0, util_1.printTableWithTitle)('Overview', table);
-}
-function renderRefunds(refunds) {
-    const table = new cli_table3_1.default({
-        head: [
-            chalk_1.default.blue('Amount (A0GI)'),
-            chalk_1.default.blue('Remaining Locked Time'),
-        ],
-        colWidths: [50, 50],
-    });
-    refunds.forEach((refund) => {
-        const totalSeconds = Number(refund.remainTime);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
-        table.push([
-            (0, util_1.neuronToA0gi)(refund.amount).toFixed(18),
-            `${hours}h ${minutes}min ${secs}s`,
-        ]);
-    });
-    (0, util_1.printTableWithTitle)('Details of Each Amount Applied for Return to Main Account', table);
 }
 //# sourceMappingURL=inference.js.map

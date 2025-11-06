@@ -7,6 +7,7 @@ const tslib_1 = require("tslib");
 const util_1 = require("./util");
 const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
+const utils_1 = require("../sdk/common/utils");
 function ledger(program) {
     program
         .command('get-account')
@@ -18,7 +19,15 @@ function ledger(program) {
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
         .action((options) => {
         (0, util_1.withBroker)(options, async (broker) => {
-            (0, exports.getLedgerTable)(broker);
+            await (0, exports.getLedgerTable)(broker);
+            // Add helpful information about sub-account details
+            console.log(chalk_1.default.yellow('\n💡 To get detailed sub-account information:'));
+            console.log(chalk_1.default.gray('• For inference sub-account details:'));
+            console.log(chalk_1.default.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service inference'));
+            console.log(chalk_1.default.gray('• For fine-tuning sub-account details:'));
+            console.log(chalk_1.default.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service fine-tuning'));
+            console.log(chalk_1.default.gray('\nExample:'));
+            console.log(chalk_1.default.green('  0g-compute-cli ledger get-sub-account --provider 0x4f371f6eff4cb5a9471c9cf9bE32c729024b063C --service inference'));
         });
     });
     program
@@ -125,6 +134,49 @@ function ledger(program) {
             console.log(`Successfully transferred ${options.amount} neuron to ${options.provider}`);
         });
     });
+    program
+        .command('get-sub-account')
+        .description('Retrieve detailed sub account information for a specific provider and service')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--service <type>', 'Service type: inference or fine-tuning')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
+        .action((options) => {
+        if (options.service !== 'inference' && options.service !== 'fine-tuning') {
+            console.error(chalk_1.default.red('Error: --service must be either "inference" or "fine-tuning"'));
+            process.exit(1);
+        }
+        (0, util_1.withBroker)(options, async (broker) => {
+            if (options.service === 'inference') {
+                const [account, refunds] = await broker.inference.getAccountWithDetail(options.provider);
+                renderSubAccountOverview({
+                    provider: account.provider,
+                    balance: account.balance,
+                    pendingRefund: account.pendingRefund,
+                    service: 'Inference'
+                });
+                renderSubAccountRefunds(refunds);
+            }
+            else if (options.service === 'fine-tuning') {
+                if (!broker.fineTuning) {
+                    console.log(chalk_1.default.red('Fine tuning broker is not available.'));
+                    return;
+                }
+                const { account, refunds } = await broker.fineTuning.getAccountWithDetail(options.provider);
+                renderSubAccountOverview({
+                    provider: account.provider,
+                    balance: account.balance,
+                    pendingRefund: account.pendingRefund,
+                    service: 'Fine-tuning'
+                });
+                renderSubAccountRefunds(refunds);
+                renderDeliverables(account.deliverables);
+            }
+        });
+    });
 }
 const getLedgerTable = async (broker) => {
     // Ledger information
@@ -179,4 +231,60 @@ const getLedgerTable = async (broker) => {
     }
 };
 exports.getLedgerTable = getLedgerTable;
+// Helper functions for detailed sub-account information
+function renderSubAccountOverview(account) {
+    const table = new cli_table3_1.default({
+        head: [chalk_1.default.blue('Field'), chalk_1.default.blue('Value')],
+        colWidths: [50, 50],
+    });
+    table.push(['Service Type', account.service]);
+    table.push(['Provider', account.provider]);
+    table.push(['Balance (A0GI)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
+    table.push([
+        'Funds Applied for Return to Main Account (A0GI)',
+        (0, util_1.neuronToA0gi)(account.pendingRefund).toFixed(18),
+    ]);
+    (0, util_1.printTableWithTitle)(`${account.service} Sub-Account Overview`, table);
+}
+function renderSubAccountRefunds(refunds) {
+    if (!refunds || refunds.length === 0) {
+        console.log(chalk_1.default.gray('\nNo pending refunds found.'));
+        return;
+    }
+    const table = new cli_table3_1.default({
+        head: [
+            chalk_1.default.blue('Amount (A0GI)'),
+            chalk_1.default.blue('Remaining Locked Time'),
+        ],
+        colWidths: [50, 50],
+    });
+    refunds.forEach((refund) => {
+        const totalSeconds = Number(refund.remainTime);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+        table.push([
+            (0, util_1.neuronToA0gi)(refund.amount).toFixed(18),
+            `${hours}h ${minutes}min ${secs}s`,
+        ]);
+    });
+    (0, util_1.printTableWithTitle)('Details of Each Amount Applied for Return to Main Account', table);
+}
+function renderDeliverables(deliverables) {
+    if (!deliverables || deliverables.length === 0) {
+        console.log(chalk_1.default.gray('\nNo deliverables found.'));
+        return;
+    }
+    const table = new cli_table3_1.default({
+        head: [chalk_1.default.blue('Root Hash'), chalk_1.default.blue('Access Confirmed')],
+        colWidths: [75, 25],
+    });
+    deliverables.forEach((d) => {
+        table.push([
+            (0, util_1.splitIntoChunks)((0, utils_1.hexToRoots)(d.modelRootHash), 60),
+            d.acknowledged ? chalk_1.default.greenBright.bold('\u2713') : '',
+        ]);
+    });
+    (0, util_1.printTableWithTitle)('Deliverables', table);
+}
 //# sourceMappingURL=ledger.js.map

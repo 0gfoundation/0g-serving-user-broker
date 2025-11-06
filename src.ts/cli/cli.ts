@@ -23,9 +23,9 @@ const inferenceCmd = program.command('inference')
     .alias('inf')
     .description('Inference service commands')
 
-const ledgerCmd = program.command('ledger')
-    .alias('led')
-    .description('Ledger management commands')
+const accountCmd = program.command('account')
+    .alias('acc')
+    .description('Account management commands')
 
 const webUICmd = program.command('web-ui')
     .alias('ui')
@@ -34,7 +34,7 @@ const webUICmd = program.command('web-ui')
 // Register commands to their respective groups
 fineTuning(fineTuningCmd)
 inference(inferenceCmd)
-ledger(ledgerCmd)
+ledger(accountCmd)
 webUIEmbedded(webUICmd)
 
 // Register network configuration commands at the root level

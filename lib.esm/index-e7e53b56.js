@@ -14825,7 +14825,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-7febbb82.js');
+    const { download } = await import('./index-4ac4905a.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20074,6 +20074,35 @@ async function createLedgerBroker(signer, ledgerCA, inferenceCA, fineTuningCA, g
     }
 }
 
+// Network configurations
+const TESTNET_CHAIN_ID = 16602n;
+const MAINNET_CHAIN_ID = 16600n; // TODO: Update with actual mainnet chain ID when available
+// Contract addresses for different networks
+const CONTRACT_ADDRESSES = {
+    testnet: {
+        ledger: '0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5',
+        inference: '0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da',
+        fineTuning: '0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a'
+    },
+    mainnet: {
+        // TODO: Update with actual mainnet addresses when available
+        ledger: '0x0000000000000000000000000000000000000000',
+        inference: '0x0000000000000000000000000000000000000000',
+        fineTuning: '0x0000000000000000000000000000000000000000'
+    }
+};
+/**
+ * Helper function to determine network type from chain ID
+ */
+function getNetworkType(chainId) {
+    if (chainId === MAINNET_CHAIN_ID) {
+        return 'mainnet';
+    }
+    else if (chainId === TESTNET_CHAIN_ID) {
+        return 'testnet';
+    }
+    return 'unknown';
+}
 class ZGComputeNetworkBroker {
     ledger;
     inference;
@@ -20087,23 +20116,57 @@ class ZGComputeNetworkBroker {
 /**
  * createZGComputeNetworkBroker is used to initialize ZGComputeNetworkBroker
  *
+ * This function automatically detects the network from the signer's provider and uses
+ * appropriate contract addresses. You can override any address by providing it explicitly.
+ *
  * @param signer - Signer from ethers.js.
- * @param ledgerCA - 0G Compute Network Ledger Contact address, use default address if not provided.
- * @param inferenceCA - 0G Compute Network Inference Serving contract address, use default address if not provided.
- * @param fineTuningCA - 0G Compute Network Fine Tuning Serving contract address, use default address if not provided.
+ * @param ledgerCA - 0G Compute Network Ledger Contact address, auto-detected if not provided.
+ * @param inferenceCA - 0G Compute Network Inference Serving contract address, auto-detected if not provided.
+ * @param fineTuningCA - 0G Compute Network Fine Tuning Serving contract address, auto-detected if not provided.
  * @param gasPrice - Gas price for transactions. If not provided, the gas price will be calculated automatically.
+ * @param maxGasPrice - Maximum gas price for transactions.
+ * @param step - Step for gas price adjustment.
  *
  * @returns broker instance.
  *
  * @throws An error if the broker cannot be initialized.
  */
-async function createZGComputeNetworkBroker(signer, ledgerCA = '0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5', inferenceCA = '0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da', fineTuningCA = '0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a', gasPrice, maxGasPrice, step) {
+async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineTuningCA, gasPrice, maxGasPrice, step) {
     try {
-        const ledger = await createLedgerBroker(signer, ledgerCA, inferenceCA, fineTuningCA, gasPrice, maxGasPrice, step);
-        const inferenceBroker = await createInferenceBroker(signer, inferenceCA, ledger);
+        // Auto-detect network from signer's provider
+        let defaultAddresses = CONTRACT_ADDRESSES.testnet; // Default to testnet
+        if (signer.provider) {
+            const network = await signer.provider.getNetwork();
+            const chainId = network.chainId;
+            if (chainId === MAINNET_CHAIN_ID) {
+                defaultAddresses = CONTRACT_ADDRESSES.mainnet;
+                console.log('Detected mainnet (chain ID:', chainId.toString(), ')');
+            }
+            else if (chainId === TESTNET_CHAIN_ID) {
+                defaultAddresses = CONTRACT_ADDRESSES.testnet;
+                console.log('Detected testnet (chain ID:', chainId.toString(), ')');
+            }
+            else {
+                console.warn(`Unknown chain ID: ${chainId}. Using testnet addresses as default.`);
+            }
+        }
+        else {
+            console.warn('No provider found on signer. Using testnet addresses as default.');
+        }
+        // Use provided addresses or fall back to auto-detected defaults
+        const finalLedgerCA = ledgerCA || defaultAddresses.ledger;
+        const finalInferenceCA = inferenceCA || defaultAddresses.inference;
+        const finalFineTuningCA = fineTuningCA || defaultAddresses.fineTuning;
+        console.log('Using contract addresses:', {
+            ledger: finalLedgerCA,
+            inference: finalInferenceCA,
+            fineTuning: finalFineTuningCA
+        });
+        const ledger = await createLedgerBroker(signer, finalLedgerCA, finalInferenceCA, finalFineTuningCA, gasPrice, maxGasPrice, step);
+        const inferenceBroker = await createInferenceBroker(signer, finalInferenceCA, ledger);
         let fineTuningBroker;
         if (signer instanceof Wallet) {
-            fineTuningBroker = await createFineTuningBroker(signer, fineTuningCA, ledger, gasPrice, maxGasPrice, step);
+            fineTuningBroker = await createFineTuningBroker(signer, finalFineTuningCA, ledger, gasPrice, maxGasPrice, step);
         }
         const broker = new ZGComputeNetworkBroker(ledger, inferenceBroker, fineTuningBroker);
         return broker;
@@ -20113,5 +20176,5 @@ async function createZGComputeNetworkBroker(signer, ledgerCA = '0xc9BF91efc972e2
     }
 }
 
-export { AccountProcessor as A, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, createZGComputeNetworkBroker as f, isNode as g, isWebWorker as h, isBrowser as i, hasWebCrypto as j, getCryptoAdapter as k, upload as u };
-//# sourceMappingURL=index-1159ef7d.js.map
+export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
+//# sourceMappingURL=index-e7e53b56.js.map

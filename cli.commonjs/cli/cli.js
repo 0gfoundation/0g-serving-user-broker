@@ -8,6 +8,7 @@ const fine_tuning_1 = tslib_1.__importDefault(require("./fine-tuning"));
 const ledger_1 = tslib_1.__importDefault(require("./ledger"));
 const inference_1 = tslib_1.__importDefault(require("./inference"));
 const web_ui_embedded_1 = tslib_1.__importDefault(require("./web-ui-embedded"));
+const network_1 = tslib_1.__importDefault(require("./network"));
 exports.program = new commander_1.Command();
 exports.program
     .name('0g-compute-cli')
@@ -31,5 +32,7 @@ const webUICmd = exports.program.command('web-ui')
 (0, inference_1.default)(inferenceCmd);
 (0, ledger_1.default)(ledgerCmd);
 (0, web_ui_embedded_1.default)(webUICmd);
+// Register network configuration commands at the root level
+(0, network_1.default)(exports.program);
 exports.program.parse(process.argv);
 //# sourceMappingURL=cli.js.map

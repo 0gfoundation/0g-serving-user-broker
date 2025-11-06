@@ -5,6 +5,7 @@ import fineTuning from './fine-tuning'
 import ledger from './ledger'
 import inference from './inference'
 import webUIEmbedded from './web-ui-embedded'
+import network from './network'
 
 export const program = new Command()
 
@@ -35,5 +36,8 @@ fineTuning(fineTuningCmd)
 inference(inferenceCmd)
 ledger(ledgerCmd)
 webUIEmbedded(webUICmd)
+
+// Register network configuration commands at the root level
+network(program)
 
 program.parse(process.argv)

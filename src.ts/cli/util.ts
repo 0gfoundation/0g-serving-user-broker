@@ -3,14 +3,15 @@ import { createZGComputeNetworkBroker } from '../sdk'
 import { ethers } from 'ethers'
 import chalk from 'chalk'
 import type { Table } from 'cli-table3'
-import { ZG_RPC_ENDPOINT_TESTNET } from './const'
+import { getRpcEndpoint } from './network-setup'
 
 export async function initBroker(
     options: any
 ): Promise<ZGComputeNetworkBroker> {
-    const provider = new ethers.JsonRpcProvider(
-        options.rpc || process.env.RPC_ENDPOINT || ZG_RPC_ENDPOINT_TESTNET
-    )
+    // Use the new interactive RPC endpoint selection
+    const rpcEndpoint = await getRpcEndpoint(options)
+    
+    const provider = new ethers.JsonRpcProvider(rpcEndpoint)
     const wallet = new ethers.Wallet(options.key, provider)
 
     return await createZGComputeNetworkBroker(

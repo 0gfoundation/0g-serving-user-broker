@@ -50,6 +50,9 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.12
         version: 2.6.12
+      '@types/prompts':
+        specifier: ^2.4.9
+        version: 2.4.9
       adm-zip:
         specifier: ^0.5.16
         version: 0.5.16
@@ -101,6 +104,9 @@ importers:
       openai:
         specifier: ^4.78.1
         version: 4.79.1(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      prompts:
+        specifier: ^2.4.2
+        version: 2.4.2
       rollup-plugin-polyfill-node:
         specifier: ^0.13.0
         version: 0.13.0(rollup@3.29.5)
@@ -845,6 +851,9 @@ packages:
 
   '@types/prettier@2.7.3':
     resolution: {integrity: sha512-+68kP9yzs4LMp7VNh8gdzMSPZFL44MLGqiHWvttYJe+6qnuVr4Ek9wSBQoveqY/r+LwjCcU29kNVkidwim+kYA==}
+
+  '@types/prompts@2.4.9':
+    resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
 
   '@types/qs@6.14.0':
     resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
@@ -4248,6 +4257,11 @@ snapshots:
       undici-types: 6.19.8
 
   '@types/prettier@2.7.3': {}
+
+  '@types/prompts@2.4.9':
+    dependencies:
+      '@types/node': 20.17.14
+      kleur: 3.0.3
 
   '@types/qs@6.14.0': {}
 

@@ -2692,6 +2692,24 @@ declare class FineTuningBroker {
  */
 declare function createFineTuningBroker(signer: Wallet, contractAddress: string, ledger: LedgerBroker, gasPrice?: number, maxGasPrice?: number, step?: number): Promise<FineTuningBroker>;
 
+declare const TESTNET_CHAIN_ID = 16602n;
+declare const MAINNET_CHAIN_ID = 16600n;
+declare const CONTRACT_ADDRESSES: {
+    readonly testnet: {
+        readonly ledger: "0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5";
+        readonly inference: "0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da";
+        readonly fineTuning: "0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a";
+    };
+    readonly mainnet: {
+        readonly ledger: "0x0000000000000000000000000000000000000000";
+        readonly inference: "0x0000000000000000000000000000000000000000";
+        readonly fineTuning: "0x0000000000000000000000000000000000000000";
+    };
+};
+/**
+ * Helper function to determine network type from chain ID
+ */
+declare function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'unknown';
 declare class ZGComputeNetworkBroker {
     ledger: LedgerBroker;
     inference: InferenceBroker;
@@ -2701,11 +2719,16 @@ declare class ZGComputeNetworkBroker {
 /**
  * createZGComputeNetworkBroker is used to initialize ZGComputeNetworkBroker
  *
+ * This function automatically detects the network from the signer's provider and uses
+ * appropriate contract addresses. You can override any address by providing it explicitly.
+ *
  * @param signer - Signer from ethers.js.
- * @param ledgerCA - 0G Compute Network Ledger Contact address, use default address if not provided.
- * @param inferenceCA - 0G Compute Network Inference Serving contract address, use default address if not provided.
- * @param fineTuningCA - 0G Compute Network Fine Tuning Serving contract address, use default address if not provided.
+ * @param ledgerCA - 0G Compute Network Ledger Contact address, auto-detected if not provided.
+ * @param inferenceCA - 0G Compute Network Inference Serving contract address, auto-detected if not provided.
+ * @param fineTuningCA - 0G Compute Network Fine Tuning Serving contract address, auto-detected if not provided.
  * @param gasPrice - Gas price for transactions. If not provided, the gas price will be calculated automatically.
+ * @param maxGasPrice - Maximum gas price for transactions.
+ * @param step - Step for gas price adjustment.
  *
  * @returns broker instance.
  *
@@ -2736,4 +2759,4 @@ interface CryptoAdapter {
 }
 declare function getCryptoAdapter(): CryptoAdapter;
 
-export { type CryptoAdapter, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, LedgerBroker, ZGComputeNetworkBroker, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, getCryptoAdapter, hasWebCrypto, isBrowser, isNode, isWebWorker };
+export { CONTRACT_ADDRESSES, type CryptoAdapter, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, LedgerBroker, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID, ZGComputeNetworkBroker, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, getCryptoAdapter, getNetworkType, hasWebCrypto, isBrowser, isNode, isWebWorker };

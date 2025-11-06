@@ -1,4 +1,4 @@
-export { F as FineTuningBroker, A as InferenceAccountProcessor, I as InferenceBroker, M as InferenceModelProcessor, R as InferenceRequestProcessor, a as InferenceResponseProcessor, V as InferenceVerifier, L as LedgerBroker, Z as ZGComputeNetworkBroker, b as createFineTuningBroker, c as createInferenceBroker, e as createLedgerBroker, f as createZGComputeNetworkBroker, k as getCryptoAdapter, j as hasWebCrypto, i as isBrowser, g as isNode, h as isWebWorker } from './index-1159ef7d.js';
+export { C as CONTRACT_ADDRESSES, F as FineTuningBroker, A as InferenceAccountProcessor, I as InferenceBroker, M as InferenceModelProcessor, R as InferenceRequestProcessor, a as InferenceResponseProcessor, V as InferenceVerifier, L as LedgerBroker, f as MAINNET_CHAIN_ID, T as TESTNET_CHAIN_ID, Z as ZGComputeNetworkBroker, b as createFineTuningBroker, c as createInferenceBroker, e as createLedgerBroker, h as createZGComputeNetworkBroker, m as getCryptoAdapter, g as getNetworkType, l as hasWebCrypto, i as isBrowser, j as isNode, k as isWebWorker } from './index-e7e53b56.js';
 import 'ethers';
 import 'fs/promises';
 import 'child_process';

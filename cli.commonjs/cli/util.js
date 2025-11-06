@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.printTableWithTitle = exports.splitIntoChunks = exports.a0giToNeuron = exports.neuronToA0gi = void 0;
 exports.initBroker = initBroker;
 exports.withBroker = withBroker;
+exports.checkFineTuningAvailability = checkFineTuningAvailability;
 exports.withFineTuningBroker = withFineTuningBroker;
 const tslib_1 = require("tslib");
 const sdk_1 = require("../sdk");
@@ -33,8 +34,57 @@ async function withBroker(options, action) {
         process.exit(1);
     }
 }
+async function checkFineTuningAvailability(options) {
+    try {
+        const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
+        const provider = new ethers_1.ethers.JsonRpcProvider(rpcEndpoint);
+        const network = await provider.getNetwork();
+        const networkType = (0, sdk_1.getNetworkType)(network.chainId);
+        if (networkType === 'mainnet') {
+            console.log(chalk_1.default.yellow('⚠ Fine-tuning is not yet ready on mainnet.'));
+            console.log(chalk_1.default.gray('Please switch to testnet to use fine-tuning features.\n'));
+            const shouldSwitch = await promptNetworkSwitch();
+            if (shouldSwitch) {
+                await switchToTestnet();
+                console.log(chalk_1.default.green('✓ Network switched to testnet. Please run the command again.'));
+                process.exit(0);
+            }
+            else {
+                process.exit(1);
+            }
+        }
+        return true;
+    }
+    catch (error) {
+        alertError(error);
+        process.exit(1);
+    }
+}
+async function promptNetworkSwitch() {
+    const { interactiveSelect } = await Promise.resolve().then(() => tslib_1.__importStar(require('./interactive-selection')));
+    const choice = await interactiveSelect({
+        message: 'Would you like to switch to testnet?',
+        options: [
+            { title: 'Yes, switch to testnet', value: 'yes' },
+            { title: 'No, exit', value: 'no' }
+        ]
+    });
+    return choice === 'yes';
+}
+async function switchToTestnet() {
+    const { setConfiguredRpcEndpoint } = await Promise.resolve().then(() => tslib_1.__importStar(require('./config')));
+    const testnetRpc = 'https://evmrpc-testnet.0g.ai';
+    // Set for current session
+    process.env['ZG_RPC_ENDPOINT'] = testnetRpc;
+    // Save to persistent config
+    setConfiguredRpcEndpoint(testnetRpc, 'testnet');
+}
 async function withFineTuningBroker(options, action) {
     try {
+        const isAvailable = await checkFineTuningAvailability(options);
+        if (!isAvailable) {
+            return;
+        }
         const broker = await initBroker(options);
         if (broker.fineTuning) {
             await action(broker);

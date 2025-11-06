@@ -4,7 +4,7 @@ import type { InferenceBroker } from './inference/broker/broker';
 import type { LedgerBroker } from './ledger';
 import type { FineTuningBroker } from './fine-tuning/broker';
 export declare const TESTNET_CHAIN_ID = 16602n;
-export declare const MAINNET_CHAIN_ID = 16600n;
+export declare const MAINNET_CHAIN_ID = 16661n;
 export declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
         readonly ledger: "0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5";

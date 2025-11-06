@@ -23,6 +23,7 @@ export default function network(program: Command) {
                 console.log(chalk.green('\n✓ Network configuration completed!'))
                 console.log(chalk.gray(`Selected RPC: ${selectedRpc}`))
                 console.log(chalk.yellow('\n💡 Configuration saved and will persist across CLI sessions'))
+                process.exit(0)
                 
             } catch (error) {
                 console.error(chalk.red('✗ Network setup failed:'), error)

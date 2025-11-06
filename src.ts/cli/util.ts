@@ -32,8 +32,10 @@ export async function withBroker(
     try {
         const broker = await initBroker(options)
         await action(broker)
+        process.exit(0)
     } catch (error: any) {
         alertError(error)
+        process.exit(1)
     }
 }
 
@@ -48,8 +50,10 @@ export async function withFineTuningBroker(
         } else {
             console.log('Fine tuning broker is not available.')
         }
+        process.exit(0)
     } catch (error: any) {
         alertError(error)
+        process.exit(1)
     }
 }
 

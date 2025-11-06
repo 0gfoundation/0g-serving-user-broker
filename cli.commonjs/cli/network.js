@@ -21,6 +21,7 @@ function network(program) {
             console.log(chalk_1.default.green('\n✓ Network configuration completed!'));
             console.log(chalk_1.default.gray(`Selected RPC: ${selectedRpc}`));
             console.log(chalk_1.default.yellow('\n💡 Configuration saved and will persist across CLI sessions'));
+            process.exit(0);
         }
         catch (error) {
             console.error(chalk_1.default.red('✗ Network setup failed:'), error);

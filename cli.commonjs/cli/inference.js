@@ -8,7 +8,7 @@ const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 function inference(program) {
     program
-        .command('ack-provider')
+        .command('ack-provider', { hidden: true })
         .description('verify TEE remote attestation of service')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)

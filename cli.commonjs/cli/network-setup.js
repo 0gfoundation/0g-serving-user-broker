@@ -13,20 +13,20 @@ const NETWORKS = {
     mainnet: {
         name: 'Mainnet',
         rpc: MAINNET_RPC,
-        description: '0G Chain Mainnet (Production)'
+        description: '0G Chain Mainnet (Production)',
     },
     testnet: {
         name: 'Testnet',
         rpc: TESTNET_RPC,
-        description: '0G Chain Testnet (Development)'
-    }
+        description: '0G Chain Testnet (Development)',
+    },
 };
 /**
  * Sets the RPC endpoint in both session and persistent config
  */
 function setRpcEndpoint(rpcEndpoint, network) {
     // Set for current session
-    process.env['0G_RPC_ENDPOINT'] = rpcEndpoint;
+    process.env['ZG_RPC_ENDPOINT'] = rpcEndpoint;
     // Save to persistent config
     (0, config_1.setConfiguredRpcEndpoint)(rpcEndpoint, network);
     console.log(chalk_1.default.green(`✓ RPC endpoint configured: ${rpcEndpoint}`));
@@ -45,19 +45,19 @@ async function promptNetworkSelection() {
             {
                 title: `${NETWORKS.mainnet.name}`,
                 value: 'mainnet',
-                description: `${NETWORKS.mainnet.description} (${NETWORKS.mainnet.rpc})`
+                description: `${NETWORKS.mainnet.description} (${NETWORKS.mainnet.rpc})`,
             },
             {
                 title: `${NETWORKS.testnet.name}`,
                 value: 'testnet',
-                description: `${NETWORKS.testnet.description} (${NETWORKS.testnet.rpc})`
+                description: `${NETWORKS.testnet.description} (${NETWORKS.testnet.rpc})`,
             },
             {
                 title: 'Custom RPC Endpoint',
                 value: 'custom',
-                description: 'Enter your own RPC endpoint URL'
-            }
-        ]
+                description: 'Enter your own RPC endpoint URL',
+            },
+        ],
     });
     if (networkChoice === 'custom') {
         console.log();
@@ -83,7 +83,7 @@ async function promptNetworkSelection() {
  */
 async function ensureNetworkConfiguration() {
     // Check environment variables first
-    const envRpc = process.env['0G_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT;
+    const envRpc = process.env['ZG_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT;
     if (envRpc) {
         return envRpc;
     }
@@ -91,7 +91,7 @@ async function ensureNetworkConfiguration() {
     const configRpc = (0, config_1.getConfiguredRpcEndpoint)();
     if (configRpc) {
         // Set in current session as well
-        process.env['0G_RPC_ENDPOINT'] = configRpc;
+        process.env['ZG_RPC_ENDPOINT'] = configRpc;
         return configRpc;
     }
     console.log(chalk_1.default.yellow('⚠ No RPC endpoint configured.'));
@@ -125,8 +125,8 @@ async function getRpcEndpoint(options) {
     if (options.rpc) {
         return options.rpc;
     }
-    if (process.env.RPC_ENDPOINT) {
-        return process.env.RPC_ENDPOINT;
+    if (process.env.ZG_RPC_ENDPOINT) {
+        return process.env.ZG_RPC_ENDPOINT;
     }
     return await ensureNetworkConfiguration();
 }

@@ -4,60 +4,48 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = inference;
 const tslib_1 = require("tslib");
 const util_1 = require("./util");
+const network_setup_1 = require("./network-setup");
+const private_key_setup_1 = require("./private-key-setup");
 const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 function inference(program) {
     program
-        .command('ack-provider', { hidden: true })
-        .description('verify TEE remote attestation of service')
-        .requiredOption('--provider <address>', 'Provider address')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
+        .command('list-providers')
+        .description('List inference providers')
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
-        .option('--gas-price <price>', 'Gas price for transactions')
         .action((options) => {
-        (0, util_1.withBroker)(options, async (broker) => {
-            await broker.inference.acknowledgeProviderTEESigner(options.provider, options.gasPrice);
-            console.log('Provider acknowledged successfully!');
+        const table = new cli_table3_1.default({
+            colWidths: [50, 50],
         });
-    });
-    program
-        .command('download-report')
-        .description('Download quote data to a specified file')
-        .requiredOption('--provider <address>', 'Provider address')
-        .requiredOption('--output <path>', 'Output file path for the quote report')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
-        .option('--rpc <url>', '0G Chain RPC endpoint')
-        .option('--ledger-ca <address>', 'Account (ledger) contract address')
-        .option('--inference-ca <address>', 'Inference contract address')
-        .option('--gas-price <price>', 'Gas price for transactions')
-        .action((options) => {
         (0, util_1.withBroker)(options, async (broker) => {
-            await broker.inference.downloadQuoteReport(options.provider, options.output);
-            console.log(`Quote report downloaded to: ${options.output}`);
-        });
-    });
-    program
-        .command('verify-tee')
-        .description('Verify the reliability of a service')
-        .requiredOption('--provider <address>', 'Provider address')
-        .option('--output-dir <path>', 'Output directory for verification reports', '.')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
-        .option('--rpc <url>', '0G Chain RPC endpoint')
-        .option('--ledger-ca <address>', 'Account (ledger) contract address')
-        .option('--inference-ca <address>', 'Inference contract address')
-        .action((options) => {
-        (0, util_1.withBroker)(options, async (broker) => {
-            const result = await broker.inference.verifyService(options.provider, options.outputDir);
-            if (result) {
-                if (!result.success) {
-                    console.log('❌ Service verification failed');
-                }
-            }
-            else {
-                console.log('Verification result is null');
-            }
+            const services = await broker.inference.listService();
+            services.forEach((service, index) => {
+                table.push([
+                    chalk_1.default.blue(`Provider ${index + 1}`),
+                    chalk_1.default.blue(service.provider),
+                ]);
+                table.push(['Model', service.model || 'N/A']);
+                table.push([
+                    'Input Price Per Byte (0G)',
+                    service.inputPrice
+                        ? (0, util_1.neuronToA0gi)(BigInt(service.inputPrice)).toFixed(18)
+                        : 'N/A',
+                ]);
+                table.push([
+                    'Output Price Per Byte (0G)',
+                    service.outputPrice
+                        ? (0, util_1.neuronToA0gi)(BigInt(service.outputPrice)).toFixed(18)
+                        : 'N/A',
+                ]);
+                table.push([
+                    'Verifiability',
+                    service.verifiability || 'N/A',
+                ]);
+            });
+            console.log(table.toString());
         });
     });
     program
@@ -72,8 +60,12 @@ function inference(program) {
         .option('--port <port>', 'Port to run the local inference service on', '3000')
         .option('--host <host>', 'Host to bind the local inference service', '0.0.0.0')
         .action(async (options) => {
+        // Ensure RPC endpoint is configured
+        const rpc = await (0, network_setup_1.getRpcEndpoint)(options);
+        // Ensure private key is configured
+        const key = await (0, private_key_setup_1.getPrivateKey)(options);
         const { runInferenceServer } = await Promise.resolve().then(() => tslib_1.__importStar(require('../example/inference-server')));
-        await runInferenceServer(options);
+        await runInferenceServer({ ...options, rpc, key });
     });
     program
         .command('router-serve')
@@ -154,8 +146,21 @@ function inference(program) {
             console.error('Error: Must specify either --add-provider or --add-endpoint');
             process.exit(1);
         }
+        // Ensure RPC endpoint is configured if we have on-chain providers
+        let rpc = options.rpc;
+        let key = options.key;
+        if (providers.length > 0) {
+            if (!rpc) {
+                rpc = await (0, network_setup_1.getRpcEndpoint)(options);
+            }
+            if (!key) {
+                key = await (0, private_key_setup_1.getPrivateKey)(options);
+            }
+        }
         const routerOptions = {
             ...options,
+            rpc,
+            key,
             providers,
             directEndpoints: Object.keys(directEndpoints).length > 0
                 ? directEndpoints
@@ -167,42 +172,56 @@ function inference(program) {
         await runRouterServer(routerOptions);
     });
     program
-        .command('list-providers')
-        .description('List inference providers')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .command('download-report')
+        .description('Download quote data to a specified file')
+        .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--output <path>', 'Output file path for the quote report')
+        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--gas-price <price>', 'Gas price for transactions')
+        .action((options) => {
+        (0, util_1.withBroker)(options, async (broker) => {
+            await broker.inference.downloadQuoteReport(options.provider, options.output);
+            console.log(`Quote report downloaded to: ${options.output}`);
+        });
+    });
+    program
+        .command('verify-tee')
+        .description('Verify the reliability of a service')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--output-dir <path>', 'Output directory for verification reports', '.')
+        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
         .action((options) => {
-        const table = new cli_table3_1.default({
-            colWidths: [50, 50],
-        });
         (0, util_1.withBroker)(options, async (broker) => {
-            const services = await broker.inference.listService();
-            services.forEach((service, index) => {
-                table.push([
-                    chalk_1.default.blue(`Provider ${index + 1}`),
-                    chalk_1.default.blue(service.provider),
-                ]);
-                table.push(['Model', service.model || 'N/A']);
-                table.push([
-                    'Input Price Per Byte (0G)',
-                    service.inputPrice
-                        ? (0, util_1.neuronToA0gi)(BigInt(service.inputPrice)).toFixed(18)
-                        : 'N/A',
-                ]);
-                table.push([
-                    'Output Price Per Byte (0G)',
-                    service.outputPrice
-                        ? (0, util_1.neuronToA0gi)(BigInt(service.outputPrice)).toFixed(18)
-                        : 'N/A',
-                ]);
-                table.push([
-                    'Verifiability',
-                    service.verifiability || 'N/A',
-                ]);
-            });
-            console.log(table.toString());
+            const result = await broker.inference.verifyService(options.provider, options.outputDir);
+            if (result) {
+                if (!result.success) {
+                    console.log('❌ Service verification failed');
+                }
+            }
+            else {
+                console.log('Verification result is null');
+            }
+        });
+    });
+    program
+        .command('ack-provider', { hidden: true })
+        .description('verify TEE remote attestation of service')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--gas-price <price>', 'Gas price for transactions')
+        .action((options) => {
+        (0, util_1.withBroker)(options, async (broker) => {
+            await broker.inference.acknowledgeProviderTEESigner(options.provider, options.gasPrice);
+            console.log('Provider acknowledged successfully!');
         });
     });
 }

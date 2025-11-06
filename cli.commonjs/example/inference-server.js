@@ -9,6 +9,7 @@ const sdk_1 = require("../sdk");
 const const_1 = require("../cli/const");
 const cache_1 = require("../sdk/common/storage/cache");
 const cache_keys_1 = require("../sdk/common/storage/cache-keys");
+const logger_1 = require("../sdk/common/logger");
 async function runInferenceServer(options) {
     const app = (0, express_1.default)();
     app.use(express_1.default.json());
@@ -18,7 +19,7 @@ async function runInferenceServer(options) {
     let endpoint;
     let model;
     async function initBroker() {
-        const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc || process.env.RPC_ENDPOINT || const_1.ZG_RPC_ENDPOINT_TESTNET);
+        const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc || process.env.ZG_RPC_ENDPOINT || const_1.ZG_RPC_ENDPOINT_TESTNET);
         const privateKey = options.key || process.env.ZG_PRIVATE_KEY;
         if (!privateKey) {
             throw new Error('Missing wallet private key, please provide --key or set ZG_PRIVATE_KEY in environment variables');
@@ -32,6 +33,7 @@ async function runInferenceServer(options) {
         model = meta.model;
     }
     async function chatProxy(body, stream = false) {
+        logger_1.logger.debug(`Chat proxy request: ${JSON.stringify(body)}`);
         const headers = await broker.inference.getRequestHeaders(providerAddress, Array.isArray(body.messages) && body.messages.length > 0
             ? body.messages.map((m) => m.content).join('\n')
             : '');
@@ -39,6 +41,7 @@ async function runInferenceServer(options) {
         if (stream) {
             body.stream = true;
         }
+        logger_1.logger.debug(`Proxying to ${endpoint}/chat/completions with body: ${JSON.stringify(body)} and headers: ${JSON.stringify(headers)}`);
         const response = await fetch(`${endpoint}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -176,6 +179,7 @@ async function runInferenceServer(options) {
         try {
             const fetch = (await Promise.resolve().then(() => tslib_1.__importStar(require('node-fetch')))).default;
             const healthCheckHost = host === '0.0.0.0' ? 'localhost' : host;
+            logger_1.logger.debug(`Performing health check on ${healthCheckHost}:${port}...`);
             const res = await fetch(`http://${healthCheckHost}:${port}/v1/chat/completions`, {
                 method: 'POST',
                 headers: {

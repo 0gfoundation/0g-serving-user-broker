@@ -59,3 +59,23 @@ export async function textInput(message: string, placeholder?: string): Promise<
     
     return response.input.trim()
 }
+
+/**
+ * Password input prompt (masked input)
+ */
+export async function passwordInput(message: string, placeholder?: string): Promise<string> {
+    const response = await prompts({
+        type: 'password',
+        name: 'password',
+        message: message,
+        mask: '*'
+    })
+    
+    // Handle Ctrl+C (user cancellation)
+    if (response.password === undefined) {
+        console.log(chalk.yellow('\nOperation cancelled.'))
+        process.exit(0)
+    }
+    
+    return response.password.trim()
+}

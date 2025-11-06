@@ -75,7 +75,7 @@ export async function runRouterServer(options: RouterServerOptions) {
         if (hasOnChainProviders) {
             const provider = new ethers.JsonRpcProvider(
                 options.rpc ||
-                    process.env.RPC_ENDPOINT ||
+                    process.env.ZG_RPC_ENDPOINT ||
                     ZG_RPC_ENDPOINT_TESTNET
             )
             const privateKey = options.key || process.env.ZG_PRIVATE_KEY

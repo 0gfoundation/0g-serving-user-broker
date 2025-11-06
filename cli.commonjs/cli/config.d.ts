@@ -2,6 +2,7 @@
 interface CLIConfig {
     rpcEndpoint?: string;
     network?: 'mainnet' | 'testnet' | 'custom';
+    privateKey?: string;
     lastUpdated?: string;
 }
 /**
@@ -20,6 +21,14 @@ export declare function getConfiguredRpcEndpoint(): string | undefined;
  * Sets the RPC endpoint in config file
  */
 export declare function setConfiguredRpcEndpoint(rpcEndpoint: string, network: 'mainnet' | 'testnet' | 'custom'): void;
+/**
+ * Gets the private key from config file or environment variable
+ */
+export declare function getConfiguredPrivateKey(): string | undefined;
+/**
+ * Sets the private key in config file
+ */
+export declare function setConfiguredPrivateKey(privateKey: string): void;
 /**
  * Clears the configuration
  */

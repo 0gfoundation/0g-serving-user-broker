@@ -2693,7 +2693,7 @@ declare class FineTuningBroker {
 declare function createFineTuningBroker(signer: Wallet, contractAddress: string, ledger: LedgerBroker, gasPrice?: number, maxGasPrice?: number, step?: number): Promise<FineTuningBroker>;
 
 declare const TESTNET_CHAIN_ID = 16602n;
-declare const MAINNET_CHAIN_ID = 16661n;
+declare const MAINNET_CHAIN_ID = 16600n;
 declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
         readonly ledger: "0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5";

@@ -184,7 +184,7 @@ function inference(program) {
         });
     });
     program
-        .command('verify-tee')
+        .command('verify')
         .description('Verify the reliability of a service')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--output-dir <path>', 'Output directory for verification reports', '.')

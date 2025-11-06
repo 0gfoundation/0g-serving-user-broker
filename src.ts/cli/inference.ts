@@ -255,7 +255,7 @@ export default function inference(program: Command) {
         })
 
     program
-        .command('verify-tee')
+        .command('verify')
         .description('Verify the reliability of a service')
         .requiredOption('--provider <address>', 'Provider address')
         .option(

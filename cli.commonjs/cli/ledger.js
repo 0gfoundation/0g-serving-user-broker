@@ -98,14 +98,20 @@ function ledger(program) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
-        .action((options) => {
-        (0, util_1.withBroker)(options, async (broker) => {
-            const serviceType = options.service;
-            if (serviceType !== 'inference' &&
-                serviceType !== 'fine-tuning') {
-                console.error('Invalid service type. Must be "inference" or "fine-tuning"');
-                process.exit(1);
+        .action(async (options) => {
+        const serviceType = options.service;
+        if (serviceType !== 'inference' &&
+            serviceType !== 'fine-tuning') {
+            console.error('Invalid service type. Must be "inference" or "fine-tuning"');
+            process.exit(1);
+        }
+        if (serviceType === 'fine-tuning') {
+            const isAvailable = await (0, util_1.checkFineTuningAvailability)(options);
+            if (!isAvailable) {
+                return;
             }
+        }
+        (0, util_1.withBroker)(options, async (broker) => {
             console.log(`Retrieving funds from ${serviceType} sub accounts...`);
             await broker.ledger.retrieveFund(serviceType);
             console.log(`Funds retrieved from ${serviceType} sub accounts`);
@@ -128,14 +134,20 @@ function ledger(program) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
-        .action((options) => {
-        (0, util_1.withBroker)(options, async (broker) => {
-            const serviceType = options.service;
-            if (serviceType !== 'inference' &&
-                serviceType !== 'fine-tuning') {
-                console.error('Invalid service type. Must be "inference" or "fine-tuning"');
-                process.exit(1);
+        .action(async (options) => {
+        const serviceType = options.service;
+        if (serviceType !== 'inference' &&
+            serviceType !== 'fine-tuning') {
+            console.error('Invalid service type. Must be "inference" or "fine-tuning"');
+            process.exit(1);
+        }
+        if (serviceType === 'fine-tuning') {
+            const isAvailable = await (0, util_1.checkFineTuningAvailability)(options);
+            if (!isAvailable) {
+                return;
             }
+        }
+        (0, util_1.withBroker)(options, async (broker) => {
             const amountInNeuron = (0, util_1.a0giToNeuron)(parseFloat(options.amount));
             console.log(`Transferring ${options.amount} 0G to ${options.provider} for ${serviceType}...`);
             await broker.ledger.transferFund(options.provider, serviceType, amountInNeuron, options.gasPrice ? parseFloat(options.gasPrice) : undefined);
@@ -152,11 +164,17 @@ function ledger(program) {
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
-        .action((options) => {
+        .action(async (options) => {
         if (options.service !== 'inference' &&
             options.service !== 'fine-tuning') {
             console.error(chalk_1.default.red('Error: --service must be either "inference" or "fine-tuning"'));
             process.exit(1);
+        }
+        if (options.service === 'fine-tuning') {
+            const isAvailable = await (0, util_1.checkFineTuningAvailability)(options);
+            if (!isAvailable) {
+                return;
+            }
         }
         (0, util_1.withBroker)(options, async (broker) => {
             if (options.service === 'inference') {

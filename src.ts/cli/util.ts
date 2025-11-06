@@ -1,5 +1,5 @@
 import type { ZGComputeNetworkBroker } from '../sdk'
-import { createZGComputeNetworkBroker } from '../sdk'
+import { createZGComputeNetworkBroker, getNetworkType } from '../sdk'
 import { ethers } from 'ethers'
 import chalk from 'chalk'
 import type { Table } from 'cli-table3'
@@ -46,11 +46,68 @@ export async function withBroker(
     }
 }
 
+export async function checkFineTuningAvailability(options: any): Promise<boolean> {
+    try {
+        const rpcEndpoint = await getRpcEndpoint(options)
+        const provider = new ethers.JsonRpcProvider(rpcEndpoint)
+        const network = await provider.getNetwork()
+        const networkType = getNetworkType(network.chainId)
+        
+        if (networkType === 'mainnet') {
+            console.log(chalk.yellow('⚠ Fine-tuning is not yet ready on mainnet.'))
+            console.log(chalk.gray('Please switch to testnet to use fine-tuning features.\n'))
+            
+            const shouldSwitch = await promptNetworkSwitch()
+            if (shouldSwitch) {
+                await switchToTestnet()
+                console.log(chalk.green('✓ Network switched to testnet. Please run the command again.'))
+                process.exit(0)
+            } else {
+                process.exit(1)
+            }
+        }
+        return true
+    } catch (error: any) {
+        alertError(error)
+        process.exit(1)
+    }
+}
+
+async function promptNetworkSwitch(): Promise<boolean> {
+    const { interactiveSelect } = await import('./interactive-selection')
+    
+    const choice = await interactiveSelect({
+        message: 'Would you like to switch to testnet?',
+        options: [
+            { title: 'Yes, switch to testnet', value: 'yes' },
+            { title: 'No, exit', value: 'no' }
+        ]
+    })
+    
+    return choice === 'yes'
+}
+
+async function switchToTestnet(): Promise<void> {
+    const { setConfiguredRpcEndpoint } = await import('./config')
+    const testnetRpc = 'https://evmrpc-testnet.0g.ai'
+    
+    // Set for current session
+    process.env['ZG_RPC_ENDPOINT'] = testnetRpc
+    
+    // Save to persistent config
+    setConfiguredRpcEndpoint(testnetRpc, 'testnet')
+}
+
 export async function withFineTuningBroker(
     options: any,
     action: (broker: ZGComputeNetworkBroker) => Promise<void>
 ) {
     try {
+        const isAvailable = await checkFineTuningAvailability(options)
+        if (!isAvailable) {
+            return
+        }
+        
         const broker = await initBroker(options)
         if (broker.fineTuning) {
             await action(broker)

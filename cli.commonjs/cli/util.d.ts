@@ -2,6 +2,7 @@ import type { ZGComputeNetworkBroker } from '../sdk';
 import type { Table } from 'cli-table3';
 export declare function initBroker(options: any): Promise<ZGComputeNetworkBroker>;
 export declare function withBroker(options: any, action: (broker: ZGComputeNetworkBroker) => Promise<void>): Promise<void>;
+export declare function checkFineTuningAvailability(options: any): Promise<boolean>;
 export declare function withFineTuningBroker(options: any, action: (broker: ZGComputeNetworkBroker) => Promise<void>): Promise<void>;
 export declare const neuronToA0gi: (value: bigint) => number;
 export declare const a0giToNeuron: (value: number) => bigint;

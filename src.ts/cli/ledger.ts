@@ -6,6 +6,7 @@ import {
     printTableWithTitle,
     withBroker,
     splitIntoChunks,
+    checkFineTuningAvailability,
 } from './util'
 import type { Command } from 'commander'
 import Table from 'cli-table3'
@@ -126,21 +127,28 @@ export default function ledger(program: Command) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
-        .action((options: any) => {
-            withBroker(options, async (broker) => {
-                const serviceType = options.service as
-                    | 'inference'
-                    | 'fine-tuning'
-                if (
-                    serviceType !== 'inference' &&
-                    serviceType !== 'fine-tuning'
-                ) {
-                    console.error(
-                        'Invalid service type. Must be "inference" or "fine-tuning"'
-                    )
-                    process.exit(1)
-                }
+        .action(async (options: any) => {
+            const serviceType = options.service as
+                | 'inference'
+                | 'fine-tuning'
+            if (
+                serviceType !== 'inference' &&
+                serviceType !== 'fine-tuning'
+            ) {
+                console.error(
+                    'Invalid service type. Must be "inference" or "fine-tuning"'
+                )
+                process.exit(1)
+            }
 
+            if (serviceType === 'fine-tuning') {
+                const isAvailable = await checkFineTuningAvailability(options)
+                if (!isAvailable) {
+                    return
+                }
+            }
+
+            withBroker(options, async (broker) => {
                 console.log(
                     `Retrieving funds from ${serviceType} sub accounts...`
                 )
@@ -182,21 +190,28 @@ export default function ledger(program: Command) {
         .option('--gas-price <price>', 'Gas price for transactions')
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
-        .action((options: any) => {
-            withBroker(options, async (broker) => {
-                const serviceType = options.service as
-                    | 'inference'
-                    | 'fine-tuning'
-                if (
-                    serviceType !== 'inference' &&
-                    serviceType !== 'fine-tuning'
-                ) {
-                    console.error(
-                        'Invalid service type. Must be "inference" or "fine-tuning"'
-                    )
-                    process.exit(1)
-                }
+        .action(async (options: any) => {
+            const serviceType = options.service as
+                | 'inference'
+                | 'fine-tuning'
+            if (
+                serviceType !== 'inference' &&
+                serviceType !== 'fine-tuning'
+            ) {
+                console.error(
+                    'Invalid service type. Must be "inference" or "fine-tuning"'
+                )
+                process.exit(1)
+            }
 
+            if (serviceType === 'fine-tuning') {
+                const isAvailable = await checkFineTuningAvailability(options)
+                if (!isAvailable) {
+                    return
+                }
+            }
+
+            withBroker(options, async (broker) => {
                 const amountInNeuron = a0giToNeuron(parseFloat(options.amount))
                 console.log(
                     `Transferring ${options.amount} 0G to ${options.provider} for ${serviceType}...`
@@ -228,7 +243,7 @@ export default function ledger(program: Command) {
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
-        .action((options: any) => {
+        .action(async (options: any) => {
             if (
                 options.service !== 'inference' &&
                 options.service !== 'fine-tuning'
@@ -239,6 +254,13 @@ export default function ledger(program: Command) {
                     )
                 )
                 process.exit(1)
+            }
+
+            if (options.service === 'fine-tuning') {
+                const isAvailable = await checkFineTuningAvailability(options)
+                if (!isAvailable) {
+                    return
+                }
             }
 
             withBroker(options, async (broker) => {

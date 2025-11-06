@@ -1,7 +1,9 @@
 #!/usr/bin/env ts-node
 
 import type { Command } from 'commander'
-import { withBroker } from './util'
+import { withBroker, neuronToA0gi, printTableWithTitle } from './util'
+import Table from 'cli-table3'
+import chalk from 'chalk'
 
 export default function inference(program: Command) {
     program
@@ -259,4 +261,119 @@ export default function inference(program: Command) {
             const { runRouterServer } = await import('../example/router-server')
             await runRouterServer(routerOptions)
         })
+
+    program
+        .command('get-sub-account')
+        .description('Retrieve sub account information for inference')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action((options: any) => {
+            withBroker(options, async (broker) => {
+                const [account, refunds] =
+                    await broker.inference.getAccountWithDetail(
+                        options.provider
+                    )
+
+                renderOverview({
+                    provider: account.provider,
+                    balance: account.balance,
+                    pendingRefund: account.pendingRefund,
+                })
+                renderRefunds(refunds)
+            })
+        })
+
+    program
+        .command('list-providers')
+        .description('List inference providers')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action((options: any) => {
+            const table = new Table({
+                colWidths: [50, 50],
+            })
+            withBroker(options, async (broker) => {
+                const services = await broker.inference.listService()
+                services.forEach((service, index) => {
+                    table.push([
+                        chalk.blue(`Provider ${index + 1}`),
+                        chalk.blue(service.provider),
+                    ])
+                    table.push(['Model', service.model || 'N/A'])
+                    table.push([
+                        'Input Price Per Byte (0G)',
+                        service.inputPrice
+                            ? neuronToA0gi(BigInt(service.inputPrice)).toFixed(
+                                  18
+                              )
+                            : 'N/A',
+                    ])
+                    table.push([
+                        'Output Price Per Byte (0G)',
+                        service.outputPrice
+                            ? neuronToA0gi(BigInt(service.outputPrice)).toFixed(
+                                  18
+                              )
+                            : 'N/A',
+                    ])
+                    table.push([
+                        'Verifiability',
+                        service.verifiability || 'N/A',
+                    ])
+                })
+                console.log(table.toString())
+            })
+        })
+}
+
+function renderOverview(account: {
+    provider: string
+    balance: bigint
+    pendingRefund: bigint
+}) {
+    const table = new Table({
+        head: [chalk.blue('Field'), chalk.blue('Value')],
+        colWidths: [50, 50],
+    })
+
+    table.push(['Provider', account.provider])
+    table.push(['Balance (A0GI)', neuronToA0gi(account.balance).toFixed(18)])
+    table.push([
+        'Funds Applied for Return to Main Account (A0GI)',
+        neuronToA0gi(account.pendingRefund).toFixed(18),
+    ])
+
+    printTableWithTitle('Overview', table)
+}
+
+function renderRefunds(refunds: { amount: bigint; remainTime: bigint }[]) {
+    const table = new Table({
+        head: [
+            chalk.blue('Amount (A0GI)'),
+            chalk.blue('Remaining Locked Time'),
+        ],
+        colWidths: [50, 50],
+    })
+
+    refunds.forEach((refund) => {
+        const totalSeconds = Number(refund.remainTime)
+        const hours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const secs = totalSeconds % 60
+
+        table.push([
+            neuronToA0gi(refund.amount).toFixed(18),
+            `${hours}h ${minutes}min ${secs}s`,
+        ])
+    })
+
+    printTableWithTitle(
+        'Details of Each Amount Applied for Return to Main Account',
+        table
+    )
 }

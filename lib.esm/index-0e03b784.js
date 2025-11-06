@@ -13026,9 +13026,17 @@ class ZGServingUserBrokerBase {
             if (!(await this.shouldCheckAccount(svc)))
                 return;
             // Re-check the account balance
-            const acc = await this.contract.getAccount(provider);
-            const lockedFund = acc.balance - acc.pendingRefund;
-            if (lockedFund < triggerThreshold) {
+            let needTransfer = false;
+            try {
+                const acc = await this.contract.getAccount(provider);
+                const lockedFund = acc.balance - acc.pendingRefund;
+                needTransfer = lockedFund < triggerThreshold;
+            }
+            catch {
+                // Account doesn't exist, need to create it by transferring funds
+                needTransfer = true;
+            }
+            if (needTransfer) {
                 try {
                     await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
                 }
@@ -14825,7 +14833,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-66eb99fa.js');
+    const { download } = await import('./index-6bea5ecc.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20076,7 +20084,7 @@ async function createLedgerBroker(signer, ledgerCA, inferenceCA, fineTuningCA, g
 
 // Network configurations
 const TESTNET_CHAIN_ID = 16602n;
-const MAINNET_CHAIN_ID = 16661n; // TODO: Update with actual mainnet chain ID when available
+const MAINNET_CHAIN_ID = 16600n; // TODO: Update with actual mainnet chain ID when available
 // Contract addresses for different networks
 const CONTRACT_ADDRESSES = {
     testnet: {
@@ -20140,11 +20148,11 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
             const chainId = network.chainId;
             if (chainId === MAINNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.mainnet;
-                console.log('Detected mainnet (chain ID:', chainId.toString(), ')');
+                console.log(`Detected mainnet (chain ID: ${chainId})`);
             }
             else if (chainId === TESTNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.testnet;
-                console.log('Detected testnet (chain ID:', chainId.toString(), ')');
+                console.log(`Detected testnet (chain ID: ${chainId})`);
             }
             else {
                 console.warn(`Unknown chain ID: ${chainId}. Using testnet addresses as default.`);
@@ -20172,4 +20180,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-da9e2f6b.js.map
+//# sourceMappingURL=index-0e03b784.js.map

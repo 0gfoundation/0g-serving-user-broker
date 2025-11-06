@@ -9,7 +9,7 @@ import type { FineTuningBroker } from './fine-tuning/broker'
 
 // Network configurations
 export const TESTNET_CHAIN_ID = 16602n
-export const MAINNET_CHAIN_ID = 16661n // TODO: Update with actual mainnet chain ID when available
+export const MAINNET_CHAIN_ID = 16600n // TODO: Update with actual mainnet chain ID when available
 
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
@@ -95,10 +95,10 @@ export async function createZGComputeNetworkBroker(
             
             if (chainId === MAINNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.mainnet
-                console.log('Detected mainnet (chain ID:', chainId.toString(), ')')
+                console.log(`Detected mainnet (chain ID: ${chainId})`)
             } else if (chainId === TESTNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.testnet
-                console.log('Detected testnet (chain ID:', chainId.toString(), ')')
+                console.log(`Detected testnet (chain ID: ${chainId})`)
             } else {
                 console.warn(
                     `Unknown chain ID: ${chainId}. Using testnet addresses as default.`

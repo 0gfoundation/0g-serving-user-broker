@@ -417,9 +417,17 @@ export abstract class ZGServingUserBrokerBase {
             if (!(await this.shouldCheckAccount(svc))) return
 
             // Re-check the account balance
-            const acc = await this.contract.getAccount(provider)
-            const lockedFund = acc.balance - acc.pendingRefund
-            if (lockedFund < triggerThreshold) {
+            let needTransfer = false
+            try {
+                const acc = await this.contract.getAccount(provider)
+                const lockedFund = acc.balance - acc.pendingRefund
+                needTransfer = lockedFund < triggerThreshold
+            } catch {
+                // Account doesn't exist, need to create it by transferring funds
+                needTransfer = true
+            }
+
+            if (needTransfer) {
                 try {
                     await this.ledger.transferFund(
                         provider,

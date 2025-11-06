@@ -70,13 +70,13 @@ function default_1(program) {
                     ]);
                     table.push(['Model', service.model || 'N/A']);
                     table.push([
-                        'Input Price Per Byte (AOGI)',
+                        'Input Price Per Byte (0G)',
                         service.inputPrice
                             ? (0, util_1.neuronToA0gi)(BigInt(service.inputPrice)).toFixed(18)
                             : 'N/A',
                     ]);
                     table.push([
-                        'Output Price Per Byte (AOGI)',
+                        'Output Price Per Byte (0G)',
                         service.outputPrice
                             ? (0, util_1.neuronToA0gi)(BigInt(service.outputPrice)).toFixed(18)
                             : 'N/A',
@@ -97,7 +97,7 @@ function default_1(program) {
                     chalk_1.default.blue(`Provider ${index + 1}`),
                     chalk_1.default.blue(service.provider),
                 ]);
-                let available = !service.occupied ? '\u2713' : `\u2717`;
+                const available = !service.occupied ? '\u2713' : `\u2717`;
                 table.push(['Available', available]);
                 table.push([
                     'Price Per Byte in Dataset (A0GI)',

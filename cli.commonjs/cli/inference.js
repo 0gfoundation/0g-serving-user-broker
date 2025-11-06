@@ -1,41 +1,11 @@
 #!/usr/bin/env ts-node
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = inference;
+const tslib_1 = require("tslib");
 const util_1 = require("./util");
+const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
+const chalk_1 = tslib_1.__importDefault(require("chalk"));
 function inference(program) {
     program
         .command('ack-provider')
@@ -102,7 +72,7 @@ function inference(program) {
         .option('--port <port>', 'Port to run the local inference service on', '3000')
         .option('--host <host>', 'Host to bind the local inference service', '0.0.0.0')
         .action(async (options) => {
-        const { runInferenceServer } = await Promise.resolve().then(() => __importStar(require('../example/inference-server')));
+        const { runInferenceServer } = await Promise.resolve().then(() => tslib_1.__importStar(require('../example/inference-server')));
         await runInferenceServer(options);
     });
     program
@@ -193,8 +163,99 @@ function inference(program) {
             priorityConfig,
             requestTimeout: options.requestTimeout,
         };
-        const { runRouterServer } = await Promise.resolve().then(() => __importStar(require('../example/router-server')));
+        const { runRouterServer } = await Promise.resolve().then(() => tslib_1.__importStar(require('../example/router-server')));
         await runRouterServer(routerOptions);
     });
+    program
+        .command('get-sub-account')
+        .description('Retrieve sub account information for inference')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action((options) => {
+        (0, util_1.withBroker)(options, async (broker) => {
+            const [account, refunds] = await broker.inference.getAccountWithDetail(options.provider);
+            renderOverview({
+                provider: account.provider,
+                balance: account.balance,
+                pendingRefund: account.pendingRefund,
+            });
+            renderRefunds(refunds);
+        });
+    });
+    program
+        .command('list-providers')
+        .description('List inference providers')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action((options) => {
+        const table = new cli_table3_1.default({
+            colWidths: [50, 50],
+        });
+        (0, util_1.withBroker)(options, async (broker) => {
+            const services = await broker.inference.listService();
+            services.forEach((service, index) => {
+                table.push([
+                    chalk_1.default.blue(`Provider ${index + 1}`),
+                    chalk_1.default.blue(service.provider),
+                ]);
+                table.push(['Model', service.model || 'N/A']);
+                table.push([
+                    'Input Price Per Byte (0G)',
+                    service.inputPrice
+                        ? (0, util_1.neuronToA0gi)(BigInt(service.inputPrice)).toFixed(18)
+                        : 'N/A',
+                ]);
+                table.push([
+                    'Output Price Per Byte (0G)',
+                    service.outputPrice
+                        ? (0, util_1.neuronToA0gi)(BigInt(service.outputPrice)).toFixed(18)
+                        : 'N/A',
+                ]);
+                table.push([
+                    'Verifiability',
+                    service.verifiability || 'N/A',
+                ]);
+            });
+            console.log(table.toString());
+        });
+    });
+}
+function renderOverview(account) {
+    const table = new cli_table3_1.default({
+        head: [chalk_1.default.blue('Field'), chalk_1.default.blue('Value')],
+        colWidths: [50, 50],
+    });
+    table.push(['Provider', account.provider]);
+    table.push(['Balance (A0GI)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
+    table.push([
+        'Funds Applied for Return to Main Account (A0GI)',
+        (0, util_1.neuronToA0gi)(account.pendingRefund).toFixed(18),
+    ]);
+    (0, util_1.printTableWithTitle)('Overview', table);
+}
+function renderRefunds(refunds) {
+    const table = new cli_table3_1.default({
+        head: [
+            chalk_1.default.blue('Amount (A0GI)'),
+            chalk_1.default.blue('Remaining Locked Time'),
+        ],
+        colWidths: [50, 50],
+    });
+    refunds.forEach((refund) => {
+        const totalSeconds = Number(refund.remainTime);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+        table.push([
+            (0, util_1.neuronToA0gi)(refund.amount).toFixed(18),
+            `${hours}h ${minutes}min ${secs}s`,
+        ]);
+    });
+    (0, util_1.printTableWithTitle)('Details of Each Amount Applied for Return to Main Account', table);
 }
 //# sourceMappingURL=inference.js.map

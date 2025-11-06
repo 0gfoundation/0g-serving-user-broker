@@ -87,7 +87,7 @@ export default function (program: Command) {
                         ])
                         table.push(['Model', service.model || 'N/A'])
                         table.push([
-                            'Input Price Per Byte (AOGI)',
+                            'Input Price Per Byte (0G)',
                             service.inputPrice
                                 ? neuronToA0gi(
                                       BigInt(service.inputPrice)
@@ -95,7 +95,7 @@ export default function (program: Command) {
                                 : 'N/A',
                         ])
                         table.push([
-                            'Output Price Per Byte (AOGI)',
+                            'Output Price Per Byte (0G)',
                             service.outputPrice
                                 ? neuronToA0gi(
                                       BigInt(service.outputPrice)
@@ -118,7 +118,7 @@ export default function (program: Command) {
                         chalk.blue(`Provider ${index + 1}`),
                         chalk.blue(service.provider),
                     ])
-                    let available = !service.occupied ? '\u2713' : `\u2717`
+                    const available = !service.occupied ? '\u2713' : `\u2717`
                     table.push(['Available', available])
                     table.push([
                         'Price Per Byte in Dataset (A0GI)',

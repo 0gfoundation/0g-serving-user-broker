@@ -3,7 +3,6 @@
 import { Command } from 'commander'
 import fineTuning from './fine-tuning'
 import ledger from './ledger'
-import common from './common'
 import inference from './inference'
 import webUIEmbedded from './web-ui-embedded'
 
@@ -14,10 +13,27 @@ program
     .description('CLI for interacting with ZG Compute Network')
     .version('0.5.4')
 
-fineTuning(program)
-inference(program)
-ledger(program)
-common(program)
-webUIEmbedded(program)
+// Create subcommands for each service
+const fineTuningCmd = program.command('fine-tuning')
+    .alias('ft')
+    .description('Fine-tuning service commands')
+
+const inferenceCmd = program.command('inference')
+    .alias('inf')
+    .description('Inference service commands')
+
+const ledgerCmd = program.command('ledger')
+    .alias('led')
+    .description('Ledger management commands')
+
+const webUICmd = program.command('web-ui')
+    .alias('ui')
+    .description('Web UI embedded commands')
+
+// Register commands to their respective groups
+fineTuning(fineTuningCmd)
+inference(inferenceCmd)
+ledger(ledgerCmd)
+webUIEmbedded(webUICmd)
 
 program.parse(process.argv)

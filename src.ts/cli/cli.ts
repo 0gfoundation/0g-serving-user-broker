@@ -15,6 +15,8 @@ program
     .description('CLI for interacting with ZG Compute Network')
     .version('0.5.4')
 
+ledger(program)
+
 // Create subcommands for each service
 const fineTuningCmd = program.command('fine-tuning')
     .alias('ft')
@@ -24,9 +26,6 @@ const inferenceCmd = program.command('inference')
     .alias('inf')
     .description('Inference service commands')
 
-const accountCmd = program.command('account')
-    .alias('acc')
-    .description('Account management commands')
 
 const webUICmd = program.command('web-ui')
     .alias('ui')
@@ -35,7 +34,6 @@ const webUICmd = program.command('web-ui')
 // Register commands to their respective groups
 fineTuning(fineTuningCmd)
 inference(inferenceCmd)
-ledger(accountCmd)
 webUIEmbedded(webUICmd)
 
 // Register network configuration commands at the root level

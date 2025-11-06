@@ -12,7 +12,6 @@ function inference(program) {
     program
         .command('list-providers')
         .description('List inference providers')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -52,7 +51,6 @@ function inference(program) {
         .command('serve')
         .description('Start local inference service')
         .requiredOption('--provider <address>', 'Provider address')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -63,7 +61,7 @@ function inference(program) {
         // Ensure RPC endpoint is configured
         const rpc = await (0, network_setup_1.getRpcEndpoint)(options);
         // Ensure private key is configured
-        const key = await (0, private_key_setup_1.getPrivateKey)(options);
+        const key = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
         const { runInferenceServer } = await Promise.resolve().then(() => tslib_1.__importStar(require('../example/inference-server')));
         await runInferenceServer({ ...options, rpc, key });
     });
@@ -103,7 +101,6 @@ function inference(program) {
     }, [])
         .option('--default-provider-priority <number>', 'Default priority for on-chain providers not explicitly set', '100')
         .option('--default-endpoint-priority <number>', 'Default priority for direct endpoints not explicitly set', '50')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -154,7 +151,7 @@ function inference(program) {
                 rpc = await (0, network_setup_1.getRpcEndpoint)(options);
             }
             if (!key) {
-                key = await (0, private_key_setup_1.getPrivateKey)(options);
+                key = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
             }
         }
         const routerOptions = {
@@ -176,7 +173,6 @@ function inference(program) {
         .description('Download quote data to a specified file')
         .requiredOption('--provider <address>', 'Provider address')
         .requiredOption('--output <path>', 'Output file path for the quote report')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -192,7 +188,6 @@ function inference(program) {
         .description('Verify the reliability of a service')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--output-dir <path>', 'Output directory for verification reports', '.')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -213,7 +208,6 @@ function inference(program) {
         .command('ack-provider', { hidden: true })
         .description('verify TEE remote attestation of service')
         .requiredOption('--provider <address>', 'Provider address')
-        .option('--key <key>', 'Wallet private key, if not provided, ensure the default key is set in the environment', process.env.ZG_PRIVATE_KEY)
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')

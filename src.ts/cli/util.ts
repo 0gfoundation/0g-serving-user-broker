@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import chalk from 'chalk'
 import type { Table } from 'cli-table3'
 import { getRpcEndpoint } from './network-setup'
-import { getPrivateKey } from './private-key-setup'
+import { ensurePrivateKeyConfiguration } from './private-key-setup'
 
 export async function initBroker(
     options: any
@@ -12,8 +12,8 @@ export async function initBroker(
     // Use the new interactive RPC endpoint selection
     const rpcEndpoint = await getRpcEndpoint(options)
     
-    // Use the new interactive private key selection
-    const privateKey = await getPrivateKey(options)
+    // Use the private key configuration
+    const privateKey = await ensurePrivateKeyConfiguration()
     if (!privateKey) {
         throw new Error('Private key is required')
     }

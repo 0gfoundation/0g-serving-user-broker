@@ -6,6 +6,7 @@ import ledger from './ledger'
 import inference from './inference'
 import webUIEmbedded from './web-ui-embedded'
 import network from './network'
+import auth from './auth'
 
 export const program = new Command()
 
@@ -39,5 +40,8 @@ webUIEmbedded(webUICmd)
 
 // Register network configuration commands at the root level
 network(program)
+
+// Register auth commands at the root level
+auth(program)
 
 program.parse(process.argv)

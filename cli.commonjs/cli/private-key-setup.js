@@ -2,7 +2,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ensurePrivateKeyConfiguration = ensurePrivateKeyConfiguration;
-exports.getPrivateKey = getPrivateKey;
 const tslib_1 = require("tslib");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const config_1 = require("./config");
@@ -28,12 +27,10 @@ function isValidPrivateKey(key) {
     }
 }
 /**
- * Sets the private key in both session and persistent config
+ * Sets the private key in persistent config only
  */
 function setPrivateKey(privateKey) {
-    // Set for current session
-    process.env['ZG_PRIVATE_KEY'] = privateKey;
-    // Save to persistent config
+    // Save to persistent config only
     (0, config_1.setConfiguredPrivateKey)(privateKey);
     console.log(chalk_1.default.green(`✓ Private key configured`));
     console.log(chalk_1.default.blue(`ℹ Settings saved to ~/.0g-compute-cli/config.json`));
@@ -81,7 +78,7 @@ async function promptPrivateKeyInput() {
             }
             return formattedKey;
         }
-        catch (error) {
+        catch {
             console.log(chalk_1.default.red('Error creating wallet from private key'));
             continue;
         }
@@ -91,16 +88,9 @@ async function promptPrivateKeyInput() {
  * Checks if private key is configured, if not, prompts user to enter it
  */
 async function ensurePrivateKeyConfiguration() {
-    // Check environment variables first
-    const envKey = process.env['ZG_PRIVATE_KEY'];
-    if (envKey) {
-        return envKey;
-    }
-    // Check config file
+    // Check config file only
     const configKey = (0, config_1.getConfiguredPrivateKey)();
     if (configKey) {
-        // Set in current session as well
-        process.env['ZG_PRIVATE_KEY'] = configKey;
         return configKey;
     }
     console.log(chalk_1.default.yellow('⚠ No wallet private key configured.'));
@@ -110,15 +100,5 @@ async function ensurePrivateKeyConfiguration() {
     // Set and save the configuration
     setPrivateKey(privateKey);
     return privateKey;
-}
-/**
- * Gets the private key, with interactive setup if needed
- */
-async function getPrivateKey(options) {
-    // Priority: CLI option > environment variable > interactive setup
-    if (options.key) {
-        return options.key;
-    }
-    return await ensurePrivateKeyConfiguration();
 }
 //# sourceMappingURL=private-key-setup.js.map

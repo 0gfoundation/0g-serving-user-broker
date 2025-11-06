@@ -17,7 +17,6 @@ export default function (program: Command) {
     program
         .command('get-sub-account')
         .description('Retrieve sub account information')
-        .option('--key <key>', 'Wallet private key')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
@@ -67,7 +66,6 @@ export default function (program: Command) {
     program
         .command('list-providers')
         .description('List providers')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')

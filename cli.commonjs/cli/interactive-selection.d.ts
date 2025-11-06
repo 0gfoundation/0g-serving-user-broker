@@ -16,5 +16,9 @@ export declare function interactiveSelect(config: SelectionConfig): Promise<stri
  * Simple text input prompt
  */
 export declare function textInput(message: string, placeholder?: string): Promise<string>;
+/**
+ * Password input prompt (masked input)
+ */
+export declare function passwordInput(message: string, placeholder?: string): Promise<string>;
 export {};
 //# sourceMappingURL=interactive-selection.d.ts.map

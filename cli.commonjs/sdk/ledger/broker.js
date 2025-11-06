@@ -76,7 +76,7 @@ class LedgerBroker {
     /**
      * Adds a new ledger to the contract.
      *
-     * @param {number} balance - The initial balance to be assigned to the new ledger. Units are in A0GI.
+     * @param {number} balance - The initial balance to be assigned to the new ledger. Units are in 0G.
      * @param {number} gasPrice - The gas price to be used for the transaction. If not provided,
      *                            the default/auto-generated gas price will be used. Units are in neuron.
      *
@@ -111,7 +111,7 @@ class LedgerBroker {
     /**
      * Deposits a specified amount of funds into Ledger corresponding to the current wallet address.
      *
-     * @param {string} amount - The amount of funds to be deposited. Units are in A0GI.
+     * @param {string} amount - The amount of funds to be deposited. Units are in 0G.
      * @param {number} gasPrice - The gas price to be used for the transaction. If not provided,
      *                            the default/auto-generated gas price will be used. Units are in neuron.
      *

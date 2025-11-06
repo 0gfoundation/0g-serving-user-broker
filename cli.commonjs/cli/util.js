@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.printTableWithTitle = exports.splitIntoChunks = exports.neuronToA0gi = void 0;
+exports.printTableWithTitle = exports.splitIntoChunks = exports.a0giToNeuron = exports.neuronToA0gi = void 0;
 exports.initBroker = initBroker;
 exports.withBroker = withBroker;
 exports.withFineTuningBroker = withFineTuningBroker;
@@ -9,11 +9,17 @@ const sdk_1 = require("../sdk");
 const ethers_1 = require("ethers");
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const network_setup_1 = require("./network-setup");
+const private_key_setup_1 = require("./private-key-setup");
 async function initBroker(options) {
     // Use the new interactive RPC endpoint selection
     const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
+    // Use the new interactive private key selection
+    const privateKey = await (0, private_key_setup_1.getPrivateKey)(options);
+    if (!privateKey) {
+        throw new Error('Private key is required');
+    }
     const provider = new ethers_1.ethers.JsonRpcProvider(rpcEndpoint);
-    const wallet = new ethers_1.ethers.Wallet(options.key, provider);
+    const wallet = new ethers_1.ethers.Wallet(privateKey, provider);
     return await (0, sdk_1.createZGComputeNetworkBroker)(wallet, options.ledgerCa || process.env.LEDGER_CA, options.inferenceCa || process.env.INFERENCE_CA, options.fineTuningCa || process.env.FINE_TUNING_CA, options.gasPrice, options.maxGasPrice, options.step);
 }
 async function withBroker(options, action) {
@@ -51,6 +57,27 @@ const neuronToA0gi = (value) => {
     return Number(integerPart) + decimalPart;
 };
 exports.neuronToA0gi = neuronToA0gi;
+const a0giToNeuron = (value) => {
+    const valueStr = value.toFixed(18);
+    const parts = valueStr.split('.');
+    // Handle integer part
+    const integerPart = parts[0];
+    let integerPartAsBigInt = BigInt(integerPart) * BigInt(10 ** 18);
+    // Handle fractional part if it exists
+    if (parts.length > 1) {
+        let fractionalPart = parts[1];
+        while (fractionalPart.length < 18) {
+            fractionalPart += '0';
+        }
+        if (fractionalPart.length > 18) {
+            fractionalPart = fractionalPart.slice(0, 18); // Truncate to avoid overflow
+        }
+        const fractionalPartAsBigInt = BigInt(fractionalPart);
+        integerPartAsBigInt += fractionalPartAsBigInt;
+    }
+    return integerPartAsBigInt;
+};
+exports.a0giToNeuron = a0giToNeuron;
 const splitIntoChunks = (str, size) => {
     const chunks = [];
     for (let i = 0; i < str.length; i += size) {

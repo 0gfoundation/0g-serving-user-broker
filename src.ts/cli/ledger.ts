@@ -1,6 +1,12 @@
 #!/usr/bin/env ts-node
 
-import { neuronToA0gi, printTableWithTitle, withBroker, splitIntoChunks } from './util'
+import {
+    neuronToA0gi,
+    a0giToNeuron,
+    printTableWithTitle,
+    withBroker,
+    splitIntoChunks,
+} from './util'
 import type { Command } from 'commander'
 import Table from 'cli-table3'
 import type { ZGComputeNetworkBroker } from '../sdk'
@@ -12,7 +18,7 @@ export default function ledger(program: Command) {
     program
         .command('get-account')
         .description('Retrieve account information')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -20,23 +26,35 @@ export default function ledger(program: Command) {
         .action((options) => {
             withBroker(options, async (broker) => {
                 await getLedgerTable(broker)
-                
+
                 // Add helpful information about sub-account details
-                console.log(chalk.yellow('\n💡 To get detailed sub-account information:'))
+                console.log(
+                    chalk.yellow(
+                        '\n💡 To get detailed sub-account information:'
+                    )
+                )
                 console.log(chalk.gray('• For inference sub-account details:'))
-                console.log(chalk.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service inference'))
-                console.log(chalk.gray('• For fine-tuning sub-account details:'))
-                console.log(chalk.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service fine-tuning'))
-                console.log(chalk.gray('\nExample:'))
-                console.log(chalk.green('  0g-compute-cli ledger get-sub-account --provider 0x4f371f6eff4cb5a9471c9cf9bE32c729024b063C --service inference'))
+                console.log(
+                    chalk.cyan(
+                        '  0g-compute-cli account get-sub-account --provider <provider_address> --service inference'
+                    )
+                )
+                console.log(
+                    chalk.gray('• For fine-tuning sub-account details:')
+                )
+                console.log(
+                    chalk.cyan(
+                        '  0g-compute-cli account get-sub-account --provider <provider_address> --service fine-tuning'
+                    )
+                )
             })
         })
 
     program
         .command('add-account')
         .description('Add account balance')
-        .requiredOption('--amount <A0GI>', 'Amount to add')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .requiredOption('--amount <0G>', 'Amount to add')
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -56,8 +74,8 @@ export default function ledger(program: Command) {
     program
         .command('deposit')
         .description('Deposit funds into the account')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
-        .requiredOption('--amount <A0GI>', 'Amount of funds to deposit')
+        .option('--key <key>', 'Wallet private key')
+        .requiredOption('--amount <0G>', 'Amount of funds to deposit')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -69,15 +87,15 @@ export default function ledger(program: Command) {
             withBroker(options, async (broker) => {
                 console.log('Depositing...')
                 await broker.ledger.depositFund(parseFloat(options.amount))
-                console.log('Deposited funds:', options.amount, 'A0GI')
+                console.log('Deposited funds:', options.amount, '0G')
             })
         })
 
     program
         .command('refund')
         .description('Refund an amount from the account')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
-        .requiredOption('-a, --amount <A0GI>', 'Amount to refund')
+        .option('--key <key>', 'Wallet private key')
+        .requiredOption('-a, --amount <0G>', 'Amount to refund')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -89,45 +107,70 @@ export default function ledger(program: Command) {
             withBroker(options, async (broker) => {
                 console.log('Refunding...')
                 await broker.ledger.refund(parseFloat(options.amount))
-                console.log('Refunded amount:', options.amount, 'A0GI')
+                console.log('Refunded amount:', options.amount, '0G')
             })
         })
 
     program
         .command('retrieve-fund')
-        .description('Retrieve fund from sub account')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .description('Retrieve funds from sub account')
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
-        .option(
-            '--infer',
-            'Retrieve fund from sub accounts for inference, default is fine-tuning'
+        .requiredOption(
+            '--service <type>',
+            'Service type: inference or fine-tuning'
         )
         .option('--gas-price <price>', 'Gas price for transactions')
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
         .action((options: any) => {
             withBroker(options, async (broker) => {
-                console.log('Retrieving funds from sub accounts...')
-                await broker.ledger.retrieveFund(
-                    options.infer ? 'inference' : 'fine-tuning'
+                const serviceType = options.service as
+                    | 'inference'
+                    | 'fine-tuning'
+                if (
+                    serviceType !== 'inference' &&
+                    serviceType !== 'fine-tuning'
+                ) {
+                    console.error(
+                        'Invalid service type. Must be "inference" or "fine-tuning"'
+                    )
+                    process.exit(1)
+                }
+
+                console.log(
+                    `Retrieving funds from ${serviceType} sub accounts...`
                 )
-                console.log('Funds retrieved from sub accounts')
+                await broker.ledger.retrieveFund(serviceType)
+                console.log(`Funds retrieved from ${serviceType} sub accounts`)
+
+                // Add helpful information about checking lock time
+                console.log(
+                    chalk.yellow(
+                        '\n💡 To check remaining lock time for funds to be retrieved to main account:'
+                    )
+                )
+                console.log(
+                    chalk.cyan(
+                        `  0g-compute-cli account get-sub-account --provider <provider_address> --service ${serviceType}`
+                    )
+                )
             })
         })
 
     program
         .command('transfer-fund')
-        .description('Transfer funds to a provider for a specific service')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .description('Transfer funds to a provider for a specific service provider')
+        .option('--key <key>', 'Wallet private key')
         .requiredOption(
             '--provider <address>',
             'Provider address to transfer funds to'
         )
-        .requiredOption('--amount <neuron>', 'Amount to transfer in neuron')
-        .option(
+        .requiredOption('--amount <0G>', 'Amount to transfer in 0G')
+        .requiredOption(
             '--service <type>',
             'Service type: inference or fine-tuning',
             'inference'
@@ -154,66 +197,95 @@ export default function ledger(program: Command) {
                     process.exit(1)
                 }
 
+                const amountInNeuron = a0giToNeuron(parseFloat(options.amount))
                 console.log(
-                    `Transferring ${options.amount} neuron to ${options.provider} for ${serviceType}...`
+                    `Transferring ${options.amount} 0G to ${options.provider} for ${serviceType}...`
                 )
                 await broker.ledger.transferFund(
                     options.provider,
                     serviceType,
-                    BigInt(options.amount),
+                    amountInNeuron,
                     options.gasPrice ? parseFloat(options.gasPrice) : undefined
                 )
                 console.log(
-                    `Successfully transferred ${options.amount} neuron to ${options.provider}`
+                    `Successfully transferred ${options.amount} 0G to ${options.provider}`
                 )
             })
         })
 
     program
         .command('get-sub-account')
-        .description('Retrieve detailed sub account information for a specific provider and service')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .description(
+            'Retrieve detailed sub account information for a specific provider and service'
+        )
+        .option('--key <key>', 'Wallet private key')
         .requiredOption('--provider <address>', 'Provider address')
-        .requiredOption('--service <type>', 'Service type: inference or fine-tuning')
+        .requiredOption(
+            '--service <type>',
+            'Service type: inference or fine-tuning'
+        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
         .action((options: any) => {
-            if (options.service !== 'inference' && options.service !== 'fine-tuning') {
-                console.error(chalk.red('Error: --service must be either "inference" or "fine-tuning"'))
+            if (
+                options.service !== 'inference' &&
+                options.service !== 'fine-tuning'
+            ) {
+                console.error(
+                    chalk.red(
+                        'Error: --service must be either "inference" or "fine-tuning"'
+                    )
+                )
                 process.exit(1)
             }
 
             withBroker(options, async (broker) => {
                 if (options.service === 'inference') {
-                    const [account, refunds] = await broker.inference.getAccountWithDetail(options.provider)
-                    
+                    const [account, refunds] =
+                        await broker.inference.getAccountWithDetail(
+                            options.provider
+                        )
+
                     renderSubAccountOverview({
                         provider: account.provider,
                         balance: account.balance,
                         pendingRefund: account.pendingRefund,
-                        service: 'Inference'
+                        service: 'Inference',
                     })
                     renderSubAccountRefunds(refunds)
-                    
                 } else if (options.service === 'fine-tuning') {
                     if (!broker.fineTuning) {
-                        console.log(chalk.red('Fine tuning broker is not available.'))
+                        console.log(
+                            chalk.red('Fine tuning broker is not available.')
+                        )
                         return
                     }
-                    
-                    const { account, refunds } = await broker.fineTuning.getAccountWithDetail(options.provider)
-                    
+
+                    const { account, refunds } =
+                        await broker.fineTuning.getAccountWithDetail(
+                            options.provider
+                        )
+
                     renderSubAccountOverview({
                         provider: account.provider,
                         balance: account.balance,
                         pendingRefund: account.pendingRefund,
-                        service: 'Fine-tuning'
+                        service: 'Fine-tuning',
                     })
                     renderSubAccountRefunds(refunds)
                     renderDeliverables(account.deliverables)
                 }
+
+                // Add helpful information about fund operations
+                console.log(chalk.yellow('\n💡 Fund Management Tips:'))
+                console.log(chalk.gray('• To retrieve all funds from sub-accounts to main account:'))
+                console.log(chalk.cyan(`  0g-compute-cli account retrieve-fund --service ${options.service}`))
+                console.log(chalk.gray('  Note: Retrieved funds need to be locked for a period. After the lock period expires,'))
+                console.log(chalk.gray('  use retrieve-fund again to transfer all unlocked amounts to the main account.'))
+                console.log(chalk.gray('\n• To transfer funds from main account to this provider:'))
+                console.log(chalk.cyan(`  0g-compute-cli account transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`))
             })
         })
 }
@@ -223,8 +295,8 @@ export const getLedgerTable = async (broker: ZGComputeNetworkBroker) => {
     const { ledgerInfo, infers, fines } =
         await broker.ledger.ledger.getLedgerWithDetail()
 
-    let table = new Table({
-        head: [chalk.blue('Balance'), chalk.blue('Value (A0GI)')],
+    const table = new Table({
+        head: [chalk.blue('Balance'), chalk.blue('Value (0G)')],
         colWidths: [50, 81],
     })
 
@@ -236,11 +308,11 @@ export const getLedgerTable = async (broker: ZGComputeNetworkBroker) => {
     printTableWithTitle('Overview', table)
     // Inference information
     if (infers && infers.length !== 0) {
-        let table = new Table({
+        const table = new Table({
             head: [
                 chalk.blue('Provider'),
-                chalk.blue('Balance (A0GI)'),
-                chalk.blue('Requested Return to Main Account (A0GI)'),
+                chalk.blue('Balance (0G)'),
+                chalk.blue('Requested Return to Main Account (0G)'),
             ],
             colWidths: [50, 30, 50],
         })
@@ -260,11 +332,11 @@ export const getLedgerTable = async (broker: ZGComputeNetworkBroker) => {
 
     // Fine tuning information
     if (fines && fines.length !== 0) {
-        let table = new Table({
+        const table = new Table({
             head: [
                 chalk.blue('Provider'),
-                chalk.blue('Balance (A0GI)'),
-                chalk.blue('Requested Return to Main Account (A0GI)'),
+                chalk.blue('Balance (0G)'),
+                chalk.blue('Requested Return to Main Account (0G)'),
             ],
             colWidths: [50, 30, 50],
         })
@@ -297,26 +369,25 @@ function renderSubAccountOverview(account: {
 
     table.push(['Service Type', account.service])
     table.push(['Provider', account.provider])
-    table.push(['Balance (A0GI)', neuronToA0gi(account.balance).toFixed(18)])
+    table.push(['Balance (0G)', neuronToA0gi(account.balance).toFixed(18)])
     table.push([
-        'Funds Applied for Return to Main Account (A0GI)',
+        'Funds Applied for Return to Main Account (0G)',
         neuronToA0gi(account.pendingRefund).toFixed(18),
     ])
 
     printTableWithTitle(`${account.service} Sub-Account Overview`, table)
 }
 
-function renderSubAccountRefunds(refunds: { amount: bigint; remainTime: bigint }[]) {
+function renderSubAccountRefunds(
+    refunds: { amount: bigint; remainTime: bigint }[]
+) {
     if (!refunds || refunds.length === 0) {
         console.log(chalk.gray('\nNo pending refunds found.'))
         return
     }
 
     const table = new Table({
-        head: [
-            chalk.blue('Amount (A0GI)'),
-            chalk.blue('Remaining Locked Time'),
-        ],
+        head: [chalk.blue('Amount (0G)'), chalk.blue('Remaining Locked Time')],
         colWidths: [50, 50],
     })
 

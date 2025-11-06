@@ -113,12 +113,6 @@ export async function createZGComputeNetworkBroker(
         const finalInferenceCA = inferenceCA || defaultAddresses.inference
         const finalFineTuningCA = fineTuningCA || defaultAddresses.fineTuning
         
-        console.log('Using contract addresses:', {
-            ledger: finalLedgerCA,
-            inference: finalInferenceCA,
-            fineTuning: finalFineTuningCA
-        })
-        
         const ledger = await createLedgerBroker(
             signer,
             finalLedgerCA,

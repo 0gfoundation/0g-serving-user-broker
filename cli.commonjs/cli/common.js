@@ -11,7 +11,7 @@ function default_1(program) {
     program
         .command('get-sub-account')
         .description('Retrieve sub account information')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
@@ -50,7 +50,7 @@ function default_1(program) {
     program
         .command('list-providers')
         .description('List providers')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -100,7 +100,7 @@ function default_1(program) {
                 const available = !service.occupied ? '\u2713' : `\u2717`;
                 table.push(['Available', available]);
                 table.push([
-                    'Price Per Byte in Dataset (A0GI)',
+                    'Price Per Byte in Dataset (0G)',
                     service.pricePerToken
                         ? (0, util_1.neuronToA0gi)(BigInt(service.pricePerToken)).toFixed(18)
                         : 'N/A',
@@ -121,19 +121,16 @@ function renderOverview(account) {
         colWidths: [50, 50],
     });
     table.push(['Provider', account.provider]);
-    table.push(['Balance (A0GI)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
+    table.push(['Balance (0G)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
     table.push([
-        'Funds Applied for Return to Main Account (A0GI)',
+        'Funds Applied for Return to Main Account (0G)',
         (0, util_1.neuronToA0gi)(account.pendingRefund).toFixed(18),
     ]);
     (0, util_1.printTableWithTitle)('Overview', table);
 }
 function renderRefunds(refunds) {
     const table = new cli_table3_1.default({
-        head: [
-            chalk_1.default.blue('Amount (A0GI)'),
-            chalk_1.default.blue('Remaining Locked Time'),
-        ],
+        head: [chalk_1.default.blue('Amount (0G)'), chalk_1.default.blue('Remaining Locked Time')],
         colWidths: [50, 50],
     });
     refunds.forEach((refund) => {

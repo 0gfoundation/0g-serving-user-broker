@@ -25,7 +25,7 @@ async function runRouterServer(options) {
         const hasOnChainProviders = options.providers && options.providers.length > 0;
         if (hasOnChainProviders) {
             const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc ||
-                process.env.RPC_ENDPOINT ||
+                process.env.ZG_RPC_ENDPOINT ||
                 const_1.ZG_RPC_ENDPOINT_TESTNET);
             const privateKey = options.key || process.env.ZG_PRIVATE_KEY;
             if (!privateKey) {

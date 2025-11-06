@@ -15,7 +15,7 @@ function network(program) {
             console.log(chalk_1.default.blue('🔧 Network Configuration Setup'));
             console.log(chalk_1.default.gray('This will configure your default RPC endpoint.\n'));
             // Force reconfiguration by clearing both env var and config
-            delete process.env['0G_RPC_ENDPOINT'];
+            delete process.env['ZG_RPC_ENDPOINT'];
             (0, config_1.clearConfig)();
             const selectedRpc = await (0, network_setup_1.ensureNetworkConfiguration)();
             console.log(chalk_1.default.green('\n✓ Network configuration completed!'));
@@ -32,7 +32,7 @@ function network(program) {
         .command('show-network')
         .description('Show current network configuration')
         .action(() => {
-        const envRpc = process.env['0G_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT;
+        const envRpc = process.env['ZG_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT;
         const config = (0, config_1.loadConfig)();
         console.log(chalk_1.default.blue('🌐 Current Network Configuration'));
         // Show environment variable if set

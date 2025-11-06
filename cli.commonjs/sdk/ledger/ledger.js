@@ -75,11 +75,11 @@ class LedgerProcessor {
                 if (ledger) {
                     throw new Error('Ledger already exists, with balance: ' +
                         this.neuronToA0gi(ledger.totalBalance) +
-                        ' A0GI');
+                        ' 0G');
                 }
             }
             catch (error) { }
-            await this.ledgerContract.addLedger(this.a0giToNeuron(balance), "", gasPrice);
+            await this.ledgerContract.addLedger(this.a0giToNeuron(balance), '', gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

@@ -446,7 +446,7 @@ export default function fineTuning(program: Command) {
     program
         .command('list-providers')
         .description('List fine-tuning providers')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
@@ -464,7 +464,7 @@ export default function fineTuning(program: Command) {
                     let available = !service.occupied ? '\u2713' : `\u2717`
                     table.push(['Available', available])
                     table.push([
-                        'Price Per Byte in Dataset (A0GI)',
+                        'Price Per Byte in Dataset (0G)',
                         service.pricePerToken
                             ? neuronToA0gi(
                                   BigInt(service.pricePerToken)

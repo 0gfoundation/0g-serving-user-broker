@@ -7,6 +7,7 @@ import * as os from 'os'
 interface CLIConfig {
     rpcEndpoint?: string
     network?: 'mainnet' | 'testnet' | 'custom'
+    privateKey?: string
     lastUpdated?: string
 }
 
@@ -40,13 +41,13 @@ export function saveConfig(config: CLIConfig): void {
     try {
         const configPath = getConfigPath()
         const configDir = path.dirname(configPath)
-        
+
         // Ensure config directory exists
         fs.mkdirSync(configDir, { recursive: true })
-        
+
         // Add timestamp
         config.lastUpdated = new Date().toISOString()
-        
+
         // Write config file
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
     } catch (error) {
@@ -59,11 +60,11 @@ export function saveConfig(config: CLIConfig): void {
  */
 export function getConfiguredRpcEndpoint(): string | undefined {
     // Priority: Environment variable > Config file
-    const envRpc = process.env['0G_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT
+    const envRpc = process.env['ZG_RPC_ENDPOINT'] || process.env.RPC_ENDPOINT
     if (envRpc) {
         return envRpc
     }
-    
+
     // Check config file
     const config = loadConfig()
     return config.rpcEndpoint
@@ -72,10 +73,37 @@ export function getConfiguredRpcEndpoint(): string | undefined {
 /**
  * Sets the RPC endpoint in config file
  */
-export function setConfiguredRpcEndpoint(rpcEndpoint: string, network: 'mainnet' | 'testnet' | 'custom'): void {
+export function setConfiguredRpcEndpoint(
+    rpcEndpoint: string,
+    network: 'mainnet' | 'testnet' | 'custom'
+): void {
     const config = loadConfig()
     config.rpcEndpoint = rpcEndpoint
     config.network = network
+    saveConfig(config)
+}
+
+/**
+ * Gets the private key from config file or environment variable
+ */
+export function getConfiguredPrivateKey(): string | undefined {
+    // Priority: Environment variable > Config file
+    const envKey = process.env['ZG_PRIVATE_KEY']
+    if (envKey) {
+        return envKey
+    }
+
+    // Check config file
+    const config = loadConfig()
+    return config.privateKey
+}
+
+/**
+ * Sets the private key in config file
+ */
+export function setConfiguredPrivateKey(privateKey: string): void {
+    const config = loadConfig()
+    config.privateKey = privateKey
     saveConfig(config)
 }
 

@@ -5,6 +5,7 @@ import { createZGComputeNetworkBroker } from '../sdk'
 import { ZG_RPC_ENDPOINT_TESTNET } from '../cli/const'
 import { Cache, CacheValueTypeEnum } from '../sdk/common/storage/cache'
 import { CacheKeyHelpers } from '../sdk/common/storage/cache-keys'
+import { logger } from '../sdk/common/logger'
 
 export interface InferenceServerOptions {
     provider: string
@@ -29,7 +30,7 @@ export async function runInferenceServer(options: InferenceServerOptions) {
 
     async function initBroker() {
         const provider = new ethers.JsonRpcProvider(
-            options.rpc || process.env.RPC_ENDPOINT || ZG_RPC_ENDPOINT_TESTNET
+            options.rpc || process.env.ZG_RPC_ENDPOINT || ZG_RPC_ENDPOINT_TESTNET
         )
         const privateKey = options.key || process.env.ZG_PRIVATE_KEY
         if (!privateKey) {
@@ -53,6 +54,7 @@ export async function runInferenceServer(options: InferenceServerOptions) {
     }
 
     async function chatProxy(body: any, stream: boolean = false) {
+        logger.debug(`Chat proxy request: ${JSON.stringify(body)}`)
         const headers = await broker.inference.getRequestHeaders(
             providerAddress,
             Array.isArray(body.messages) && body.messages.length > 0
@@ -63,6 +65,9 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         if (stream) {
             body.stream = true
         }
+        logger.debug(`Proxying to ${endpoint}/chat/completions with body: ${JSON.stringify(
+            body
+        )} and headers: ${JSON.stringify(headers)}`)
         const response = await fetch(`${endpoint}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -217,6 +222,7 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         try {
             const fetch = (await import('node-fetch')).default
             const healthCheckHost = host === '0.0.0.0' ? 'localhost' : host
+            logger.debug(`Performing health check on ${healthCheckHost}:${port}...`)
             const res = await fetch(
                 `http://${healthCheckHost}:${port}/v1/chat/completions`,
                 {

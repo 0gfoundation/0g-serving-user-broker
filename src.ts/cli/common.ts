@@ -17,7 +17,7 @@ export default function (program: Command) {
     program
         .command('get-sub-account')
         .description('Retrieve sub account information')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .requiredOption('--provider <address>', 'Provider address')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
@@ -67,7 +67,7 @@ export default function (program: Command) {
     program
         .command('list-providers')
         .description('List providers')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -121,7 +121,7 @@ export default function (program: Command) {
                     const available = !service.occupied ? '\u2713' : `\u2717`
                     table.push(['Available', available])
                     table.push([
-                        'Price Per Byte in Dataset (A0GI)',
+                        'Price Per Byte in Dataset (0G)',
                         service.pricePerToken
                             ? neuronToA0gi(
                                   BigInt(service.pricePerToken)
@@ -150,9 +150,9 @@ function renderOverview(account: {
     })
 
     table.push(['Provider', account.provider])
-    table.push(['Balance (A0GI)', neuronToA0gi(account.balance).toFixed(18)])
+    table.push(['Balance (0G)', neuronToA0gi(account.balance).toFixed(18)])
     table.push([
-        'Funds Applied for Return to Main Account (A0GI)',
+        'Funds Applied for Return to Main Account (0G)',
         neuronToA0gi(account.pendingRefund).toFixed(18),
     ])
 
@@ -161,10 +161,7 @@ function renderOverview(account: {
 
 function renderRefunds(refunds: { amount: bigint; remainTime: bigint }[]) {
     const table = new Table({
-        head: [
-            chalk.blue('Amount (A0GI)'),
-            chalk.blue('Remaining Locked Time'),
-        ],
+        head: [chalk.blue('Amount (0G)'), chalk.blue('Remaining Locked Time')],
         colWidths: [50, 50],
     })
 

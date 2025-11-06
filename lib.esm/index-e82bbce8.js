@@ -14825,7 +14825,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-4ac4905a.js');
+    const { download } = await import('./index-e3929c80.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -19552,11 +19552,11 @@ class LedgerProcessor {
                 if (ledger) {
                     throw new Error('Ledger already exists, with balance: ' +
                         this.neuronToA0gi(ledger.totalBalance) +
-                        ' A0GI');
+                        ' 0G');
                 }
             }
             catch (error) { }
-            await this.ledgerContract.addLedger(this.a0giToNeuron(balance), "", gasPrice);
+            await this.ledgerContract.addLedger(this.a0giToNeuron(balance), '', gasPrice);
         }
         catch (error) {
             throwFormattedError(error);
@@ -19927,7 +19927,7 @@ class LedgerBroker {
     /**
      * Adds a new ledger to the contract.
      *
-     * @param {number} balance - The initial balance to be assigned to the new ledger. Units are in A0GI.
+     * @param {number} balance - The initial balance to be assigned to the new ledger. Units are in 0G.
      * @param {number} gasPrice - The gas price to be used for the transaction. If not provided,
      *                            the default/auto-generated gas price will be used. Units are in neuron.
      *
@@ -19962,7 +19962,7 @@ class LedgerBroker {
     /**
      * Deposits a specified amount of funds into Ledger corresponding to the current wallet address.
      *
-     * @param {string} amount - The amount of funds to be deposited. Units are in A0GI.
+     * @param {string} amount - The amount of funds to be deposited. Units are in 0G.
      * @param {number} gasPrice - The gas price to be used for the transaction. If not provided,
      *                            the default/auto-generated gas price will be used. Units are in neuron.
      *
@@ -20157,11 +20157,6 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
         const finalLedgerCA = ledgerCA || defaultAddresses.ledger;
         const finalInferenceCA = inferenceCA || defaultAddresses.inference;
         const finalFineTuningCA = fineTuningCA || defaultAddresses.fineTuning;
-        console.log('Using contract addresses:', {
-            ledger: finalLedgerCA,
-            inference: finalInferenceCA,
-            fineTuning: finalFineTuningCA
-        });
         const ledger = await createLedgerBroker(signer, finalLedgerCA, finalInferenceCA, finalFineTuningCA, gasPrice, maxGasPrice, step);
         const inferenceBroker = await createInferenceBroker(signer, finalInferenceCA, ledger);
         let fineTuningBroker;
@@ -20177,4 +20172,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-e7e53b56.js.map
+//# sourceMappingURL=index-e82bbce8.js.map

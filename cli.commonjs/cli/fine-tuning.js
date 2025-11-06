@@ -11,7 +11,6 @@ const path = tslib_1.__importStar(require("path"));
 const fs = tslib_1.__importStar(require("fs/promises"));
 const zg_storage_1 = require("../sdk/fine-tuning/zg-storage");
 const const_2 = require("../sdk/fine-tuning/const");
-const utils_1 = require("../sdk/common/utils");
 function fineTuning(program) {
     program
         .command('verify')
@@ -290,30 +289,6 @@ function fineTuning(program) {
         await fs.chmod(binaryFile, 0o755);
     });
     program
-        .command('get-sub-account')
-        .description('Retrieve sub account information for fine-tuning')
-        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
-        .requiredOption('--provider <address>', 'Provider address')
-        .option('--rpc <url>', '0G Chain RPC endpoint')
-        .option('--ledger-ca <address>', 'Account (ledger) contract address')
-        .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
-        .action((options) => {
-        (0, util_1.withFineTuningBroker)(options, async (broker) => {
-            if (!broker.fineTuning) {
-                console.log('Fine tuning broker is not available.');
-                return;
-            }
-            const { account, refunds } = await broker.fineTuning.getAccountWithDetail(options.provider);
-            renderOverview({
-                provider: account.provider,
-                balance: account.balance,
-                pendingRefund: account.pendingRefund,
-            });
-            renderRefunds(refunds);
-            renderDeliverables(account.deliverables);
-        });
-    });
-    program
         .command('list-providers')
         .description('List fine-tuning providers')
         .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
@@ -343,51 +318,5 @@ function fineTuning(program) {
             console.log(table.toString());
         });
     });
-}
-function renderOverview(account) {
-    const table = new cli_table3_1.default({
-        head: [chalk_1.default.blue('Field'), chalk_1.default.blue('Value')],
-        colWidths: [50, 50],
-    });
-    table.push(['Provider', account.provider]);
-    table.push(['Balance (A0GI)', (0, util_1.neuronToA0gi)(account.balance).toFixed(18)]);
-    table.push([
-        'Funds Applied for Return to Main Account (A0GI)',
-        (0, util_1.neuronToA0gi)(account.pendingRefund).toFixed(18),
-    ]);
-    (0, util_1.printTableWithTitle)('Overview', table);
-}
-function renderRefunds(refunds) {
-    const table = new cli_table3_1.default({
-        head: [
-            chalk_1.default.blue('Amount (A0GI)'),
-            chalk_1.default.blue('Remaining Locked Time'),
-        ],
-        colWidths: [50, 50],
-    });
-    refunds.forEach((refund) => {
-        const totalSeconds = Number(refund.remainTime);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
-        table.push([
-            (0, util_1.neuronToA0gi)(refund.amount).toFixed(18),
-            `${hours}h ${minutes}min ${secs}s`,
-        ]);
-    });
-    (0, util_1.printTableWithTitle)('Details of Each Amount Applied for Return to Main Account', table);
-}
-function renderDeliverables(deliverables) {
-    const table = new cli_table3_1.default({
-        head: [chalk_1.default.blue('Root Hash'), chalk_1.default.blue('Access Confirmed')],
-        colWidths: [75, 25],
-    });
-    deliverables.forEach((d) => {
-        table.push([
-            (0, util_1.splitIntoChunks)((0, utils_1.hexToRoots)(d.modelRootHash), 60),
-            d.acknowledged ? chalk_1.default.greenBright.bold('\u2713') : '',
-        ]);
-    });
-    (0, util_1.printTableWithTitle)('Deliverables', table);
 }
 //# sourceMappingURL=fine-tuning.js.map

@@ -1,10 +1,12 @@
 #!/usr/bin/env ts-node
 
-import { neuronToA0gi, printTableWithTitle, withBroker } from './util'
+import { neuronToA0gi, printTableWithTitle, withBroker, splitIntoChunks } from './util'
 import type { Command } from 'commander'
 import Table from 'cli-table3'
 import type { ZGComputeNetworkBroker } from '../sdk'
 import chalk from 'chalk'
+import { hexToRoots } from '../sdk/common/utils'
+import type { DeliverableStructOutput } from '../sdk/fine-tuning/contract/typechain/FineTuningServing'
 
 export default function ledger(program: Command) {
     program
@@ -17,7 +19,16 @@ export default function ledger(program: Command) {
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
         .action((options) => {
             withBroker(options, async (broker) => {
-                getLedgerTable(broker)
+                await getLedgerTable(broker)
+                
+                // Add helpful information about sub-account details
+                console.log(chalk.yellow('\n💡 To get detailed sub-account information:'))
+                console.log(chalk.gray('• For inference sub-account details:'))
+                console.log(chalk.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service inference'))
+                console.log(chalk.gray('• For fine-tuning sub-account details:'))
+                console.log(chalk.cyan('  0g-compute-cli ledger get-sub-account --provider <provider_address> --service fine-tuning'))
+                console.log(chalk.gray('\nExample:'))
+                console.log(chalk.green('  0g-compute-cli ledger get-sub-account --provider 0x4f371f6eff4cb5a9471c9cf9bE32c729024b063C --service inference'))
             })
         })
 
@@ -157,6 +168,54 @@ export default function ledger(program: Command) {
                 )
             })
         })
+
+    program
+        .command('get-sub-account')
+        .description('Retrieve detailed sub account information for a specific provider and service')
+        .option('--key <key>', 'Wallet private key', process.env.ZG_PRIVATE_KEY)
+        .requiredOption('--provider <address>', 'Provider address')
+        .requiredOption('--service <type>', 'Service type: inference or fine-tuning')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
+        .action((options: any) => {
+            if (options.service !== 'inference' && options.service !== 'fine-tuning') {
+                console.error(chalk.red('Error: --service must be either "inference" or "fine-tuning"'))
+                process.exit(1)
+            }
+
+            withBroker(options, async (broker) => {
+                if (options.service === 'inference') {
+                    const [account, refunds] = await broker.inference.getAccountWithDetail(options.provider)
+                    
+                    renderSubAccountOverview({
+                        provider: account.provider,
+                        balance: account.balance,
+                        pendingRefund: account.pendingRefund,
+                        service: 'Inference'
+                    })
+                    renderSubAccountRefunds(refunds)
+                    
+                } else if (options.service === 'fine-tuning') {
+                    if (!broker.fineTuning) {
+                        console.log(chalk.red('Fine tuning broker is not available.'))
+                        return
+                    }
+                    
+                    const { account, refunds } = await broker.fineTuning.getAccountWithDetail(options.provider)
+                    
+                    renderSubAccountOverview({
+                        provider: account.provider,
+                        balance: account.balance,
+                        pendingRefund: account.pendingRefund,
+                        service: 'Fine-tuning'
+                    })
+                    renderSubAccountRefunds(refunds)
+                    renderDeliverables(account.deliverables)
+                }
+            })
+        })
 }
 
 export const getLedgerTable = async (broker: ZGComputeNetworkBroker) => {
@@ -222,4 +281,80 @@ export const getLedgerTable = async (broker: ZGComputeNetworkBroker) => {
             table
         )
     }
+}
+
+// Helper functions for detailed sub-account information
+function renderSubAccountOverview(account: {
+    provider: string
+    balance: bigint
+    pendingRefund: bigint
+    service: string
+}) {
+    const table = new Table({
+        head: [chalk.blue('Field'), chalk.blue('Value')],
+        colWidths: [50, 50],
+    })
+
+    table.push(['Service Type', account.service])
+    table.push(['Provider', account.provider])
+    table.push(['Balance (A0GI)', neuronToA0gi(account.balance).toFixed(18)])
+    table.push([
+        'Funds Applied for Return to Main Account (A0GI)',
+        neuronToA0gi(account.pendingRefund).toFixed(18),
+    ])
+
+    printTableWithTitle(`${account.service} Sub-Account Overview`, table)
+}
+
+function renderSubAccountRefunds(refunds: { amount: bigint; remainTime: bigint }[]) {
+    if (!refunds || refunds.length === 0) {
+        console.log(chalk.gray('\nNo pending refunds found.'))
+        return
+    }
+
+    const table = new Table({
+        head: [
+            chalk.blue('Amount (A0GI)'),
+            chalk.blue('Remaining Locked Time'),
+        ],
+        colWidths: [50, 50],
+    })
+
+    refunds.forEach((refund) => {
+        const totalSeconds = Number(refund.remainTime)
+        const hours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const secs = totalSeconds % 60
+
+        table.push([
+            neuronToA0gi(refund.amount).toFixed(18),
+            `${hours}h ${minutes}min ${secs}s`,
+        ])
+    })
+
+    printTableWithTitle(
+        'Details of Each Amount Applied for Return to Main Account',
+        table
+    )
+}
+
+function renderDeliverables(deliverables: DeliverableStructOutput[]) {
+    if (!deliverables || deliverables.length === 0) {
+        console.log(chalk.gray('\nNo deliverables found.'))
+        return
+    }
+
+    const table = new Table({
+        head: [chalk.blue('Root Hash'), chalk.blue('Access Confirmed')],
+        colWidths: [75, 25],
+    })
+
+    deliverables.forEach((d) => {
+        table.push([
+            splitIntoChunks(hexToRoots(d.modelRootHash), 60),
+            d.acknowledged ? chalk.greenBright.bold('\u2713') : '',
+        ])
+    })
+
+    printTableWithTitle('Deliverables', table)
 }

@@ -22,7 +22,7 @@ export declare function getConfiguredRpcEndpoint(): string | undefined;
  */
 export declare function setConfiguredRpcEndpoint(rpcEndpoint: string, network: 'mainnet' | 'testnet' | 'custom'): void;
 /**
- * Gets the private key from config file or environment variable
+ * Gets the private key from config file only
  */
 export declare function getConfiguredPrivateKey(): string | undefined;
 /**

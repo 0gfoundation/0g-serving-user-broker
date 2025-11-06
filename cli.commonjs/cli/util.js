@@ -14,8 +14,8 @@ const private_key_setup_1 = require("./private-key-setup");
 async function initBroker(options) {
     // Use the new interactive RPC endpoint selection
     const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
-    // Use the new interactive private key selection
-    const privateKey = await (0, private_key_setup_1.getPrivateKey)(options);
+    // Use the private key configuration
+    const privateKey = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
     if (!privateKey) {
         throw new Error('Private key is required');
     }

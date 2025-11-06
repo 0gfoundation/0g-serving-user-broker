@@ -27,13 +27,10 @@ function isValidPrivateKey(key: string): boolean {
 }
 
 /**
- * Sets the private key in both session and persistent config
+ * Sets the private key in persistent config only
  */
 function setPrivateKey(privateKey: string): void {
-    // Set for current session
-    process.env['ZG_PRIVATE_KEY'] = privateKey
-    
-    // Save to persistent config
+    // Save to persistent config only
     setConfiguredPrivateKey(privateKey)
     
     console.log(chalk.green(`✓ Private key configured`))
@@ -94,7 +91,7 @@ async function promptPrivateKeyInput(): Promise<string> {
             }
             
             return formattedKey
-        } catch (error) {
+        } catch {
             console.log(chalk.red('Error creating wallet from private key'))
             continue
         }
@@ -105,17 +102,9 @@ async function promptPrivateKeyInput(): Promise<string> {
  * Checks if private key is configured, if not, prompts user to enter it
  */
 export async function ensurePrivateKeyConfiguration(): Promise<string> {
-    // Check environment variables first
-    const envKey = process.env['ZG_PRIVATE_KEY']
-    if (envKey) {
-        return envKey
-    }
-    
-    // Check config file
+    // Check config file only
     const configKey = getConfiguredPrivateKey()
     if (configKey) {
-        // Set in current session as well
-        process.env['ZG_PRIVATE_KEY'] = configKey
         return configKey
     }
     
@@ -131,14 +120,3 @@ export async function ensurePrivateKeyConfiguration(): Promise<string> {
     return privateKey
 }
 
-/**
- * Gets the private key, with interactive setup if needed
- */
-export async function getPrivateKey(options: any): Promise<string | undefined> {
-    // Priority: CLI option > environment variable > interactive setup
-    if (options.key) {
-        return options.key
-    }
-    
-    return await ensurePrivateKeyConfiguration()
-}

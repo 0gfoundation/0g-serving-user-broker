@@ -19,7 +19,6 @@ export default function ledger(program: Command) {
     program
         .command('get-account')
         .description('Retrieve account information')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -55,7 +54,6 @@ export default function ledger(program: Command) {
         .command('add-account')
         .description('Add account balance')
         .requiredOption('--amount <0G>', 'Amount to add')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -75,7 +73,6 @@ export default function ledger(program: Command) {
     program
         .command('deposit')
         .description('Deposit funds into the account')
-        .option('--key <key>', 'Wallet private key')
         .requiredOption('--amount <0G>', 'Amount of funds to deposit')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
@@ -95,7 +92,6 @@ export default function ledger(program: Command) {
     program
         .command('refund')
         .description('Refund an amount from the account')
-        .option('--key <key>', 'Wallet private key')
         .requiredOption('-a, --amount <0G>', 'Amount to refund')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
@@ -115,7 +111,6 @@ export default function ledger(program: Command) {
     program
         .command('retrieve-fund')
         .description('Retrieve funds from sub account')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -172,7 +167,6 @@ export default function ledger(program: Command) {
     program
         .command('transfer-fund')
         .description('Transfer funds to a provider for a specific service provider')
-        .option('--key <key>', 'Wallet private key')
         .requiredOption(
             '--provider <address>',
             'Provider address to transfer funds to'
@@ -233,7 +227,6 @@ export default function ledger(program: Command) {
         .description(
             'Retrieve detailed sub account information for a specific provider and service'
         )
-        .option('--key <key>', 'Wallet private key')
         .requiredOption('--provider <address>', 'Provider address')
         .requiredOption(
             '--service <type>',

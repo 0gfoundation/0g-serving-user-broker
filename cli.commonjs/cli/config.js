@@ -29,7 +29,7 @@ function loadConfig() {
         const configData = fs.readFileSync(configPath, 'utf8');
         return JSON.parse(configData);
     }
-    catch (error) {
+    catch {
         // Config file doesn't exist or is invalid, return empty config
         return {};
     }
@@ -75,15 +75,10 @@ function setConfiguredRpcEndpoint(rpcEndpoint, network) {
     saveConfig(config);
 }
 /**
- * Gets the private key from config file or environment variable
+ * Gets the private key from config file only
  */
 function getConfiguredPrivateKey() {
-    // Priority: Environment variable > Config file
-    const envKey = process.env['ZG_PRIVATE_KEY'];
-    if (envKey) {
-        return envKey;
-    }
-    // Check config file
+    // Only use config file, ignore environment variables
     const config = loadConfig();
     return config.privateKey;
 }
@@ -103,7 +98,7 @@ function clearConfig() {
         const configPath = getConfigPath();
         fs.unlinkSync(configPath);
     }
-    catch (error) {
+    catch {
         // Config file doesn't exist, which is fine
     }
 }

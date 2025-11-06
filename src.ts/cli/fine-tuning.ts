@@ -15,11 +15,6 @@ export default function fineTuning(program: Command) {
         .command('verify')
         .description('verify TEE remote attestation of service')
         .requiredOption('--provider <address>', 'Provider address')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
@@ -37,11 +32,6 @@ export default function fineTuning(program: Command) {
     program
         .command('list-models')
         .description('List available models')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
@@ -87,11 +77,6 @@ export default function fineTuning(program: Command) {
     program
         .command('model-usage')
         .description('Download detailed customized model usage')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .requiredOption('--provider <address>', 'Provider address for the task')
         .requiredOption('--model <name>', 'Pre-trained model name to use')
         .requiredOption('--output <path>', 'Download path')
@@ -115,11 +100,6 @@ export default function fineTuning(program: Command) {
         .command('upload')
         .description('Upload a dataset for fine-tuning')
         .requiredOption('--data-path <path>', 'Path to the dataset')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option(
             '--ledger-ca <address>',
@@ -144,11 +124,6 @@ export default function fineTuning(program: Command) {
         .requiredOption('--data-path <path>', 'Path to the dataset')
         .requiredOption('--data-root <hash>', 'Root hash of the dataset')
         .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
-        .option(
             `--rpc <url>', '0G Chain RPC endpoint, default is ${ZG_RPC_ENDPOINT_TESTNET}`,
             ZG_RPC_ENDPOINT_TESTNET
         )
@@ -166,11 +141,6 @@ export default function fineTuning(program: Command) {
     program
         .command('calculate-token')
         .description('Download token-counter')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .requiredOption('--model <name>', 'Pre-trained model name to use')
         .requiredOption(
             '--dataset-path <path>',
@@ -191,11 +161,6 @@ export default function fineTuning(program: Command) {
     program
         .command('create-task')
         .description('Create a fine-tuning task')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .requiredOption('--provider <address>', 'Provider address for the task')
         .requiredOption('--model <name>', 'Pre-trained model name to use')
         .requiredOption(
@@ -238,11 +203,6 @@ export default function fineTuning(program: Command) {
     program
         .command('cancel-task')
         .description('Cancel a fine-tuning task')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .requiredOption(
             '--task <id>',
             'Task ID, if not provided, the latest task will be retrieved'
@@ -265,12 +225,6 @@ export default function fineTuning(program: Command) {
         .command('list-tasks')
         .description('Retrieve all fine-tuning task')
         .requiredOption('--provider <address>', 'Provider address')
-
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
@@ -298,12 +252,6 @@ export default function fineTuning(program: Command) {
         .command('get-task')
         .description('Retrieve fine-tuning task information')
         .requiredOption('--provider <address>', 'Provider address')
-
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option(
             '--task <id>',
             'Task ID, if not provided, the latest task will be retrieved'
@@ -340,11 +288,6 @@ export default function fineTuning(program: Command) {
         .description('Retrieve fine-tuning task log')
         .requiredOption('--provider <address>', 'Provider address')
         .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
-        .option(
             '--task <id>',
             'Task ID, if not provided, the latest task will be retrieved'
         )
@@ -367,11 +310,6 @@ export default function fineTuning(program: Command) {
         .requiredOption('--provider <address>', 'Provider address')
         .requiredOption('--task-id <id>', 'Task ID')
         .requiredOption('--data-path <path>', 'Path to store the model')
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
-        )
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')
@@ -398,11 +336,6 @@ export default function fineTuning(program: Command) {
         .requiredOption(
             '--encrypted-model <path>',
             'Path to the encrypted model'
-        )
-        .option(
-            '--key <key>',
-            'Wallet private key, if not provided, ensure the default key is set in the environment',
-            process.env.ZG_PRIVATE_KEY
         )
         .requiredOption('--output <path>', 'Path to the decrypted model')
         .option('--rpc <url>', '0G Chain RPC endpoint')
@@ -446,7 +379,6 @@ export default function fineTuning(program: Command) {
     program
         .command('list-providers')
         .description('List fine-tuning providers')
-        .option('--key <key>', 'Wallet private key')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--fine-tuning-ca <address>', 'Fine Tuning contract address')

@@ -28,7 +28,7 @@ export function loadConfig(): CLIConfig {
         const configPath = getConfigPath()
         const configData = fs.readFileSync(configPath, 'utf8')
         return JSON.parse(configData)
-    } catch (error) {
+    } catch {
         // Config file doesn't exist or is invalid, return empty config
         return {}
     }
@@ -84,16 +84,10 @@ export function setConfiguredRpcEndpoint(
 }
 
 /**
- * Gets the private key from config file or environment variable
+ * Gets the private key from config file only
  */
 export function getConfiguredPrivateKey(): string | undefined {
-    // Priority: Environment variable > Config file
-    const envKey = process.env['ZG_PRIVATE_KEY']
-    if (envKey) {
-        return envKey
-    }
-
-    // Check config file
+    // Only use config file, ignore environment variables
     const config = loadConfig()
     return config.privateKey
 }
@@ -114,7 +108,7 @@ export function clearConfig(): void {
     try {
         const configPath = getConfigPath()
         fs.unlinkSync(configPath)
-    } catch (error) {
+    } catch {
         // Config file doesn't exist, which is fine
     }
 }

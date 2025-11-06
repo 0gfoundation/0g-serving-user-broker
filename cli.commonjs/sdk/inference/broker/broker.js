@@ -290,9 +290,9 @@ class InferenceBroker {
      *
      * @throws An error if errors occur during the verification process.
      */
-    verifyService = async (providerAddress) => {
+    verifyService = async (providerAddress, outputDir = '.') => {
         try {
-            return await this.verifier.verifyService(providerAddress);
+            return await this.verifier.verifyService(providerAddress, outputDir);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

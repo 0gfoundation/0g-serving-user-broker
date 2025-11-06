@@ -2340,29 +2340,51 @@ interface SingerRAVerificationResult {
      */
     signingAddress: string;
 }
+interface VerificationResult {
+    success: boolean;
+    teeVerifier: string;
+    targetSeparated: boolean;
+    verifierURL?: string;
+    reportsGenerated: string[];
+    outputDirectory: string;
+}
 /**
  * The Verifier class contains methods for verifying service reliability.
  */
 declare class Verifier extends ZGServingUserBrokerBase {
-    protected automata: Automata;
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    verifyService(providerAddress: string): Promise<boolean | null>;
     /**
-     * getSigningAddress verifies whether the signing address
-     * of the signer corresponds to a valid RA.
+     * Comprehensive TEE service verification guide
+     * Guides users through verifying whether a provider is running in TEE
      *
-     * It also stores the signing address of the RA in
-     * localStorage and returns it.
-     *
-     * @param providerAddress - provider address.
-     * @param verifyRA - whether to verify the RA， default is false.
-     * @returns The first return value indicates whether the RA is valid,
-     * and the second return value indicates the signing address of the RA.
+     * @param providerAddress - The provider address to verify
+     * @param outputDir - Directory to save attestation reports (default: current directory)
+     * @returns Verification results and user guidance
      */
-    getSigningAddress(providerAddress: string, verifyRA?: boolean, vllmProxy?: boolean): Promise<SingerRAVerificationResult>;
+    verifyService(providerAddress: string, outputDir?: string): Promise<VerificationResult>;
+    /**
+     * Extract TEE signer address from attestation report
+     */
+    private extractTeeSignerAddress;
+    /**
+     * Process DStack-specific verification steps
+     */
+    private processDStackVerification;
+    /**
+     * Verify compose hash based on the dstack verification logic
+     */
+    private verifyComposeHash;
+    /**
+     * Extract all Docker images from tcb_info
+     */
+    private extractAllImagesFromTcbInfo;
+    /**
+     * Save report to file
+     */
+    private saveReportToFile;
     getSignerRaDownloadLink(providerAddress: string): Promise<string>;
     getChatSignatureDownloadLink(providerAddress: string, chatID: string): Promise<string>;
-    static verifyRA(providerBrokerURL: string, nvidia_payload: any): Promise<boolean>;
+    static verifyRA(providerBrokerURL: string, nvidia_payload: Record<string, unknown>): Promise<boolean>;
     getQuoteInLLMServer(providerBrokerURL: string, model: string): Promise<TdxQuoteResponse>;
     static fetchSignatureByChatID(providerBrokerURL: string, chatID: string, model: string): Promise<ResponseSignature>;
     static verifySignature(message: string, signature: string, expectedAddress: string): boolean;
@@ -2557,7 +2579,7 @@ declare class InferenceBroker {
      *
      * @throws An error if errors occur during the verification process.
      */
-    verifyService: (providerAddress: string) => Promise<boolean | null>;
+    verifyService: (providerAddress: string, outputDir?: string) => Promise<VerificationResult | null>;
     /**
      * getSignerRaDownloadLink returns the download link for the Signer RA.
      *

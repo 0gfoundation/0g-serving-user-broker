@@ -7,7 +7,7 @@ import chalk from 'chalk'
 
 export default function inference(program: Command) {
     program
-        .command('ack-provider')
+        .command('ack-provider', { hidden: true })
         .description('verify TEE remote attestation of service')
         .requiredOption('--provider <address>', 'Provider address')
         .option(

@@ -20,9 +20,11 @@ async function withBroker(options, action) {
     try {
         const broker = await initBroker(options);
         await action(broker);
+        process.exit(0);
     }
     catch (error) {
         alertError(error);
+        process.exit(1);
     }
 }
 async function withFineTuningBroker(options, action) {
@@ -34,9 +36,11 @@ async function withFineTuningBroker(options, action) {
         else {
             console.log('Fine tuning broker is not available.');
         }
+        process.exit(0);
     }
     catch (error) {
         alertError(error);
+        process.exit(1);
     }
 }
 const neuronToA0gi = (value) => {

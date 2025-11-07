@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestProcessor = void 0;
 const base_1 = require("./base");
-const automata_1 = require("../../common/automata ");
+const automata_1 = require("../../common/automata");
 const storage_1 = require("../../common/storage");
 const utils_1 = require("../../common/utils");
 /**

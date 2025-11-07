@@ -4,6 +4,10 @@
 
 This document provides an overview of the 0G Serving Broker, including setup and usage instructions.
 
+## Requirements
+
+- Node.js >= 20.0.0
+
 ## Setup and Usage
 
 To integrate the 0G Serving Broker into your project, follow these steps
@@ -13,8 +17,17 @@ To integrate the 0G Serving Broker into your project, follow these steps
 To get started, you need to install the `@0glabs/0g-serving-broker` package:
 
 ```bash
+# Using npm
+npm install @0glabs/0g-serving-broker @types/crypto-js@4.2.2 crypto-js@4.2.0
+
+# Using yarn  
+yarn add @0glabs/0g-serving-broker @types/crypto-js@4.2.2 crypto-js@4.2.0
+
+# Using pnpm (recommended for development)
 pnpm add @0glabs/0g-serving-broker @types/crypto-js@4.2.2 crypto-js@4.2.0
 ```
+
+**Note for Contributors**: This project uses pnpm@9.15.4 for development. If you're contributing to this project, please use pnpm. For regular users installing as a dependency, any package manager works.
 
 ### Step 2: Initialize a Broker Instance
 

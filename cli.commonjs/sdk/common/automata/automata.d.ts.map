@@ -1,0 +1,1 @@
+{"version":3,"file":"automata.d.ts","sourceRoot":"","sources":["../../../../src.ts/sdk/common/automata/automata.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,QAAQ,CAAA;AAO/B,qBAAa,QAAQ;IACjB,SAAS,CAAC,QAAQ,EAAE,GAAG,CAAA;IACvB,SAAS,CAAC,QAAQ,EAAE,MAAM,CAAC,QAAQ,CAAA;;IAW7B,WAAW,CAAC,QAAQ,EAAE,MAAM,GAAG,OAAO,CAAC,OAAO,GAAG,SAAS,CAAC;CAWpE"}

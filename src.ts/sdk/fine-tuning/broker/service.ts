@@ -15,7 +15,7 @@ import type { Provider, Task } from '../provider/provider'
 import { BrokerBase } from './base'
 import { isBrowser } from '../../common/utils/env'
 import type { LedgerBroker } from '../../ledger'
-import { Automata } from '../../common/automata '
+import { Automata } from '../../common/automata'
 
 // Browser-safe function to avoid readline dependency
 async function askUser(question: string): Promise<string> {

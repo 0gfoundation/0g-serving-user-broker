@@ -4,7 +4,7 @@ import type { ServiceStructOutput } from '../contract';
 import type { Provider, Task } from '../provider/provider';
 import { BrokerBase } from './base';
 import type { LedgerBroker } from '../../ledger';
-import { Automata } from '../../common/automata ';
+import { Automata } from '../../common/automata';
 export interface FineTuningAccountDetail {
     account: AccountDetailsStructOutput;
     refunds: {

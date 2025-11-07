@@ -38,7 +38,7 @@ const utils_1 = require("../../common/utils");
 const const_1 = require("../const");
 const base_1 = require("./base");
 const env_1 = require("../../common/utils/env");
-const automata_1 = require("../../common/automata ");
+const automata_1 = require("../../common/automata");
 // Browser-safe function to avoid readline dependency
 async function askUser(question) {
     if ((0, env_1.isBrowser)()) {

@@ -22,9 +22,9 @@ function ledger(program) {
             // Add helpful information about sub-account details
             console.log(chalk_1.default.yellow('\n💡 To get detailed sub-account information:'));
             console.log(chalk_1.default.gray('• For inference sub-account details:'));
-            console.log(chalk_1.default.cyan('  0g-compute-cli account get-sub-account --provider <provider_address> --service inference'));
+            console.log(chalk_1.default.cyan('  0g-compute-cli get-sub-account --provider <provider_address> --service inference'));
             console.log(chalk_1.default.gray('• For fine-tuning sub-account details:'));
-            console.log(chalk_1.default.cyan('  0g-compute-cli account get-sub-account --provider <provider_address> --service fine-tuning'));
+            console.log(chalk_1.default.cyan('  0g-compute-cli get-sub-account --provider <provider_address> --service fine-tuning'));
         });
     });
     program
@@ -112,7 +112,7 @@ function ledger(program) {
             console.log(`Funds retrieved from ${serviceType} sub accounts`);
             // Add helpful information about checking lock time
             console.log(chalk_1.default.yellow('\n💡 To check remaining lock time for funds to be retrieved to main account:'));
-            console.log(chalk_1.default.cyan(`  0g-compute-cli account get-sub-account --provider <provider_address> --service ${serviceType}`));
+            console.log(chalk_1.default.cyan(`  0g-compute-cli get-sub-account --provider <provider_address> --service ${serviceType}`));
         });
     });
     program
@@ -198,11 +198,11 @@ function ledger(program) {
             // Add helpful information about fund operations
             console.log(chalk_1.default.yellow('\n💡 Fund Management Tips:'));
             console.log(chalk_1.default.gray('• To retrieve all funds from sub-accounts to main account:'));
-            console.log(chalk_1.default.cyan(`  0g-compute-cli account retrieve-fund --service ${options.service}`));
+            console.log(chalk_1.default.cyan(`  0g-compute-cli retrieve-fund --service ${options.service}`));
             console.log(chalk_1.default.gray('  Note: Retrieved funds need to be locked for a period. After the lock period expires,'));
             console.log(chalk_1.default.gray('  use retrieve-fund again to transfer all unlocked amounts to the main account.'));
             console.log(chalk_1.default.gray('\n• To transfer funds from main account to this provider:'));
-            console.log(chalk_1.default.cyan(`  0g-compute-cli account transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`));
+            console.log(chalk_1.default.cyan(`  0g-compute-cli transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`));
         });
     });
 }

@@ -1,0 +1,122 @@
+name: CLI Integration Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src.ts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/cli-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src.ts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/cli-test.yml'
+  workflow_dispatch:
+
+jobs:
+  user-scenario-test:
+    name: User Test (Node ${{ matrix.node-version }} / ${{ matrix.pkg-manager }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+        pkg-manager: [npm, yarn, pnpm]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm (for building)
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      
+      - name: Build and pack project
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm pack
+      
+      - name: Setup test environment
+        run: |
+          mkdir -p /tmp/user-test
+          cd /tmp/user-test
+          cp $GITHUB_WORKSPACE/*.tgz ./package.tgz
+      
+      - name: Setup package manager
+        run: |
+          if [ "${{ matrix.pkg-manager }}" = "yarn" ]; then
+            corepack enable
+            corepack prepare yarn@stable --activate
+          elif [ "${{ matrix.pkg-manager }}" = "pnpm" ]; then
+            npm install -g pnpm@9.15.4
+          fi
+      
+      - name: Test package installation and CLI
+        working-directory: /tmp/user-test
+        run: |
+          # Initialize test project
+          npm init -y
+          
+          # Install our package with peer dependencies
+          case "${{ matrix.pkg-manager }}" in
+            npm)
+              npm install ./package.tgz @types/crypto-js@4.2.2 crypto-js@4.2.0 ethers@6.13.1
+              ;;
+            yarn)
+              yarn add ./package.tgz @types/crypto-js@4.2.2 crypto-js@4.2.0 ethers@6.13.1
+              ;;
+            pnpm)
+              pnpm add ./package.tgz @types/crypto-js@4.2.2 crypto-js@4.2.0 ethers@6.13.1
+              ;;
+          esac
+          
+          # Test CLI commands using local binary
+          if [ -f "./node_modules/.bin/0g-compute-cli" ]; then
+            # npm/yarn classic with node_modules/.bin
+            ./node_modules/.bin/0g-compute-cli --version
+            ./node_modules/.bin/0g-compute-cli --help
+            ./node_modules/.bin/0g-compute-cli inference --help
+            ./node_modules/.bin/0g-compute-cli show-network || echo "Network command tested"
+          elif [ "${{ matrix.pkg-manager }}" = "yarn" ]; then
+            # yarn 4+ with PnP mode
+            yarn run 0g-compute-cli --version
+            yarn run 0g-compute-cli --help
+            yarn run 0g-compute-cli inference --help
+            yarn run 0g-compute-cli show-network || echo "Network command tested"
+          else
+            echo "CLI binary not found"
+            exit 1
+          fi
+        env:
+          ZG_RPC_ENDPOINT: https://evmrpc-testnet.0g.ai
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [user-scenario-test]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.user-scenario-test.result }}" == "success" ]; then
+            echo "✅ All CLI user scenario tests passed!"
+            echo "- User installation scenarios: ✅"
+          else
+            echo "❌ User scenario tests failed:"
+            echo "- User scenarios: ${{ needs.user-scenario-test.result }}"
+            exit 1
+          fi

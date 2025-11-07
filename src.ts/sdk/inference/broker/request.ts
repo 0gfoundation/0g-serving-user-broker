@@ -2,7 +2,7 @@ import { ZGServingUserBrokerBase } from './base'
 import type { Cache, Metadata } from '../../common/storage'
 import type { InferenceServingContract } from '../contract'
 import type { LedgerBroker } from '../../ledger'
-import { Automata } from '../../common/automata '
+import { Automata } from '../../common/automata'
 import { CacheValueTypeEnum, CacheKeyHelpers } from '../../common/storage'
 import { throwFormattedError } from '../../common/utils'
 // import { Verifier } from './verifier'
@@ -147,7 +147,7 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
                 userAddress,
                 providerAddress
             )
-            
+
             if (
                 service.teeSignerAcknowledged &&
                 service.teeSignerAddress !==
@@ -225,7 +225,10 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
         gasPrice?: number
     ): Promise<void> {
         try {
-            await this.contract.revokeTEESignerAcknowledgement(providerAddress, gasPrice)
+            await this.contract.revokeTEESignerAcknowledgement(
+                providerAddress,
+                gasPrice
+            )
         } catch (error) {
             throwFormattedError(error)
         }

@@ -36,7 +36,7 @@ export default function ledger(program: Command) {
                 console.log(chalk.gray('• For inference sub-account details:'))
                 console.log(
                     chalk.cyan(
-                        '  0g-compute-cli account get-sub-account --provider <provider_address> --service inference'
+                        '  0g-compute-cli get-sub-account --provider <provider_address> --service inference'
                     )
                 )
                 console.log(
@@ -44,7 +44,7 @@ export default function ledger(program: Command) {
                 )
                 console.log(
                     chalk.cyan(
-                        '  0g-compute-cli account get-sub-account --provider <provider_address> --service fine-tuning'
+                        '  0g-compute-cli get-sub-account --provider <provider_address> --service fine-tuning'
                     )
                 )
             })
@@ -158,7 +158,7 @@ export default function ledger(program: Command) {
                 )
                 console.log(
                     chalk.cyan(
-                        `  0g-compute-cli account get-sub-account --provider <provider_address> --service ${serviceType}`
+                        `  0g-compute-cli get-sub-account --provider <provider_address> --service ${serviceType}`
                     )
                 )
             })
@@ -296,11 +296,11 @@ export default function ledger(program: Command) {
                 // Add helpful information about fund operations
                 console.log(chalk.yellow('\n💡 Fund Management Tips:'))
                 console.log(chalk.gray('• To retrieve all funds from sub-accounts to main account:'))
-                console.log(chalk.cyan(`  0g-compute-cli account retrieve-fund --service ${options.service}`))
+                console.log(chalk.cyan(`  0g-compute-cli retrieve-fund --service ${options.service}`))
                 console.log(chalk.gray('  Note: Retrieved funds need to be locked for a period. After the lock period expires,'))
                 console.log(chalk.gray('  use retrieve-fund again to transfer all unlocked amounts to the main account.'))
                 console.log(chalk.gray('\n• To transfer funds from main account to this provider:'))
-                console.log(chalk.cyan(`  0g-compute-cli account transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`))
+                console.log(chalk.cyan(`  0g-compute-cli transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`))
             })
         })
 }

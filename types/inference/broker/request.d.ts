@@ -2,7 +2,7 @@ import { ZGServingUserBrokerBase } from './base';
 import type { Cache, Metadata } from '../../common/storage';
 import type { InferenceServingContract } from '../contract';
 import type { LedgerBroker } from '../../ledger';
-import { Automata } from '../../common/automata ';
+import { Automata } from '../../common/automata';
 /**
  * ServingRequestHeaders contains headers related to request.
  * Only Address and VLLM-Proxy are required now.

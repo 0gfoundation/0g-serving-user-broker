@@ -7,13 +7,13 @@ export declare const TESTNET_CHAIN_ID = 16602n;
 export declare const MAINNET_CHAIN_ID = 16600n;
 export declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
-        readonly ledger: "0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5";
-        readonly inference: "0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da";
+        readonly ledger: "0x327025B6435424735a3d97c4b1671FeFF0E8879B";
+        readonly inference: "0xa58e5220A5cF61768c7A5dBFC34a2377829240be";
         readonly fineTuning: "0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a";
     };
     readonly mainnet: {
-        readonly ledger: "0x0000000000000000000000000000000000000000";
-        readonly inference: "0x0000000000000000000000000000000000000000";
+        readonly ledger: "0x1C4450Dc74504e585571B4aF70451C0737F10b71";
+        readonly inference: "0x0754221A9f2C11D820F827170249c3cc5cC3DC74";
         readonly fineTuning: "0x0000000000000000000000000000000000000000";
     };
 };

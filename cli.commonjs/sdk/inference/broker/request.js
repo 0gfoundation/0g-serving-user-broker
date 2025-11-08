@@ -96,14 +96,41 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
         }
     }
     /**
-     * @deprecated Use checkProviderSignerStatus instead.
-     * TEE signer acknowledgement is now handled by contract owner only.
+     * acknowledgeProviderSigner tells the contract that user trust the acknowledgment of contract owner towards certain provider.
+     *
+     * @param providerAddress - The address of the provider
      */
     async acknowledgeProviderSigner(providerAddress, gasPrice) {
-        console.warn('acknowledgeProviderSigner is deprecated. Use checkProviderSignerStatus instead.');
-        const status = await this.checkProviderSignerStatus(providerAddress, gasPrice);
-        if (!status.isAcknowledged) {
-            throw new Error(`Provider ${providerAddress} TEE signer is not acknowledged by contract owner. Contact the service administrator.`);
+        try {
+            // Ensure user has an account with the provider
+            try {
+                await this.contract.getAccount(providerAddress);
+            }
+            catch {
+                await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
+            }
+            await this.contract.acknowledgeTEESigner(providerAddress, true, gasPrice);
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    /**
+     * revokeAcknowledgeProviderSigner tells the contract that user not trust the acknowledgment of contract owner towards certain provider.
+     * The function only take effect when the balance of the account is empty.
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async revokeAcknowledgeProviderSigner(providerAddress, gasPrice) {
+        try {
+            const account = await this.contract.getAccount(providerAddress);
+            if (account.balance > BigInt(0)) {
+                throw new Error('Cannot revoke acknowledgement when account balance is not zero.');
+            }
+            await this.contract.acknowledgeTEESigner(providerAddress, false, gasPrice);
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
         }
     }
     /**
@@ -113,7 +140,7 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
      */
     async ownerAcknowledgeTEESigner(providerAddress, gasPrice) {
         try {
-            await this.contract.acknowledgeTEESigner(providerAddress, gasPrice);
+            await this.contract.acknowledgeTEESignerByOwner(providerAddress, gasPrice);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

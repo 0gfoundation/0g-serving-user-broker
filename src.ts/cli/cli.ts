@@ -18,16 +18,18 @@ program
 ledger(program)
 
 // Create subcommands for each service
-const fineTuningCmd = program.command('fine-tuning')
+const fineTuningCmd = program
+    .command('fine-tuning')
     .alias('ft')
     .description('Fine-tuning service commands')
 
-const inferenceCmd = program.command('inference')
+const inferenceCmd = program
+    .command('inference')
     .alias('inf')
     .description('Inference service commands')
 
-
-const webUICmd = program.command('web-ui')
+const webUICmd = program
+    .command('web-ui')
     .alias('ui')
     .description('Web UI embedded commands')
 

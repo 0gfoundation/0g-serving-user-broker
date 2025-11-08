@@ -143,11 +143,7 @@ export class LedgerManagerContract {
                 txOptions.gasPrice = gasPrice || this._gasPrice
             }
 
-            await this.sendTx(
-                'addLedger',
-                [additionalInfo || ''],
-                txOptions
-            )
+            await this.sendTx('addLedger', [additionalInfo || ''], txOptions)
         } catch (error) {
             throwFormattedError(error)
         }

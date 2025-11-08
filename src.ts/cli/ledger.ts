@@ -123,13 +123,8 @@ export default function ledger(program: Command) {
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
         .action(async (options: any) => {
-            const serviceType = options.service as
-                | 'inference'
-                | 'fine-tuning'
-            if (
-                serviceType !== 'inference' &&
-                serviceType !== 'fine-tuning'
-            ) {
+            const serviceType = options.service as 'inference' | 'fine-tuning'
+            if (serviceType !== 'inference' && serviceType !== 'fine-tuning') {
                 console.error(
                     'Invalid service type. Must be "inference" or "fine-tuning"'
                 )
@@ -166,7 +161,9 @@ export default function ledger(program: Command) {
 
     program
         .command('transfer-fund')
-        .description('Transfer funds to a provider for a specific service provider')
+        .description(
+            'Transfer funds to a provider for a specific service provider'
+        )
         .requiredOption(
             '--provider <address>',
             'Provider address to transfer funds to'
@@ -185,13 +182,8 @@ export default function ledger(program: Command) {
         .option('--max-gas-price <price>', 'Max gas price for transactions')
         .option('--step <step>', 'Step for gas price calculation')
         .action(async (options: any) => {
-            const serviceType = options.service as
-                | 'inference'
-                | 'fine-tuning'
-            if (
-                serviceType !== 'inference' &&
-                serviceType !== 'fine-tuning'
-            ) {
+            const serviceType = options.service as 'inference' | 'fine-tuning'
+            if (serviceType !== 'inference' && serviceType !== 'fine-tuning') {
                 console.error(
                     'Invalid service type. Must be "inference" or "fine-tuning"'
                 )
@@ -295,12 +287,36 @@ export default function ledger(program: Command) {
 
                 // Add helpful information about fund operations
                 console.log(chalk.yellow('\n💡 Fund Management Tips:'))
-                console.log(chalk.gray('• To retrieve all funds from sub-accounts to main account:'))
-                console.log(chalk.cyan(`  0g-compute-cli retrieve-fund --service ${options.service}`))
-                console.log(chalk.gray('  Note: Retrieved funds need to be locked for a period. After the lock period expires,'))
-                console.log(chalk.gray('  use retrieve-fund again to transfer all unlocked amounts to the main account.'))
-                console.log(chalk.gray('\n• To transfer funds from main account to this provider:'))
-                console.log(chalk.cyan(`  0g-compute-cli transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`))
+                console.log(
+                    chalk.gray(
+                        '• To retrieve all funds from sub-accounts to main account:'
+                    )
+                )
+                console.log(
+                    chalk.cyan(
+                        `  0g-compute-cli retrieve-fund --service ${options.service}`
+                    )
+                )
+                console.log(
+                    chalk.gray(
+                        '  Note: Retrieved funds need to be locked for a period. After the lock period expires,'
+                    )
+                )
+                console.log(
+                    chalk.gray(
+                        '  use retrieve-fund again to transfer all unlocked amounts to the main account.'
+                    )
+                )
+                console.log(
+                    chalk.gray(
+                        '\n• To transfer funds from main account to this provider:'
+                    )
+                )
+                console.log(
+                    chalk.cyan(
+                        `  0g-compute-cli transfer-fund --provider ${options.provider} --amount <amount> --service ${options.service}`
+                    )
+                )
             })
         })
 }

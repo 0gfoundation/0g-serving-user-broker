@@ -30,14 +30,18 @@ const os = tslib_1.__importStar(require("os"));
     });
     (0, mocha_1.describe)('CLI Basic Functionality', () => {
         (0, mocha_1.it)('should display help message', () => {
-            const output = (0, child_process_1.execSync)(`node ${cliPath} --help`, { encoding: 'utf8' });
+            const output = (0, child_process_1.execSync)(`node ${cliPath} --help`, {
+                encoding: 'utf8',
+            });
             (0, chai_1.expect)(output).to.include('0g-compute-cli');
             (0, chai_1.expect)(output).to.include('CLI for interacting with ZG Compute Network');
             (0, chai_1.expect)(output).to.include('fine-tuning');
             (0, chai_1.expect)(output).to.include('inference');
         });
         (0, mocha_1.it)('should display version', () => {
-            const output = (0, child_process_1.execSync)(`node ${cliPath} --version`, { encoding: 'utf8' });
+            const output = (0, child_process_1.execSync)(`node ${cliPath} --version`, {
+                encoding: 'utf8',
+            });
             (0, chai_1.expect)(output).to.match(/\d+\.\d+\.\d+/);
         });
     });
@@ -48,7 +52,7 @@ const os = tslib_1.__importStar(require("os"));
                 const output = (0, child_process_1.execSync)(`node ${cliPath} login --help`, {
                     encoding: 'utf8',
                     env: process.env,
-                    timeout: 5000
+                    timeout: 5000,
                 });
                 (0, chai_1.expect)(output).to.include('login');
             }
@@ -58,7 +62,7 @@ const os = tslib_1.__importStar(require("os"));
                     // Kill immediately to avoid interactive mode
                     const child = (0, child_process_1.spawn)('node', [cliPath, 'login'], {
                         env: { ...process.env },
-                        cwd: process.cwd()
+                        cwd: process.cwd(),
                     });
                     child.kill();
                 }
@@ -69,12 +73,13 @@ const os = tslib_1.__importStar(require("os"));
             }
         });
         (0, mocha_1.it)('should handle login command with environment variable', () => {
-            process.env.ZG_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
+            process.env.ZG_PRIVATE_KEY =
+                '0x0000000000000000000000000000000000000000000000000000000000000001';
             try {
                 (0, child_process_1.execSync)(`node ${cliPath} login`, {
                     encoding: 'utf8',
                     env: process.env,
-                    timeout: 5000
+                    timeout: 5000,
                 });
                 // Check if credentials file was created
                 const credPath = path.join(tempDir, '.0g-compute-cli', 'credentials.json');
@@ -93,7 +98,9 @@ const os = tslib_1.__importStar(require("os"));
     });
     (0, mocha_1.describe)('Inference Commands', () => {
         (0, mocha_1.it)('should display help for inference commands', () => {
-            const output = (0, child_process_1.execSync)(`node ${cliPath} inference --help`, { encoding: 'utf8' });
+            const output = (0, child_process_1.execSync)(`node ${cliPath} inference --help`, {
+                encoding: 'utf8',
+            });
             (0, chai_1.expect)(output).to.include('Inference service commands');
             (0, chai_1.expect)(output).to.include('list-providers');
         });
@@ -108,7 +115,7 @@ const os = tslib_1.__importStar(require("os"));
             const child = (0, child_process_1.spawn)('node', [cliPath, 'inference', 'list-providers'], {
                 env: { ...process.env },
                 cwd: process.cwd(),
-                timeout: 14000
+                timeout: 14000,
             });
             let output = '';
             let errorOutput = '';
@@ -161,7 +168,7 @@ const os = tslib_1.__importStar(require("os"));
             const child = (0, child_process_1.spawn)('node', [cliPath, 'inference', 'list-services'], {
                 env: { ...process.env },
                 cwd: process.cwd(),
-                timeout: 14000
+                timeout: 14000,
             });
             let errorOutput = '';
             child.stdout.on('data', () => {
@@ -199,7 +206,7 @@ const os = tslib_1.__importStar(require("os"));
                 const output = (0, child_process_1.execSync)(`node ${cliPath} show-network`, {
                     encoding: 'utf8',
                     env: process.env,
-                    timeout: 5000
+                    timeout: 5000,
                 });
                 (0, chai_1.expect)(output).to.include('Network Configuration');
                 (0, chai_1.expect)(output).to.include('RPC Endpoint');
@@ -214,7 +221,9 @@ const os = tslib_1.__importStar(require("os"));
     });
     (0, mocha_1.describe)('Fine-tuning Commands', () => {
         (0, mocha_1.it)('should display help for fine-tuning commands', () => {
-            const output = (0, child_process_1.execSync)(`node ${cliPath} fine-tuning --help`, { encoding: 'utf8' });
+            const output = (0, child_process_1.execSync)(`node ${cliPath} fine-tuning --help`, {
+                encoding: 'utf8',
+            });
             (0, chai_1.expect)(output).to.include('Fine-tuning service commands');
             (0, chai_1.expect)(output).to.include('list-models');
             (0, chai_1.expect)(output).to.include('create-task');
@@ -222,7 +231,9 @@ const os = tslib_1.__importStar(require("os"));
     });
     (0, mocha_1.describe)('Ledger Commands', () => {
         (0, mocha_1.it)('should display help for ledger commands', () => {
-            const output = (0, child_process_1.execSync)(`node ${cliPath} ledger --help`, { encoding: 'utf8' });
+            const output = (0, child_process_1.execSync)(`node ${cliPath} ledger --help`, {
+                encoding: 'utf8',
+            });
             (0, chai_1.expect)(output).to.include('balance');
             (0, chai_1.expect)(output).to.include('deposit');
         });

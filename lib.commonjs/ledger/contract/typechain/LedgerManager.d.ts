@@ -47,12 +47,13 @@ export type LedgerStructOutput = [
     additionalInfo: string;
 };
 export interface LedgerManagerInterface extends Interface {
-    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH' | 'addLedger' | 'deleteLedger' | 'depositFund' | 'getAllActiveServices' | 'getAllLedgers' | 'getAllVersions' | 'getLedger' | 'getLedgerProviders' | 'getRecommendedService' | 'getServiceAddressByName' | 'getServiceInfo' | 'initialize' | 'initialized' | 'isRecommendedVersion' | 'owner' | 'refund' | 'registerService' | 'renounceOwnership' | 'retrieveFund' | 'setRecommendedService' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
+    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH' | 'addLedger' | 'deleteLedger' | 'depositFund' | 'depositFundFor' | 'getAllActiveServices' | 'getAllLedgers' | 'getAllVersions' | 'getLedger' | 'getLedgerProviders' | 'getRecommendedService' | 'getServiceAddressByName' | 'getServiceInfo' | 'initialize' | 'initialized' | 'isRecommendedVersion' | 'owner' | 'refund' | 'registerService' | 'renounceOwnership' | 'retrieveFund' | 'setRecommendedService' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred' | 'RecommendedServiceUpdated' | 'ServiceRegistered'): EventFragment;
     encodeFunctionData(functionFragment: 'MAX_PROVIDERS_PER_BATCH', values?: undefined): string;
     encodeFunctionData(functionFragment: 'addLedger', values: [string]): string;
     encodeFunctionData(functionFragment: 'deleteLedger', values?: undefined): string;
     encodeFunctionData(functionFragment: 'depositFund', values?: undefined): string;
+    encodeFunctionData(functionFragment: 'depositFundFor', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'getAllActiveServices', values?: undefined): string;
     encodeFunctionData(functionFragment: 'getAllLedgers', values: [BigNumberish, BigNumberish]): string;
     encodeFunctionData(functionFragment: 'getAllVersions', values: [string]): string;
@@ -77,6 +78,7 @@ export interface LedgerManagerInterface extends Interface {
     decodeFunctionResult(functionFragment: 'addLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'deleteLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'depositFund', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'depositFundFor', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllActiveServices', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllLedgers', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllVersions', data: BytesLike): Result;
@@ -164,6 +166,11 @@ export interface LedgerManager extends BaseContract {
     ], 'payable'>;
     deleteLedger: TypedContractMethod<[], [void], 'nonpayable'>;
     depositFund: TypedContractMethod<[], [void], 'payable'>;
+    depositFundFor: TypedContractMethod<[
+        recipient: AddressLike
+    ], [
+        void
+    ], 'payable'>;
     getAllActiveServices: TypedContractMethod<[
     ], [
         ServiceInfoStructOutput[]
@@ -280,6 +287,7 @@ export interface LedgerManager extends BaseContract {
     ], 'payable'>;
     getFunction(nameOrSignature: 'deleteLedger'): TypedContractMethod<[], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'depositFund'): TypedContractMethod<[], [void], 'payable'>;
+    getFunction(nameOrSignature: 'depositFundFor'): TypedContractMethod<[recipient: AddressLike], [void], 'payable'>;
     getFunction(nameOrSignature: 'getAllActiveServices'): TypedContractMethod<[], [ServiceInfoStructOutput[]], 'view'>;
     getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod<[
         offset: BigNumberish,

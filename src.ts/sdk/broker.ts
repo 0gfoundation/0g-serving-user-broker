@@ -14,22 +14,24 @@ export const MAINNET_CHAIN_ID = 16600n // TODO: Update with actual mainnet chain
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
     testnet: {
-        ledger: '0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5',
-        inference: '0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da',
-        fineTuning: '0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a'
+        ledger: '0x327025B6435424735a3d97c4b1671FeFF0E8879B',
+        inference: '0xa58e5220A5cF61768c7A5dBFC34a2377829240be',
+        fineTuning: '0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a',
     },
     mainnet: {
         // TODO: Update with actual mainnet addresses when available
-        ledger: '0x0000000000000000000000000000000000000000',
-        inference: '0x0000000000000000000000000000000000000000',
-        fineTuning: '0x0000000000000000000000000000000000000000'
-    }
+        ledger: '0x1C4450Dc74504e585571B4aF70451C0737F10b71',
+        inference: '0x0754221A9f2C11D820F827170249c3cc5cC3DC74',
+        fineTuning: '0x0000000000000000000000000000000000000000',
+    },
 } as const
 
 /**
  * Helper function to determine network type from chain ID
  */
-export function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'unknown' {
+export function getNetworkType(
+    chainId: bigint
+): 'mainnet' | 'testnet' | 'unknown' {
     if (chainId === MAINNET_CHAIN_ID) {
         return 'mainnet'
     } else if (chainId === TESTNET_CHAIN_ID) {
@@ -56,7 +58,7 @@ export class ZGComputeNetworkBroker {
 
 /**
  * createZGComputeNetworkBroker is used to initialize ZGComputeNetworkBroker
- * 
+ *
  * This function automatically detects the network from the signer's provider and uses
  * appropriate contract addresses. You can override any address by providing it explicitly.
  *
@@ -88,11 +90,11 @@ export async function createZGComputeNetworkBroker(
             inference: string
             fineTuning: string
         } = CONTRACT_ADDRESSES.testnet // Default to testnet
-        
+
         if (signer.provider) {
             const network = await signer.provider.getNetwork()
             const chainId = network.chainId
-            
+
             if (chainId === MAINNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.mainnet
                 console.log(`Detected mainnet (chain ID: ${chainId})`)
@@ -105,14 +107,16 @@ export async function createZGComputeNetworkBroker(
                 )
             }
         } else {
-            console.warn('No provider found on signer. Using testnet addresses as default.')
+            console.warn(
+                'No provider found on signer. Using testnet addresses as default.'
+            )
         }
-        
+
         // Use provided addresses or fall back to auto-detected defaults
         const finalLedgerCA = ledgerCA || defaultAddresses.ledger
         const finalInferenceCA = inferenceCA || defaultAddresses.inference
         const finalFineTuningCA = fineTuningCA || defaultAddresses.fineTuning
-        
+
         const ledger = await createLedgerBroker(
             signer,
             finalLedgerCA,

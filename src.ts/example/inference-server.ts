@@ -30,7 +30,9 @@ export async function runInferenceServer(options: InferenceServerOptions) {
 
     async function initBroker() {
         const provider = new ethers.JsonRpcProvider(
-            options.rpc || process.env.ZG_RPC_ENDPOINT || ZG_RPC_ENDPOINT_TESTNET
+            options.rpc ||
+                process.env.ZG_RPC_ENDPOINT ||
+                ZG_RPC_ENDPOINT_TESTNET
         )
         const privateKey = options.key || process.env.ZG_PRIVATE_KEY
         if (!privateKey) {
@@ -65,9 +67,11 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         if (stream) {
             body.stream = true
         }
-        logger.debug(`Proxying to ${endpoint}/chat/completions with body: ${JSON.stringify(
-            body
-        )} and headers: ${JSON.stringify(headers)}`)
+        logger.debug(
+            `Proxying to ${endpoint}/chat/completions with body: ${JSON.stringify(
+                body
+            )} and headers: ${JSON.stringify(headers)}`
+        )
         const response = await fetch(`${endpoint}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -222,7 +226,9 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         try {
             const fetch = (await import('node-fetch')).default
             const healthCheckHost = host === '0.0.0.0' ? 'localhost' : host
-            logger.debug(`Performing health check on ${healthCheckHost}:${port}...`)
+            logger.debug(
+                `Performing health check on ${healthCheckHost}:${port}...`
+            )
             const res = await fetch(
                 `http://${healthCheckHost}:${port}/v1/chat/completions`,
                 {

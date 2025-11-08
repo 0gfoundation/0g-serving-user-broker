@@ -73,7 +73,7 @@ type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput$1[],
     additionalInfo: string,
-    teeSignerAddress: string,
+    acknowledged: boolean,
     validRefundsLength: bigint
 ] & {
     user: string;
@@ -83,7 +83,7 @@ type AccountStructOutput = [
     pendingRefund: bigint;
     refunds: RefundStructOutput$1[];
     additionalInfo: string;
-    teeSignerAddress: string;
+    acknowledged: boolean;
     validRefundsLength: bigint;
 };
 type ServiceStructOutput$1 = [
@@ -120,10 +120,11 @@ type TEESettlementDataStruct = {
     signature: BytesLike;
 };
 interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'acknowledgeTEESignerByOwner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'ProviderTEESignerAcknowledged' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, boolean]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESignerByOwner', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addOrUpdateService', values: [ServiceParamsStruct]): string;
     encodeFunctionData(functionFragment: 'deleteAccount', values: [AddressLike, AddressLike]): string;
@@ -153,6 +154,7 @@ interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'acknowledgeTEESigner', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'acknowledgeTEESignerByOwner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addAccount', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addOrUpdateService', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'deleteAccount', data: BytesLike): Result;
@@ -371,6 +373,12 @@ interface InferenceServing extends BaseContract {
         boolean
     ], 'view'>;
     acknowledgeTEESigner: TypedContractMethod$2<[
+        provider: AddressLike,
+        acknowledged: boolean
+    ], [
+        void
+    ], 'nonpayable'>;
+    acknowledgeTEESignerByOwner: TypedContractMethod$2<[
         provider: AddressLike
     ], [
         void
@@ -551,7 +559,13 @@ interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod$2<[provider: AddressLike], [void], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod$2<[
+        provider: AddressLike,
+        acknowledged: boolean
+    ], [
+        void
+    ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESignerByOwner'): TypedContractMethod$2<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'addAccount'): TypedContractMethod$2<[
         user: AddressLike,
         provider: AddressLike,
@@ -743,11 +757,18 @@ declare class InferenceServingContract {
     listAccount(offset?: number, limit?: number): Promise<AccountStructOutput[]>;
     getAccount(provider: AddressLike): Promise<AccountStructOutput>;
     /**
+     * Acknowledge TEE signer for a provider
+     *
+     * @param providerAddress - The address of the provider
+     * @param acknowledged - Whether to acknowledge (true) or revoke acknowledgement (false)
+     */
+    acknowledgeTEESigner(providerAddress: AddressLike, acknowledged?: boolean, gasPrice?: number): Promise<void>;
+    /**
      * Acknowledge TEE signer for a provider (Contract owner only)
      *
      * @param providerAddress - The address of the provider
      */
-    acknowledgeTEESigner(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
+    acknowledgeTEESignerByOwner(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
     /**
      * Revoke TEE signer acknowledgement for a provider (Contract owner only)
      *
@@ -892,12 +913,13 @@ type LedgerStructOutput = [
     additionalInfo: string;
 };
 interface LedgerManagerInterface extends Interface {
-    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH' | 'addLedger' | 'deleteLedger' | 'depositFund' | 'getAllActiveServices' | 'getAllLedgers' | 'getAllVersions' | 'getLedger' | 'getLedgerProviders' | 'getRecommendedService' | 'getServiceAddressByName' | 'getServiceInfo' | 'initialize' | 'initialized' | 'isRecommendedVersion' | 'owner' | 'refund' | 'registerService' | 'renounceOwnership' | 'retrieveFund' | 'setRecommendedService' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
+    getFunction(nameOrSignature: 'MAX_PROVIDERS_PER_BATCH' | 'addLedger' | 'deleteLedger' | 'depositFund' | 'depositFundFor' | 'getAllActiveServices' | 'getAllLedgers' | 'getAllVersions' | 'getLedger' | 'getLedgerProviders' | 'getRecommendedService' | 'getServiceAddressByName' | 'getServiceInfo' | 'initialize' | 'initialized' | 'isRecommendedVersion' | 'owner' | 'refund' | 'registerService' | 'renounceOwnership' | 'retrieveFund' | 'setRecommendedService' | 'spendFund' | 'transferFund' | 'transferOwnership'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred' | 'RecommendedServiceUpdated' | 'ServiceRegistered'): EventFragment;
     encodeFunctionData(functionFragment: 'MAX_PROVIDERS_PER_BATCH', values?: undefined): string;
     encodeFunctionData(functionFragment: 'addLedger', values: [string]): string;
     encodeFunctionData(functionFragment: 'deleteLedger', values?: undefined): string;
     encodeFunctionData(functionFragment: 'depositFund', values?: undefined): string;
+    encodeFunctionData(functionFragment: 'depositFundFor', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'getAllActiveServices', values?: undefined): string;
     encodeFunctionData(functionFragment: 'getAllLedgers', values: [BigNumberish, BigNumberish]): string;
     encodeFunctionData(functionFragment: 'getAllVersions', values: [string]): string;
@@ -922,6 +944,7 @@ interface LedgerManagerInterface extends Interface {
     decodeFunctionResult(functionFragment: 'addLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'deleteLedger', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'depositFund', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'depositFundFor', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllActiveServices', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllLedgers', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'getAllVersions', data: BytesLike): Result;
@@ -1009,6 +1032,11 @@ interface LedgerManager extends BaseContract {
     ], 'payable'>;
     deleteLedger: TypedContractMethod$1<[], [void], 'nonpayable'>;
     depositFund: TypedContractMethod$1<[], [void], 'payable'>;
+    depositFundFor: TypedContractMethod$1<[
+        recipient: AddressLike
+    ], [
+        void
+    ], 'payable'>;
     getAllActiveServices: TypedContractMethod$1<[
     ], [
         ServiceInfoStructOutput[]
@@ -1125,6 +1153,7 @@ interface LedgerManager extends BaseContract {
     ], 'payable'>;
     getFunction(nameOrSignature: 'deleteLedger'): TypedContractMethod$1<[], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'depositFund'): TypedContractMethod$1<[], [void], 'payable'>;
+    getFunction(nameOrSignature: 'depositFundFor'): TypedContractMethod$1<[recipient: AddressLike], [void], 'payable'>;
     getFunction(nameOrSignature: 'getAllActiveServices'): TypedContractMethod$1<[], [ServiceInfoStructOutput[]], 'view'>;
     getFunction(nameOrSignature: 'getAllLedgers'): TypedContractMethod$1<[
         offset: BigNumberish,
@@ -2223,10 +2252,18 @@ declare class RequestProcessor extends ZGServingUserBrokerBase {
         teeSignerAddress: string;
     }>;
     /**
-     * @deprecated Use checkProviderSignerStatus instead.
-     * TEE signer acknowledgement is now handled by contract owner only.
+     * acknowledgeProviderSigner tells the contract that user trust the acknowledgment of contract owner towards certain provider.
+     *
+     * @param providerAddress - The address of the provider
      */
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * revokeAcknowledgeProviderSigner tells the contract that user not trust the acknowledgment of contract owner towards certain provider.
+     * The function only take effect when the balance of the account is empty.
+     *
+     * @param providerAddress - The address of the provider
+     */
+    revokeAcknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
     /**
      * Acknowledge TEE Signer (Contract Owner Only)
      *
@@ -2272,7 +2309,6 @@ declare abstract class ZGServingUserBrokerBase {
     downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
-     * Note: This now checks the service-level acknowledgement instead of user-level.
      */
     acknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
@@ -2471,8 +2507,6 @@ declare class InferenceBroker {
      */
     revokeProviderTEESignerAcknowledgement: (providerAddress: string, gasPrice?: number) => Promise<void>;
     /**
-     * @deprecated Use checkProviderSignerStatus instead.
-     *
      * Acknowledge the given provider address.
      *
      * @param {string} providerAddress - The address of the provider identifying the account.
@@ -2696,13 +2730,13 @@ declare const TESTNET_CHAIN_ID = 16602n;
 declare const MAINNET_CHAIN_ID = 16600n;
 declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
-        readonly ledger: "0xc9BF91efc972e2B1225D4d9266B31aea458EE0B5";
-        readonly inference: "0xD18A6308793bDE62c3664729e3Fd0F7CFd2565Da";
+        readonly ledger: "0x327025B6435424735a3d97c4b1671FeFF0E8879B";
+        readonly inference: "0xa58e5220A5cF61768c7A5dBFC34a2377829240be";
         readonly fineTuning: "0x434cAbDedef8eBB760e7e583E419BFD5537A8B8a";
     };
     readonly mainnet: {
-        readonly ledger: "0x0000000000000000000000000000000000000000";
-        readonly inference: "0x0000000000000000000000000000000000000000";
+        readonly ledger: "0x1C4450Dc74504e585571B4aF70451C0737F10b71";
+        readonly inference: "0x0754221A9f2C11D820F827170249c3cc5cC3DC74";
         readonly fineTuning: "0x0000000000000000000000000000000000000000";
     };
 };

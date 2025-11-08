@@ -211,8 +211,6 @@ export class InferenceBroker {
     }
 
     /**
-     * @deprecated Use checkProviderSignerStatus instead.
-     *
      * Acknowledge the given provider address.
      *
      * @param {string} providerAddress - The address of the provider identifying the account.

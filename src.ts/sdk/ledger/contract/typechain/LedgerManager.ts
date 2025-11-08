@@ -80,6 +80,7 @@ export interface LedgerManagerInterface extends Interface {
             | 'addLedger'
             | 'deleteLedger'
             | 'depositFund'
+            | 'depositFundFor'
             | 'getAllActiveServices'
             | 'getAllLedgers'
             | 'getAllVersions'
@@ -121,6 +122,10 @@ export interface LedgerManagerInterface extends Interface {
     encodeFunctionData(
         functionFragment: 'depositFund',
         values?: undefined
+    ): string
+    encodeFunctionData(
+        functionFragment: 'depositFundFor',
+        values: [AddressLike]
     ): string
     encodeFunctionData(
         functionFragment: 'getAllActiveServices',
@@ -211,6 +216,10 @@ export interface LedgerManagerInterface extends Interface {
     ): Result
     decodeFunctionResult(
         functionFragment: 'depositFund',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'depositFundFor',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -398,6 +407,12 @@ export interface LedgerManager extends BaseContract {
 
     depositFund: TypedContractMethod<[], [void], 'payable'>
 
+    depositFundFor: TypedContractMethod<
+        [recipient: AddressLike],
+        [void],
+        'payable'
+    >
+
     getAllActiveServices: TypedContractMethod<
         [],
         [ServiceInfoStructOutput[]],
@@ -534,6 +549,9 @@ export interface LedgerManager extends BaseContract {
     getFunction(
         nameOrSignature: 'depositFund'
     ): TypedContractMethod<[], [void], 'payable'>
+    getFunction(
+        nameOrSignature: 'depositFundFor'
+    ): TypedContractMethod<[recipient: AddressLike], [void], 'payable'>
     getFunction(
         nameOrSignature: 'getAllActiveServices'
     ): TypedContractMethod<[], [ServiceInfoStructOutput[]], 'view'>

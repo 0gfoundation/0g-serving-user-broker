@@ -76,7 +76,6 @@ class ZGServingUserBrokerBase {
     }
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
-     * Note: This now checks the service-level acknowledgement instead of user-level.
      */
     async acknowledged(providerAddress) {
         const userAddress = this.contract.getUserAddress();

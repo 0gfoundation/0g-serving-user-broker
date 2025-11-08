@@ -19,7 +19,9 @@ async function runInferenceServer(options) {
     let endpoint;
     let model;
     async function initBroker() {
-        const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc || process.env.ZG_RPC_ENDPOINT || const_1.ZG_RPC_ENDPOINT_TESTNET);
+        const provider = new ethers_1.ethers.JsonRpcProvider(options.rpc ||
+            process.env.ZG_RPC_ENDPOINT ||
+            const_1.ZG_RPC_ENDPOINT_TESTNET);
         const privateKey = options.key || process.env.ZG_PRIVATE_KEY;
         if (!privateKey) {
             throw new Error('Missing wallet private key, please provide --key or set ZG_PRIVATE_KEY in environment variables');

@@ -50,7 +50,9 @@ async function promptPrivateKeyInput() {
             continue;
         }
         // Add 0x prefix if not present
-        const formattedKey = privateKey.startsWith('0x') ? privateKey : '0x' + privateKey;
+        const formattedKey = privateKey.startsWith('0x')
+            ? privateKey
+            : '0x' + privateKey;
         if (!isValidPrivateKey(formattedKey)) {
             console.log(chalk_1.default.red('Invalid private key format. Please enter a valid 64-character hex string.'));
             continue;
@@ -65,7 +67,7 @@ async function promptPrivateKeyInput() {
                 type: 'confirm',
                 name: 'value',
                 message: 'Is this the correct wallet address?',
-                initial: true
+                initial: true,
             });
             if (confirmed.value === false) {
                 console.log(chalk_1.default.yellow('Please enter a different private key.'));

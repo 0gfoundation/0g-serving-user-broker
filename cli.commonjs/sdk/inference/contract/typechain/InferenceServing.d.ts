@@ -54,7 +54,7 @@ export type AccountStruct = {
     pendingRefund: BigNumberish;
     refunds: RefundStruct[];
     additionalInfo: string;
-    teeSignerAddress: AddressLike;
+    acknowledged: boolean;
     validRefundsLength: BigNumberish;
 };
 export type AccountStructOutput = [
@@ -65,7 +65,7 @@ export type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput[],
     additionalInfo: string,
-    teeSignerAddress: string,
+    acknowledged: boolean,
     validRefundsLength: bigint
 ] & {
     user: string;
@@ -75,7 +75,7 @@ export type AccountStructOutput = [
     pendingRefund: bigint;
     refunds: RefundStructOutput[];
     additionalInfo: string;
-    teeSignerAddress: string;
+    acknowledged: boolean;
     validRefundsLength: bigint;
 };
 export type ServiceStruct = {
@@ -140,10 +140,11 @@ export type TEESettlementDataStructOutput = [
     signature: string;
 };
 export interface InferenceServingInterface extends Interface {
-    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
+    getFunction(nameOrSignature: 'accountExists' | 'acknowledgeTEESigner' | 'acknowledgeTEESignerByOwner' | 'addAccount' | 'addOrUpdateService' | 'deleteAccount' | 'depositFund' | 'getAccount' | 'getAccountsByProvider' | 'getAccountsByUser' | 'getAllAccounts' | 'getAllServices' | 'getBatchAccountsByUsers' | 'getPendingRefund' | 'getService' | 'initialize' | 'initialized' | 'ledgerAddress' | 'lockTime' | 'owner' | 'previewSettlementResults' | 'processRefund' | 'removeService' | 'renounceOwnership' | 'requestRefundAll' | 'revokeTEESignerAcknowledgement' | 'settleFeesWithTEE' | 'supportsInterface' | 'transferOwnership' | 'updateLockTime'): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: 'BalanceUpdated' | 'BatchBalanceUpdated' | 'OwnershipTransferred' | 'ProviderTEESignerAcknowledged' | 'RefundRequested' | 'ServiceRemoved' | 'ServiceUpdated' | 'TEESettlementResult'): EventFragment;
     encodeFunctionData(functionFragment: 'accountExists', values: [AddressLike, AddressLike]): string;
-    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESigner', values: [AddressLike, boolean]): string;
+    encodeFunctionData(functionFragment: 'acknowledgeTEESignerByOwner', values: [AddressLike]): string;
     encodeFunctionData(functionFragment: 'addAccount', values: [AddressLike, AddressLike, string]): string;
     encodeFunctionData(functionFragment: 'addOrUpdateService', values: [ServiceParamsStruct]): string;
     encodeFunctionData(functionFragment: 'deleteAccount', values: [AddressLike, AddressLike]): string;
@@ -173,6 +174,7 @@ export interface InferenceServingInterface extends Interface {
     encodeFunctionData(functionFragment: 'updateLockTime', values: [BigNumberish]): string;
     decodeFunctionResult(functionFragment: 'accountExists', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'acknowledgeTEESigner', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'acknowledgeTEESignerByOwner', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addAccount', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'addOrUpdateService', data: BytesLike): Result;
     decodeFunctionResult(functionFragment: 'deleteAccount', data: BytesLike): Result;
@@ -391,6 +393,12 @@ export interface InferenceServing extends BaseContract {
         boolean
     ], 'view'>;
     acknowledgeTEESigner: TypedContractMethod<[
+        provider: AddressLike,
+        acknowledged: boolean
+    ], [
+        void
+    ], 'nonpayable'>;
+    acknowledgeTEESignerByOwner: TypedContractMethod<[
         provider: AddressLike
     ], [
         void
@@ -571,7 +579,13 @@ export interface InferenceServing extends BaseContract {
     ], [
         boolean
     ], 'view'>;
-    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESigner'): TypedContractMethod<[
+        provider: AddressLike,
+        acknowledged: boolean
+    ], [
+        void
+    ], 'nonpayable'>;
+    getFunction(nameOrSignature: 'acknowledgeTEESignerByOwner'): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>;
     getFunction(nameOrSignature: 'addAccount'): TypedContractMethod<[
         user: AddressLike,
         provider: AddressLike,

@@ -55,7 +55,9 @@ async function loginCommand(options) {
             continue;
         }
         // Add 0x prefix if not present
-        const formattedKey = privateKey.startsWith('0x') ? privateKey : '0x' + privateKey;
+        const formattedKey = privateKey.startsWith('0x')
+            ? privateKey
+            : '0x' + privateKey;
         if (!isValidPrivateKey(formattedKey)) {
             console.log(chalk_1.default.red('Invalid private key format. Please enter a valid 64-character hex string.'));
             continue;
@@ -70,7 +72,7 @@ async function loginCommand(options) {
                 type: 'confirm',
                 name: 'value',
                 message: 'Login with this wallet address?',
-                initial: true
+                initial: true,
             });
             if (confirmed.value === false) {
                 console.log(chalk_1.default.yellow('Please enter a different private key.'));
@@ -119,7 +121,7 @@ async function logoutCommand() {
         type: 'confirm',
         name: 'value',
         message: 'Are you sure you want to logout?',
-        initial: false
+        initial: false,
     });
     if (confirmed.value !== true) {
         console.log(chalk_1.default.yellow('Logout cancelled.'));

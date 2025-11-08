@@ -15,12 +15,12 @@ async function interactiveSelect(config) {
         type: 'select',
         name: 'selection',
         message: config.message,
-        choices: config.options.map(option => ({
+        choices: config.options.map((option) => ({
             title: option.title,
             description: option.description,
-            value: option.value
+            value: option.value,
         })),
-        initial: 0
+        initial: 0,
     });
     // Handle Ctrl+C (user cancellation)
     if (response.selection === undefined) {
@@ -38,7 +38,7 @@ async function textInput(message, placeholder) {
         name: 'input',
         message: message,
         initial: placeholder ? '' : undefined,
-        style: 'default'
+        style: 'default',
     });
     // Handle Ctrl+C (user cancellation)
     if (response.input === undefined) {
@@ -55,7 +55,7 @@ async function passwordInput(message, placeholder) {
         type: 'password',
         name: 'password',
         message: message,
-        mask: '*'
+        mask: '*',
     });
     // Handle Ctrl+C (user cancellation)
     if (response.password === undefined) {

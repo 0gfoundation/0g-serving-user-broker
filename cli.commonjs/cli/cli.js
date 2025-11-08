@@ -17,13 +17,16 @@ exports.program
     .version('0.5.4');
 (0, ledger_1.default)(exports.program);
 // Create subcommands for each service
-const fineTuningCmd = exports.program.command('fine-tuning')
+const fineTuningCmd = exports.program
+    .command('fine-tuning')
     .alias('ft')
     .description('Fine-tuning service commands');
-const inferenceCmd = exports.program.command('inference')
+const inferenceCmd = exports.program
+    .command('inference')
     .alias('inf')
     .description('Inference service commands');
-const webUICmd = exports.program.command('web-ui')
+const webUICmd = exports.program
+    .command('web-ui')
     .alias('ui')
     .description('Web UI embedded commands');
 // Register commands to their respective groups

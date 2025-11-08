@@ -68,10 +68,18 @@ export declare class RequestProcessor extends ZGServingUserBrokerBase {
         teeSignerAddress: string;
     }>;
     /**
-     * @deprecated Use checkProviderSignerStatus instead.
-     * TEE signer acknowledgement is now handled by contract owner only.
+     * acknowledgeProviderSigner tells the contract that user trust the acknowledgment of contract owner towards certain provider.
+     *
+     * @param providerAddress - The address of the provider
      */
     acknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
+    /**
+     * revokeAcknowledgeProviderSigner tells the contract that user not trust the acknowledgment of contract owner towards certain provider.
+     * The function only take effect when the balance of the account is empty.
+     *
+     * @param providerAddress - The address of the provider
+     */
+    revokeAcknowledgeProviderSigner(providerAddress: string, gasPrice?: number): Promise<void>;
     /**
      * Acknowledge TEE Signer (Contract Owner Only)
      *

@@ -35,7 +35,6 @@ export declare abstract class ZGServingUserBrokerBase {
     downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
-     * Note: This now checks the service-level acknowledgement instead of user-level.
      */
     acknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;

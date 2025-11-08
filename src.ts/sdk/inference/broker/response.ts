@@ -14,7 +14,6 @@ import { logger } from '../../common/logger'
  * before use.
  */
 export class ResponseProcessor extends ZGServingUserBrokerBase {
-
     constructor(
         contract: InferenceServingContract,
         ledger: LedgerBroker,
@@ -70,10 +69,7 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
                 }
             } catch (error) {
                 // If JSON parsing fails, fall back to using additionalInfo as the address directly (backward compatibility)
-                logger.warn(
-                    'Failed to parse additionalInfo as JSON',
-                    error
-                )
+                logger.warn('Failed to parse additionalInfo as JSON', error)
                 return false
             }
 

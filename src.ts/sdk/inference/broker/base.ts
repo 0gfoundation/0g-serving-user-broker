@@ -132,7 +132,6 @@ export abstract class ZGServingUserBrokerBase {
 
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
-     * Note: This now checks the service-level acknowledgement instead of user-level.
      */
     async acknowledged(providerAddress: string): Promise<boolean> {
         const userAddress = this.contract.getUserAddress()
@@ -311,9 +310,7 @@ export abstract class ZGServingUserBrokerBase {
         return await this.generateSessionToken(providerAddress)
     }
 
-    async getHeader(
-        providerAddress: string,
-    ): Promise<ServingRequestHeaders> {
+    async getHeader(providerAddress: string): Promise<ServingRequestHeaders> {
         const userAddress = this.contract.getUserAddress()
 
         // Check if provider is acknowledged - this is still necessary

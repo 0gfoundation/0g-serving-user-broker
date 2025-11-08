@@ -95,8 +95,7 @@ function ledger(program) {
         .option('--step <step>', 'Step for gas price calculation')
         .action(async (options) => {
         const serviceType = options.service;
-        if (serviceType !== 'inference' &&
-            serviceType !== 'fine-tuning') {
+        if (serviceType !== 'inference' && serviceType !== 'fine-tuning') {
             console.error('Invalid service type. Must be "inference" or "fine-tuning"');
             process.exit(1);
         }
@@ -130,8 +129,7 @@ function ledger(program) {
         .option('--step <step>', 'Step for gas price calculation')
         .action(async (options) => {
         const serviceType = options.service;
-        if (serviceType !== 'inference' &&
-            serviceType !== 'fine-tuning') {
+        if (serviceType !== 'inference' && serviceType !== 'fine-tuning') {
             console.error('Invalid service type. Must be "inference" or "fine-tuning"');
             process.exit(1);
         }

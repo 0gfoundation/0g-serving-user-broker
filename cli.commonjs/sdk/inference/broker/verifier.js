@@ -144,8 +144,10 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 const reportSignerAddress = this.extractTeeSignerAddress(report);
                 if (reportSignerAddress) {
                     totalSignerChecks++;
-                    const addressMatch = reportSignerAddress.toLowerCase() === svc.teeSignerAddress.toLowerCase();
-                    console.log(`   ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report Signer: ${reportSignerAddress}`);
+                    const addressMatch = reportSignerAddress.toLowerCase() ===
+                        svc.teeSignerAddress.toLowerCase();
+                    console.log(`   ${reportType.charAt(0).toUpperCase() +
+                        reportType.slice(1)} Report Signer: ${reportSignerAddress}`);
                     console.log(`   Address Match: ${addressMatch ? '✅ MATCH' : '❌ MISMATCH'}`);
                     if (addressMatch) {
                         signerMatches++;
@@ -155,7 +157,8 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                     }
                 }
                 else {
-                    console.log(`   ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report: No signer address found`);
+                    console.log(`   ${reportType.charAt(0).toUpperCase() +
+                        reportType.slice(1)} Report: No signer address found`);
                 }
             }
             console.log('');
@@ -178,14 +181,21 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             // Verification Summary
             const verificationSummary = {
                 composeVerification: composeVerificationPassed,
-                signerAddressVerification: signerMatches === totalSignerChecks && totalSignerChecks > 0,
+                signerAddressVerification: signerMatches === totalSignerChecks &&
+                    totalSignerChecks > 0,
                 signerAddressMatches: signerMatches,
                 totalReports: totalSignerChecks,
-                allVerificationsPassed: composeVerificationPassed && (signerMatches === totalSignerChecks && totalSignerChecks > 0)
+                allVerificationsPassed: composeVerificationPassed &&
+                    signerMatches === totalSignerChecks &&
+                    totalSignerChecks > 0,
             };
             console.log('📋 Automated Verification Summary');
-            console.log(`   Docker Compose Verification: ${verificationSummary.composeVerification ? '✅ PASSED' : '❌ FAILED'}`);
-            console.log(`   TEE Signer Address Verification: ${verificationSummary.signerAddressVerification ? '✅ PASSED' : '❌ FAILED'} (${verificationSummary.signerAddressMatches}/${verificationSummary.totalReports} matches)`);
+            console.log(`   Docker Compose Verification: ${verificationSummary.composeVerification
+                ? '✅ PASSED'
+                : '❌ FAILED'}`);
+            console.log(`   TEE Signer Address Verification: ${verificationSummary.signerAddressVerification
+                ? '✅ PASSED'
+                : '❌ FAILED'} (${verificationSummary.signerAddressMatches}/${verificationSummary.totalReports} matches)`);
             console.log('');
             console.log('🎯 ============================================================================');
             console.log('🎯  AUTOMATED VERIFICATION CHECKS HAVE BEEN COMPLETED');
@@ -298,7 +308,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 targetSeparated,
                 verifierURL,
                 reportsGenerated: Object.keys(reports),
-                outputDirectory: outputDir
+                outputDirectory: outputDir,
             };
         }
         catch (error) {
@@ -379,7 +389,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 }
                 // Extract all images from tcb_info for later processing
                 const images = this.extractAllImagesFromTcbInfo(tcbInfo);
-                images.forEach(image => {
+                images.forEach((image) => {
                     if (!allImages.includes(image)) {
                         allImages.push(image);
                     }
@@ -389,10 +399,11 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 console.log(`   ⚠️  Error processing ${reportType} report: ${error}`);
             }
         }
-        const composeVerificationPassed = composeVerificationCount > 0 && passedComposeVerifications === composeVerificationCount;
+        const composeVerificationPassed = composeVerificationCount > 0 &&
+            passedComposeVerifications === composeVerificationCount;
         return {
             images: allImages,
-            composeVerificationPassed
+            composeVerificationPassed,
         };
     }
     /**
@@ -401,17 +412,22 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
     verifyComposeHash(tcbInfo, eventLog) {
         try {
             if (!tcbInfo.app_compose) {
-                return { isValid: false, error: 'app_compose not found in tcb_info' };
+                return {
+                    isValid: false,
+                    error: 'app_compose not found in tcb_info',
+                };
             }
             // Hash the app_compose JSON string
-            const composeHash = (0, crypto_1.createHash)('sha256').update(tcbInfo.app_compose).digest('hex');
+            const composeHash = (0, crypto_1.createHash)('sha256')
+                .update(tcbInfo.app_compose)
+                .digest('hex');
             // Find compose-hash event in the event log
-            const composeHashEvent = eventLog.find(entry => entry.event === 'compose-hash');
+            const composeHashEvent = eventLog.find((entry) => entry.event === 'compose-hash');
             if (!composeHashEvent) {
                 return {
                     isValid: false,
                     error: 'No compose-hash event found in event log',
-                    calculatedHash: composeHash
+                    calculatedHash: composeHash,
                 };
             }
             const expectedHash = composeHashEvent.event_payload;
@@ -419,11 +435,14 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 isValid: composeHash === expectedHash,
                 calculatedHash: composeHash,
                 eventLogHash: expectedHash,
-                composeHashEvent
+                composeHashEvent,
             };
         }
         catch (error) {
-            return { isValid: false, error: `Compose hash verification failed: ${error}` };
+            return {
+                isValid: false,
+                error: `Compose hash verification failed: ${error}`,
+            };
         }
     }
     /**

@@ -76,7 +76,7 @@ export type AccountStruct = {
     pendingRefund: BigNumberish
     refunds: RefundStruct[]
     additionalInfo: string
-    teeSignerAddress: AddressLike
+    acknowledged: boolean
     validRefundsLength: BigNumberish
 }
 
@@ -88,7 +88,7 @@ export type AccountStructOutput = [
     pendingRefund: bigint,
     refunds: RefundStructOutput[],
     additionalInfo: string,
-    teeSignerAddress: string,
+    acknowledged: boolean,
     validRefundsLength: bigint
 ] & {
     user: string
@@ -98,7 +98,7 @@ export type AccountStructOutput = [
     pendingRefund: bigint
     refunds: RefundStructOutput[]
     additionalInfo: string
-    teeSignerAddress: string
+    acknowledged: boolean
     validRefundsLength: bigint
 }
 
@@ -172,6 +172,7 @@ export interface InferenceServingInterface extends Interface {
         nameOrSignature:
             | 'accountExists'
             | 'acknowledgeTEESigner'
+            | 'acknowledgeTEESignerByOwner'
             | 'addAccount'
             | 'addOrUpdateService'
             | 'deleteAccount'
@@ -219,6 +220,10 @@ export interface InferenceServingInterface extends Interface {
     ): string
     encodeFunctionData(
         functionFragment: 'acknowledgeTEESigner',
+        values: [AddressLike, boolean]
+    ): string
+    encodeFunctionData(
+        functionFragment: 'acknowledgeTEESignerByOwner',
         values: [AddressLike]
     ): string
     encodeFunctionData(
@@ -330,6 +335,10 @@ export interface InferenceServingInterface extends Interface {
     ): Result
     decodeFunctionResult(
         functionFragment: 'acknowledgeTEESigner',
+        data: BytesLike
+    ): Result
+    decodeFunctionResult(
+        functionFragment: 'acknowledgeTEESignerByOwner',
         data: BytesLike
     ): Result
     decodeFunctionResult(
@@ -696,6 +705,12 @@ export interface InferenceServing extends BaseContract {
     >
 
     acknowledgeTEESigner: TypedContractMethod<
+        [provider: AddressLike, acknowledged: boolean],
+        [void],
+        'nonpayable'
+    >
+
+    acknowledgeTEESignerByOwner: TypedContractMethod<
         [provider: AddressLike],
         [void],
         'nonpayable'
@@ -891,6 +906,13 @@ export interface InferenceServing extends BaseContract {
     >
     getFunction(
         nameOrSignature: 'acknowledgeTEESigner'
+    ): TypedContractMethod<
+        [provider: AddressLike, acknowledged: boolean],
+        [void],
+        'nonpayable'
+    >
+    getFunction(
+        nameOrSignature: 'acknowledgeTEESignerByOwner'
     ): TypedContractMethod<[provider: AddressLike], [void], 'nonpayable'>
     getFunction(
         nameOrSignature: 'addAccount'

@@ -113,17 +113,35 @@ class InferenceServingContract {
         }
     }
     /**
-     * Acknowledge TEE signer for a provider (Contract owner only)
+     * Acknowledge TEE signer for a provider
      *
      * @param providerAddress - The address of the provider
+     * @param acknowledged - Whether to acknowledge (true) or revoke acknowledgement (false)
      */
-    async acknowledgeTEESigner(providerAddress, gasPrice) {
+    async acknowledgeTEESigner(providerAddress, acknowledged = true, gasPrice) {
         try {
             const txOptions = {};
             if (gasPrice || this._gasPrice) {
                 txOptions.gasPrice = gasPrice || this._gasPrice;
             }
-            await this.sendTx('acknowledgeTEESigner', [providerAddress], txOptions);
+            await this.sendTx('acknowledgeTEESigner', [providerAddress, acknowledged], txOptions);
+        }
+        catch (error) {
+            (0, utils_1.throwFormattedError)(error);
+        }
+    }
+    /**
+     * Acknowledge TEE signer for a provider (Contract owner only)
+     *
+     * @param providerAddress - The address of the provider
+     */
+    async acknowledgeTEESignerByOwner(providerAddress, gasPrice) {
+        try {
+            const txOptions = {};
+            if (gasPrice || this._gasPrice) {
+                txOptions.gasPrice = gasPrice || this._gasPrice;
+            }
+            await this.sendTx('acknowledgeTEESignerByOwner', [providerAddress], txOptions);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

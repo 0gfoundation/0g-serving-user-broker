@@ -11,13 +11,13 @@ export async function initBroker(
 ): Promise<ZGComputeNetworkBroker> {
     // Use the new interactive RPC endpoint selection
     const rpcEndpoint = await getRpcEndpoint(options)
-    
+
     // Use the private key configuration
     const privateKey = await ensurePrivateKeyConfiguration()
     if (!privateKey) {
         throw new Error('Private key is required')
     }
-    
+
     const provider = new ethers.JsonRpcProvider(rpcEndpoint)
     const wallet = new ethers.Wallet(privateKey, provider)
 
@@ -46,21 +46,33 @@ export async function withBroker(
     }
 }
 
-export async function checkFineTuningAvailability(options: any): Promise<boolean> {
+export async function checkFineTuningAvailability(
+    options: any
+): Promise<boolean> {
     try {
         const rpcEndpoint = await getRpcEndpoint(options)
         const provider = new ethers.JsonRpcProvider(rpcEndpoint)
         const network = await provider.getNetwork()
         const networkType = getNetworkType(network.chainId)
-        
+
         if (networkType === 'mainnet') {
-            console.log(chalk.yellow('⚠ Fine-tuning is not yet ready on mainnet.'))
-            console.log(chalk.gray('Please switch to testnet to use fine-tuning features.\n'))
-            
+            console.log(
+                chalk.yellow('⚠ Fine-tuning is not yet ready on mainnet.')
+            )
+            console.log(
+                chalk.gray(
+                    'Please switch to testnet to use fine-tuning features.\n'
+                )
+            )
+
             const shouldSwitch = await promptNetworkSwitch()
             if (shouldSwitch) {
                 await switchToTestnet()
-                console.log(chalk.green('✓ Network switched to testnet. Please run the command again.'))
+                console.log(
+                    chalk.green(
+                        '✓ Network switched to testnet. Please run the command again.'
+                    )
+                )
                 process.exit(0)
             } else {
                 process.exit(1)
@@ -75,25 +87,25 @@ export async function checkFineTuningAvailability(options: any): Promise<boolean
 
 async function promptNetworkSwitch(): Promise<boolean> {
     const { interactiveSelect } = await import('./interactive-selection')
-    
+
     const choice = await interactiveSelect({
         message: 'Would you like to switch to testnet?',
         options: [
             { title: 'Yes, switch to testnet', value: 'yes' },
-            { title: 'No, exit', value: 'no' }
-        ]
+            { title: 'No, exit', value: 'no' },
+        ],
     })
-    
+
     return choice === 'yes'
 }
 
 async function switchToTestnet(): Promise<void> {
     const { setConfiguredRpcEndpoint } = await import('./config')
     const testnetRpc = 'https://evmrpc-testnet.0g.ai'
-    
+
     // Set for current session
     process.env['ZG_RPC_ENDPOINT'] = testnetRpc
-    
+
     // Save to persistent config
     setConfiguredRpcEndpoint(testnetRpc, 'testnet')
 }
@@ -107,7 +119,7 @@ export async function withFineTuningBroker(
         if (!isAvailable) {
             return
         }
-        
+
         const broker = await initBroker(options)
         if (broker.fineTuning) {
             await action(broker)

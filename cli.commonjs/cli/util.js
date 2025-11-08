@@ -66,8 +66,8 @@ async function promptNetworkSwitch() {
         message: 'Would you like to switch to testnet?',
         options: [
             { title: 'Yes, switch to testnet', value: 'yes' },
-            { title: 'No, exit', value: 'no' }
-        ]
+            { title: 'No, exit', value: 'no' },
+        ],
     });
     return choice === 'yes';
 }

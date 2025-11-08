@@ -15,11 +15,18 @@ export declare class InferenceServingContract {
     listAccount(offset?: number, limit?: number): Promise<import(".").AccountStructOutput[]>;
     getAccount(provider: AddressLike): Promise<import(".").AccountStructOutput>;
     /**
+     * Acknowledge TEE signer for a provider
+     *
+     * @param providerAddress - The address of the provider
+     * @param acknowledged - Whether to acknowledge (true) or revoke acknowledgement (false)
+     */
+    acknowledgeTEESigner(providerAddress: AddressLike, acknowledged?: boolean, gasPrice?: number): Promise<void>;
+    /**
      * Acknowledge TEE signer for a provider (Contract owner only)
      *
      * @param providerAddress - The address of the provider
      */
-    acknowledgeTEESigner(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
+    acknowledgeTEESignerByOwner(providerAddress: AddressLike, gasPrice?: number): Promise<void>;
     /**
      * Revoke TEE signer acknowledgement for a provider (Contract owner only)
      *

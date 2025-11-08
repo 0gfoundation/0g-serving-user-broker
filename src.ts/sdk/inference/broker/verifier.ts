@@ -72,7 +72,6 @@ export interface VerificationSummary {
  * The Verifier class contains methods for verifying service reliability.
  */
 export class Verifier extends ZGServingUserBrokerBase {
-
     constructor(
         contract: InferenceServingContract,
         ledger: LedgerBroker,
@@ -85,31 +84,46 @@ export class Verifier extends ZGServingUserBrokerBase {
     /**
      * Comprehensive TEE service verification guide
      * Guides users through verifying whether a provider is running in TEE
-     * 
+     *
      * @param providerAddress - The provider address to verify
      * @param outputDir - Directory to save attestation reports (default: current directory)
      * @returns Verification results and user guidance
      */
-    async verifyService(providerAddress: string, outputDir: string = '.'): Promise<VerificationResult> {
+    async verifyService(
+        providerAddress: string,
+        outputDir: string = '.'
+    ): Promise<VerificationResult> {
         try {
-            console.log(`🔍 Starting TEE verification for provider: ${providerAddress}`)
+            console.log(
+                `🔍 Starting TEE verification for provider: ${providerAddress}`
+            )
             console.log('')
 
             // Step 1: Get service information from contract
-            console.log('📋 Step 1: Retrieving service information from contract...')
+            console.log(
+                '📋 Step 1: Retrieving service information from contract...'
+            )
             const svc = await this.getService(providerAddress)
-            
+
             if (!svc.additionalInfo) {
-                throw new Error('Service additionalInfo is missing - cannot proceed with verification')
+                throw new Error(
+                    'Service additionalInfo is missing - cannot proceed with verification'
+                )
             }
 
             // Step 2: Parse additionalInfo and analyze service configuration
-            console.log('🔧 Step 2: Parsing and analyzing service configuration...')
+            console.log(
+                '🔧 Step 2: Parsing and analyzing service configuration...'
+            )
             let additionalInfo: AdditionalInfo
             try {
-                additionalInfo = JSON.parse(svc.additionalInfo) as AdditionalInfo
+                additionalInfo = JSON.parse(
+                    svc.additionalInfo
+                ) as AdditionalInfo
             } catch {
-                throw new Error('Failed to parse service additionalInfo as JSON')
+                throw new Error(
+                    'Failed to parse service additionalInfo as JSON'
+                )
             }
 
             const verifierURL = additionalInfo.VerifierURL
@@ -117,33 +131,43 @@ export class Verifier extends ZGServingUserBrokerBase {
             const teeVerifier = additionalInfo.TEEVerifier || 'dstack' // default to dstack
 
             if (!verifierURL) {
-                console.warn('⚠️  Warning: VerifierURL not found in additionalInfo')
+                console.warn(
+                    '⚠️  Warning: VerifierURL not found in additionalInfo'
+                )
             }
 
             // Display service verification configuration
             console.log(`   Provider URL: ${svc.url}`)
             console.log(`   TEE Verifier: ${teeVerifier}`)
-            
+
             // TEE verification method information
             if (teeVerifier === 'dstack') {
                 console.log('   Verification Method: DStack TEE (Intel TDX)')
-                console.log('   Verification includes: Quote validation, Compose hash check, Image integrity')
+                console.log(
+                    '   Verification includes: Quote validation, Compose hash check, Image integrity'
+                )
             } else if (teeVerifier === 'cryptopilot') {
                 console.log('   Verification Method: CryptoPilot TEE')
-                console.log('   ⚠️  CryptoPilot verification flow is not yet implemented')
+                console.log(
+                    '   ⚠️  CryptoPilot verification flow is not yet implemented'
+                )
             } else {
                 console.log(`   Verification Method: Unknown (${teeVerifier})`)
             }
 
             // Component architecture information
             if (targetSeparated) {
-                console.log('   Architecture: Separated (Broker and LLM inference in different TEE nodes)')
+                console.log(
+                    '   Architecture: Separated (Broker and LLM inference in different TEE nodes)'
+                )
                 console.log('   Required Reports: 2 (Broker + LLM inference)')
             } else {
-                console.log('   Architecture: Combined (Broker and LLM inference in same TEE node)')
+                console.log(
+                    '   Architecture: Combined (Broker and LLM inference in same TEE node)'
+                )
                 console.log('   Required Reports: 1 (Combined)')
             }
-            
+
             if (verifierURL) {
                 console.log(`   Verifier Image URL: ${verifierURL}`)
             }
@@ -152,37 +176,53 @@ export class Verifier extends ZGServingUserBrokerBase {
             // Step 3: Get attestation reports
             console.log('📥 Step 3: Downloading attestation reports...')
             const reports: Record<string, AttestationReport> = {}
-            
+
             if (targetSeparated) {
                 // Get both broker and LLM reports
                 console.log('   Downloading broker attestation report...')
                 const brokerReport = await this.getQuote(providerAddress)
                 const brokerPath = `${outputDir}/broker_attestation_report.json`
                 await this.saveReportToFile(brokerReport.rawReport, brokerPath)
-                reports.broker = JSON.parse(brokerReport.rawReport) as AttestationReport
+                reports.broker = JSON.parse(
+                    brokerReport.rawReport
+                ) as AttestationReport
                 console.log(`   ✅ Broker report saved to: ${brokerPath}`)
 
-                console.log('   Downloading LLM inference attestation report...')
-                const llmReport = await this.getQuoteInLLMServer(svc.url, svc.model)
+                console.log(
+                    '   Downloading LLM inference attestation report...'
+                )
+                const llmReport = await this.getQuoteInLLMServer(
+                    svc.url,
+                    svc.model
+                )
                 const llmPath = `${outputDir}/llm_attestation_report.json`
                 await this.saveReportToFile(llmReport.rawReport, llmPath)
-                reports.llm = JSON.parse(llmReport.rawReport) as AttestationReport
+                reports.llm = JSON.parse(
+                    llmReport.rawReport
+                ) as AttestationReport
                 console.log(`   ✅ LLM report saved to: ${llmPath}`)
             } else {
                 // Get single combined report via broker
                 console.log('   Downloading combined attestation report...')
                 const combinedReport = await this.getQuote(providerAddress)
                 const combinedPath = `${outputDir}/attestation_report.json`
-                await this.saveReportToFile(combinedReport.rawReport, combinedPath)
-                reports.combined = JSON.parse(combinedReport.rawReport) as AttestationReport
+                await this.saveReportToFile(
+                    combinedReport.rawReport,
+                    combinedPath
+                )
+                reports.combined = JSON.parse(
+                    combinedReport.rawReport
+                ) as AttestationReport
                 console.log(`   ✅ Combined report saved to: ${combinedPath}`)
             }
             console.log('')
 
             // Step 4: TEE Signer Address Verification
             console.log('🔑 Step 4: TEE Signer Address Verification')
-            console.log(`   Contract TEE Signer Address: ${svc.teeSignerAddress}`)
-            
+            console.log(
+                `   Contract TEE Signer Address: ${svc.teeSignerAddress}`
+            )
+
             // Extract signer addresses from reports and verify
             let signerMatches = 0
             let totalSignerChecks = 0
@@ -190,17 +230,35 @@ export class Verifier extends ZGServingUserBrokerBase {
                 const reportSignerAddress = this.extractTeeSignerAddress(report)
                 if (reportSignerAddress) {
                     totalSignerChecks++
-                    const addressMatch = reportSignerAddress.toLowerCase() === svc.teeSignerAddress.toLowerCase()
-                    console.log(`   ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report Signer: ${reportSignerAddress}`)
-                    console.log(`   Address Match: ${addressMatch ? '✅ MATCH' : '❌ MISMATCH'}`)
-                    
+                    const addressMatch =
+                        reportSignerAddress.toLowerCase() ===
+                        svc.teeSignerAddress.toLowerCase()
+                    console.log(
+                        `   ${
+                            reportType.charAt(0).toUpperCase() +
+                            reportType.slice(1)
+                        } Report Signer: ${reportSignerAddress}`
+                    )
+                    console.log(
+                        `   Address Match: ${
+                            addressMatch ? '✅ MATCH' : '❌ MISMATCH'
+                        }`
+                    )
+
                     if (addressMatch) {
                         signerMatches++
                     } else {
-                        console.log(`   ⚠️  Warning: TEE signer address mismatch detected!`)
+                        console.log(
+                            `   ⚠️  Warning: TEE signer address mismatch detected!`
+                        )
                     }
                 } else {
-                    console.log(`   ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report: No signer address found`)
+                    console.log(
+                        `   ${
+                            reportType.charAt(0).toUpperCase() +
+                            reportType.slice(1)
+                        } Report: No signer address found`
+                    )
                 }
             }
             console.log('')
@@ -215,8 +273,12 @@ export class Verifier extends ZGServingUserBrokerBase {
                 composeVerificationPassed = result.composeVerificationPassed
             } else if (teeVerifier === 'cryptopilot') {
                 console.log('🔍 Step 5: CryptoPilot Verification Process')
-                console.log('   ⚠️  CryptoPilot verification is not yet implemented.')
-                console.log('   Please refer to CryptoPilot documentation for manual verification.')
+                console.log(
+                    '   ⚠️  CryptoPilot verification is not yet implemented.'
+                )
+                console.log(
+                    '   Please refer to CryptoPilot documentation for manual verification.'
+                )
                 composeVerificationPassed = false // Unknown for cryptopilot
             }
             console.log('')
@@ -224,36 +286,64 @@ export class Verifier extends ZGServingUserBrokerBase {
             // Verification Summary
             const verificationSummary: VerificationSummary = {
                 composeVerification: composeVerificationPassed,
-                signerAddressVerification: signerMatches === totalSignerChecks && totalSignerChecks > 0,
+                signerAddressVerification:
+                    signerMatches === totalSignerChecks &&
+                    totalSignerChecks > 0,
                 signerAddressMatches: signerMatches,
                 totalReports: totalSignerChecks,
-                allVerificationsPassed: composeVerificationPassed && (signerMatches === totalSignerChecks && totalSignerChecks > 0)
+                allVerificationsPassed:
+                    composeVerificationPassed &&
+                    signerMatches === totalSignerChecks &&
+                    totalSignerChecks > 0,
             }
 
             console.log('📋 Automated Verification Summary')
-            console.log(`   Docker Compose Verification: ${verificationSummary.composeVerification ? '✅ PASSED' : '❌ FAILED'}`)
-            console.log(`   TEE Signer Address Verification: ${verificationSummary.signerAddressVerification ? '✅ PASSED' : '❌ FAILED'} (${verificationSummary.signerAddressMatches}/${verificationSummary.totalReports} matches)`)
+            console.log(
+                `   Docker Compose Verification: ${
+                    verificationSummary.composeVerification
+                        ? '✅ PASSED'
+                        : '❌ FAILED'
+                }`
+            )
+            console.log(
+                `   TEE Signer Address Verification: ${
+                    verificationSummary.signerAddressVerification
+                        ? '✅ PASSED'
+                        : '❌ FAILED'
+                } (${verificationSummary.signerAddressMatches}/${
+                    verificationSummary.totalReports
+                } matches)`
+            )
             console.log('')
-            console.log('🎯 ============================================================================')
+            console.log(
+                '🎯 ============================================================================'
+            )
             console.log('🎯  AUTOMATED VERIFICATION CHECKS HAVE BEEN COMPLETED')
-            console.log('🎯  Please continue with the manual verification steps below to complete')
+            console.log(
+                '🎯  Please continue with the manual verification steps below to complete'
+            )
             console.log('🎯  the full verification process.')
-            console.log('🎯 ============================================================================')
+            console.log(
+                '🎯 ============================================================================'
+            )
             console.log('')
 
             // Step 6: Image verification guidance
             console.log('🖼️  Step 6: Image Verification')
-            
+
             // Display found Docker images
             if (dockerImages.length > 0) {
-                console.log(`   Images Extracted from Docker Compose (${dockerImages.length}):`)
-                
+                console.log(
+                    `   Images Extracted from Docker Compose (${dockerImages.length}):`
+                )
+
                 const brokerImages: string[] = []
                 const otherImages: string[] = []
-                
+
                 dockerImages.forEach((image, index) => {
-                    const isBroker = image.includes('broker') || image.includes('0g-serving')
-                    
+                    const isBroker =
+                        image.includes('broker') || image.includes('0g-serving')
+
                     if (isBroker) {
                         brokerImages.push(image)
                         console.log(`     ${index + 1}. ${image} (0G Broker)`)
@@ -262,21 +352,33 @@ export class Verifier extends ZGServingUserBrokerBase {
                         console.log(`     ${index + 1}. ${image}`)
                     }
                 })
-                
+
                 console.log('')
-                
+
                 // Show broker verification guidance only if broker images are found
                 if (brokerImages.length > 0) {
                     console.log('   To verify 0G broker image integrity:')
-                    console.log('   1. The broker image address has been extracted from the report')
-                    console.log('   2. Visit: https://github.com/0gfoundation/0g-serving-broker/releases')
-                    console.log('   3. Find the compute network broker image with matching Digest (SHA256)')
-                    console.log('   4. Verify the build process at: https://search.sigstore.dev/')
+                    console.log(
+                        '   1. The broker image address has been extracted from the report'
+                    )
+                    console.log(
+                        '   2. Visit: https://github.com/0gfoundation/0g-serving-broker/releases'
+                    )
+                    console.log(
+                        '   3. Find the compute network broker image with matching Digest (SHA256)'
+                    )
+                    console.log(
+                        '   4. Verify the build process at: https://search.sigstore.dev/'
+                    )
                     console.log('')
                 }
-                
+
                 if (otherImages.length > 0) {
-                    console.log(`   Note: Please verify the other images (${otherImages.join(', ')}) according to their respective sources`)
+                    console.log(
+                        `   Note: Please verify the other images (${otherImages.join(
+                            ', '
+                        )}) according to their respective sources`
+                    )
                     console.log('')
                 }
             } else {
@@ -288,63 +390,97 @@ export class Verifier extends ZGServingUserBrokerBase {
             if (verifierURL) {
                 console.log('🔐 Step 7: Download and Verify the Verifier Image')
                 console.log('')
-                console.log('   The verifier image will be used in Step 8 to perform comprehensive verification.')
-                console.log('   Before using it, we need to ensure the verifier itself has a verifiable build process.')
+                console.log(
+                    '   The verifier image will be used in Step 8 to perform comprehensive verification.'
+                )
+                console.log(
+                    '   Before using it, we need to ensure the verifier itself has a verifiable build process.'
+                )
                 console.log('')
                 console.log(`   Verifier image download URL: ${verifierURL}`)
                 console.log('   To verify the verifier image:')
-                console.log('   1. Download the verifier image from the provided URL')
+                console.log(
+                    '   1. Download the verifier image from the provided URL'
+                )
                 console.log('   2. Get the image hash/digest')
-                console.log('   3. Verify the build process at: https://search.sigstore.dev/')
+                console.log(
+                    '   3. Verify the build process at: https://search.sigstore.dev/'
+                )
                 console.log('')
             }
 
             // Step 8: Verifier usage instructions
             console.log('🛠️  Step 8: Run Verifier for Complete Verification')
-            
+
             if (teeVerifier === 'dstack') {
                 console.log('')
-                console.log('   The DStack verifier performs three main verification steps:')
+                console.log(
+                    '   The DStack verifier performs three main verification steps:'
+                )
                 console.log('')
                 console.log('   1. Quote Verification:')
                 console.log('      - Validates the TDX quote using dcap-qvl')
                 console.log('      - Checks the quote signature and TCB status')
                 console.log('')
                 console.log('   2. Event Log Verification:')
-                console.log('      - Replays event logs to ensure RTMR values match')
+                console.log(
+                    '      - Replays event logs to ensure RTMR values match'
+                )
                 console.log('      - Extracts app information from the logs')
                 console.log('')
                 console.log('   3. OS Image Hash Verification:')
-                console.log('      - Automatically downloads OS images if not cached locally')
-                console.log('      - Uses dstack-mr to compute expected measurements')
-                console.log('      - Compares against the verified measurements from the quote')
+                console.log(
+                    '      - Automatically downloads OS images if not cached locally'
+                )
+                console.log(
+                    '      - Uses dstack-mr to compute expected measurements'
+                )
+                console.log(
+                    '      - Compares against the verified measurements from the quote'
+                )
                 console.log('')
                 console.log('   Usage Instructions:')
                 console.log('')
-                console.log('   1. Start the verifier service locally (example with dstack-verifier:0.5.4):')
-                console.log('      docker run -d -p 8080:8080 docker.io/dstacktee/dstack-verifier:0.5.4')
+                console.log(
+                    '   1. Start the verifier service locally (example with dstack-verifier:0.5.4):'
+                )
+                console.log(
+                    '      docker run -d -p 8080:8080 docker.io/dstacktee/dstack-verifier:0.5.4'
+                )
                 console.log('')
-                console.log('   2. Verify the downloaded attestation report(s):')
-                
+                console.log(
+                    '   2. Verify the downloaded attestation report(s):'
+                )
+
                 // Show specific commands based on whether components are separated
                 if (targetSeparated) {
                     console.log('      # Verify broker attestation report')
-                    console.log(`      curl -s -d @${outputDir}/broker_attestation_report.json localhost:8080/verify`)
+                    console.log(
+                        `      curl -s -d @${outputDir}/broker_attestation_report.json localhost:8080/verify`
+                    )
                     console.log('')
                     console.log('      # Verify LLM attestation report')
-                    console.log(`      curl -s -d @${outputDir}/llm_attestation_report.json localhost:8080/verify`)
+                    console.log(
+                        `      curl -s -d @${outputDir}/llm_attestation_report.json localhost:8080/verify`
+                    )
                 } else {
-                    console.log(`      curl -s -d @${outputDir}/attestation_report.json localhost:8080/verify`)
+                    console.log(
+                        `      curl -s -d @${outputDir}/attestation_report.json localhost:8080/verify`
+                    )
                 }
                 console.log('')
             } else if (teeVerifier === 'cryptopilot') {
                 console.log('')
                 console.log('   The CryptoPilot verifier verification process:')
-                console.log('   [CryptoPilot verifier details to be implemented]')
+                console.log(
+                    '   [CryptoPilot verifier details to be implemented]'
+                )
                 console.log('')
             } else {
                 console.log('')
-                console.log('   [Verifier usage instructions for this TEE type]')
+                console.log(
+                    '   [Verifier usage instructions for this TEE type]'
+                )
             }
 
             return {
@@ -353,9 +489,8 @@ export class Verifier extends ZGServingUserBrokerBase {
                 targetSeparated,
                 verifierURL,
                 reportsGenerated: Object.keys(reports),
-                outputDirectory: outputDir
+                outputDirectory: outputDir,
             }
-
         } catch (error) {
             console.error('❌ TEE verification failed:', error)
             throwFormattedError(error)
@@ -374,10 +509,12 @@ export class Verifier extends ZGServingUserBrokerBase {
             }
 
             // Decode the base64 report_data to get the signer address
-            const decodedData = Buffer.from(reportData, 'base64').toString('utf-8')
+            const decodedData = Buffer.from(reportData, 'base64').toString(
+                'utf-8'
+            )
             // Remove NULL characters that pad the address
             const signingAddress = decodedData.replace(/\0/g, '')
-            
+
             return signingAddress || null
         } catch {
             return null
@@ -387,16 +524,20 @@ export class Verifier extends ZGServingUserBrokerBase {
     /**
      * Process DStack-specific verification steps
      */
-    private async processDStackVerification(reports: Record<string, AttestationReport>): Promise<{images: string[], composeVerificationPassed: boolean}> {
+    private async processDStackVerification(
+        reports: Record<string, AttestationReport>
+    ): Promise<{ images: string[]; composeVerificationPassed: boolean }> {
         const allImages: string[] = []
         let composeVerificationCount = 0
         let passedComposeVerifications = 0
-        
+
         for (const [reportType, report] of Object.entries(reports)) {
             console.log(`   Processing ${reportType} report...`)
-            
+
             if (!report.tcb_info || !report.event_log) {
-                console.log(`   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`)
+                console.log(
+                    `   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`
+                )
                 continue
             }
 
@@ -404,7 +545,10 @@ export class Verifier extends ZGServingUserBrokerBase {
                 // Parse tcb_info if it's a string
                 let tcbInfo: Record<string, unknown>
                 if (typeof report.tcb_info === 'string') {
-                    tcbInfo = JSON.parse(report.tcb_info) as Record<string, unknown>
+                    tcbInfo = JSON.parse(report.tcb_info) as Record<
+                        string,
+                        unknown
+                    >
                 } else {
                     tcbInfo = report.tcb_info
                 }
@@ -416,7 +560,9 @@ export class Verifier extends ZGServingUserBrokerBase {
                 } else if (Array.isArray(report.event_log)) {
                     eventLog = report.event_log
                 } else {
-                    console.log(`   ⚠️  Warning: event_log is not in expected format`)
+                    console.log(
+                        `   ⚠️  Warning: event_log is not in expected format`
+                    )
                     continue
                 }
 
@@ -426,89 +572,114 @@ export class Verifier extends ZGServingUserBrokerBase {
                 if (composeResult.isValid) {
                     passedComposeVerifications++
                 }
-                
+
                 console.log(`   Docker Compose Verification:`)
-                
+
                 if (composeResult.calculatedHash) {
-                    console.log(`     Calculated Hash: ${composeResult.calculatedHash}`)
+                    console.log(
+                        `     Calculated Hash: ${composeResult.calculatedHash}`
+                    )
                 }
                 if (composeResult.eventLogHash) {
-                    console.log(`     Event Log Hash:  ${composeResult.eventLogHash}`)
+                    console.log(
+                        `     Event Log Hash:  ${composeResult.eventLogHash}`
+                    )
                 }
-                console.log(`     Status: ${composeResult.isValid ? '✅ VALID' : '❌ INVALID'}`)
-                
+                console.log(
+                    `     Status: ${
+                        composeResult.isValid ? '✅ VALID' : '❌ INVALID'
+                    }`
+                )
+
                 if (!composeResult.isValid && composeResult.error) {
                     console.log(`     Error: ${composeResult.error}`)
                 }
 
                 // Extract all images from tcb_info for later processing
                 const images = this.extractAllImagesFromTcbInfo(tcbInfo)
-                images.forEach(image => {
+                images.forEach((image) => {
                     if (!allImages.includes(image)) {
                         allImages.push(image)
                     }
                 })
-
             } catch (error) {
-                console.log(`   ⚠️  Error processing ${reportType} report: ${error}`)
+                console.log(
+                    `   ⚠️  Error processing ${reportType} report: ${error}`
+                )
             }
         }
-        
-        const composeVerificationPassed = composeVerificationCount > 0 && passedComposeVerifications === composeVerificationCount
+
+        const composeVerificationPassed =
+            composeVerificationCount > 0 &&
+            passedComposeVerifications === composeVerificationCount
         return {
             images: allImages,
-            composeVerificationPassed
+            composeVerificationPassed,
         }
     }
 
     /**
      * Verify compose hash based on the dstack verification logic
      */
-    private verifyComposeHash(tcbInfo: Record<string, unknown>, eventLog: EventLogEntry[]): ComposeVerificationResult {
+    private verifyComposeHash(
+        tcbInfo: Record<string, unknown>,
+        eventLog: EventLogEntry[]
+    ): ComposeVerificationResult {
         try {
             if (!tcbInfo.app_compose) {
-                return { isValid: false, error: 'app_compose not found in tcb_info' }
+                return {
+                    isValid: false,
+                    error: 'app_compose not found in tcb_info',
+                }
             }
 
             // Hash the app_compose JSON string
-            const composeHash = createHash('sha256').update(tcbInfo.app_compose as string).digest('hex')
+            const composeHash = createHash('sha256')
+                .update(tcbInfo.app_compose as string)
+                .digest('hex')
 
             // Find compose-hash event in the event log
-            const composeHashEvent = eventLog.find(entry => entry.event === 'compose-hash')
-            
+            const composeHashEvent = eventLog.find(
+                (entry) => entry.event === 'compose-hash'
+            )
+
             if (!composeHashEvent) {
-                return { 
-                    isValid: false, 
+                return {
+                    isValid: false,
                     error: 'No compose-hash event found in event log',
-                    calculatedHash: composeHash
+                    calculatedHash: composeHash,
                 }
             }
 
             const expectedHash = composeHashEvent.event_payload
-            return { 
+            return {
                 isValid: composeHash === expectedHash,
                 calculatedHash: composeHash,
                 eventLogHash: expectedHash,
-                composeHashEvent
+                composeHashEvent,
             }
-
         } catch (error) {
-            return { isValid: false, error: `Compose hash verification failed: ${error}` }
+            return {
+                isValid: false,
+                error: `Compose hash verification failed: ${error}`,
+            }
         }
     }
 
     /**
      * Extract all Docker images from tcb_info
      */
-    private extractAllImagesFromTcbInfo(tcbInfo: Record<string, unknown>): string[] {
+    private extractAllImagesFromTcbInfo(
+        tcbInfo: Record<string, unknown>
+    ): string[] {
         try {
             const images: string[] = []
             const tcbString = JSON.stringify(tcbInfo)
-            
+
             // Match various image patterns in docker-compose format
             // Pattern 1: image: <image-address>
             const imageMatches = tcbString.match(/"image"\s*:\s*"([^"]+)"/g)
-            
+
             if (imageMatches) {
                 for (const match of imageMatches) {
                     // Extract the image address from the match
@@ -522,7 +693,7 @@ export class Verifier extends ZGServingUserBrokerBase {
                     }
                 }
             }
-            
+
             // Also try alternative pattern without quotes around key
             const altImageMatches = tcbString.match(/image:\s*([^",\s\}]+)/g)
             if (altImageMatches) {
@@ -536,22 +707,23 @@ export class Verifier extends ZGServingUserBrokerBase {
                     }
                 }
             }
-            
+
             return images
         } catch {
             return []
         }
     }
 
-
     /**
      * Save report to file
      */
-    private async saveReportToFile(reportContent: string, filePath: string): Promise<void> {
+    private async saveReportToFile(
+        reportContent: string,
+        filePath: string
+    ): Promise<void> {
         const fs = await import('fs/promises')
         await fs.writeFile(filePath, reportContent, 'utf8')
     }
-
 
     async getSignerRaDownloadLink(providerAddress: string): Promise<string> {
         try {
@@ -628,7 +800,7 @@ export class Verifier extends ZGServingUserBrokerBase {
     static async fetchSignatureByChatID(
         providerBrokerURL: string,
         chatID: string,
-        model: string,
+        model: string
     ): Promise<ResponseSignature> {
         return fetch(
             `${providerBrokerURL}/v1/proxy/signature/${chatID}?model=${model}`,

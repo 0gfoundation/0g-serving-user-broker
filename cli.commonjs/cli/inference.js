@@ -48,6 +48,20 @@ function inference(program) {
         });
     });
     program
+        .command('acknowledge-provider')
+        .description('Acknowledge the provider signer')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--gas-price <price>', 'Gas price for transactions')
+        .action((options) => {
+        (0, util_1.withBroker)(options, async (broker) => {
+            await broker.inference.acknowledgeProviderSigner(options.provider, options.gasPrice);
+            console.log('Provider signer acknowledged successfully!');
+        });
+    });
+    program
         .command('serve')
         .description('Start local inference service')
         .requiredOption('--provider <address>', 'Provider address')

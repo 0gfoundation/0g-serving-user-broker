@@ -9,7 +9,7 @@ const broker_1 = require("./fine-tuning/broker");
 const broker_2 = require("./inference/broker/broker");
 // Network configurations
 exports.TESTNET_CHAIN_ID = 16602n;
-exports.MAINNET_CHAIN_ID = 16600n; // TODO: Update with actual mainnet chain ID when available
+exports.MAINNET_CHAIN_ID = 16661n;
 // Contract addresses for different networks
 exports.CONTRACT_ADDRESSES = {
     testnet: {

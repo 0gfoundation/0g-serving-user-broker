@@ -9,7 +9,7 @@ import type { FineTuningBroker } from './fine-tuning/broker'
 
 // Network configurations
 export const TESTNET_CHAIN_ID = 16602n
-export const MAINNET_CHAIN_ID = 16600n // TODO: Update with actual mainnet chain ID when available
+export const MAINNET_CHAIN_ID = 16661n
 
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {

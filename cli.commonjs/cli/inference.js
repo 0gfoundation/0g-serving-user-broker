@@ -8,6 +8,9 @@ const network_setup_1 = require("./network-setup");
 const private_key_setup_1 = require("./private-key-setup");
 const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
+const axios_1 = tslib_1.__importDefault(require("axios"));
+const fs_1 = tslib_1.__importDefault(require("fs"));
+const ethers_1 = require("ethers");
 function inference(program) {
     program
         .command('list-providers')
@@ -217,6 +220,234 @@ function inference(program) {
                 console.log('Verification result is null');
             }
         });
+    });
+    program
+        .command('list-logs')
+        .description('[For provider] List available log files from your provider service')
+        .option('--component <component>', 'Component name (broker/event/both)', 'both')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options) => {
+        try {
+            const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
+            const privateKey = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
+            if (!privateKey) {
+                throw new Error('Private key is required');
+            }
+            const provider = new ethers_1.ethers.JsonRpcProvider(rpcEndpoint);
+            const wallet = new ethers_1.ethers.Wallet(privateKey, provider);
+            const userAddress = await wallet.getAddress();
+            const broker = await (0, util_1.initBroker)(options);
+            try {
+                // Get service metadata for current user's provider service
+                const serviceMetadata = await broker.inference.getServiceMetadata(userAddress);
+                // Create session for provider authentication
+                const session = await broker.inference.requestProcessor.getOrCreateSession(userAddress);
+                const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}?component=${options.component}`;
+                const response = await axios_1.default.get(endpoint, {
+                    headers: {
+                        'Address': userAddress,
+                        'Session-Token': session.rawMessage,
+                        'Session-Signature': session.signature
+                    }
+                });
+                const logs = response.data.logs || [];
+                if (logs.length === 0) {
+                    console.log('No log files found.');
+                    return;
+                }
+                const table = new cli_table3_1.default({
+                    head: ['Component', 'Filename', 'Size (bytes)', 'Modified Time', 'Current'],
+                    colWidths: [12, 30, 15, 25, 10]
+                });
+                logs.forEach((log) => {
+                    const modifiedTime = new Date(log.modifiedTime * 1000).toLocaleString();
+                    const isCurrent = log.isCurrentLog ? '✓' : '';
+                    const size = log.size.toLocaleString();
+                    table.push([
+                        chalk_1.default.blue(log.component),
+                        log.name,
+                        size,
+                        modifiedTime,
+                        isCurrent ? chalk_1.default.green(isCurrent) : ''
+                    ]);
+                });
+                console.log('\nAvailable Log Files:');
+                console.log(table.toString());
+                process.exit(0);
+            }
+            catch (error) {
+                if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error;
+                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                }
+                else if (error instanceof Error) {
+                    console.error('Error:', error.message);
+                }
+                else {
+                    console.error('Error:', String(error));
+                }
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Error:', error.message);
+            }
+            else {
+                console.error('Error:', String(error));
+            }
+            process.exit(1);
+        }
+    });
+    program
+        .command('download-log')
+        .description('[For provider] Download a specific log file from your provider service')
+        .requiredOption('--component <component>', 'Component name (broker/event)')
+        .requiredOption('--filename <filename>', 'Log file name')
+        .option('--output <path>', 'Output file path (defaults to filename)')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options) => {
+        try {
+            const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
+            const privateKey = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
+            if (!privateKey) {
+                throw new Error('Private key is required');
+            }
+            const provider = new ethers_1.ethers.JsonRpcProvider(rpcEndpoint);
+            const wallet = new ethers_1.ethers.Wallet(privateKey, provider);
+            const userAddress = await wallet.getAddress();
+            const broker = await (0, util_1.initBroker)(options);
+            try {
+                // Get service metadata for current user's provider service
+                const serviceMetadata = await broker.inference.getServiceMetadata(userAddress);
+                // Create session for provider authentication
+                const session = await broker.inference.requestProcessor.getOrCreateSession(userAddress);
+                const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}/${options.component}/${options.filename}`;
+                const response = await axios_1.default.get(endpoint, {
+                    headers: {
+                        'Address': userAddress,
+                        'Session-Token': session.rawMessage,
+                        'Session-Signature': session.signature
+                    },
+                    responseType: 'stream'
+                });
+                const outputPath = options.output || options.filename;
+                const writer = fs_1.default.createWriteStream(outputPath);
+                response.data.pipe(writer);
+                writer.on('finish', () => {
+                    console.log(`Log file downloaded to: ${outputPath}`);
+                    process.exit(0);
+                });
+                writer.on('error', (error) => {
+                    console.error('Error writing file:', error.message);
+                    process.exit(1);
+                });
+            }
+            catch (error) {
+                if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error;
+                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                }
+                else if (error instanceof Error) {
+                    console.error('Error:', error.message);
+                }
+                else {
+                    console.error('Error:', String(error));
+                }
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Error:', error.message);
+            }
+            else {
+                console.error('Error:', String(error));
+            }
+            process.exit(1);
+        }
+    });
+    program
+        .command('view-log')
+        .description('[For provider] View a specific log file content from your provider service')
+        .requiredOption('--component <component>', 'Component name (broker/event)')
+        .requiredOption('--filename <filename>', 'Log file name')
+        .option('--lines <number>', 'Number of lines to show (default: all)', 'all')
+        .option('--tail', 'Show last N lines instead of first N lines')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options) => {
+        try {
+            const rpcEndpoint = await (0, network_setup_1.getRpcEndpoint)(options);
+            const privateKey = await (0, private_key_setup_1.ensurePrivateKeyConfiguration)();
+            if (!privateKey) {
+                throw new Error('Private key is required');
+            }
+            const provider = new ethers_1.ethers.JsonRpcProvider(rpcEndpoint);
+            const wallet = new ethers_1.ethers.Wallet(privateKey, provider);
+            const userAddress = await wallet.getAddress();
+            const broker = await (0, util_1.initBroker)(options);
+            try {
+                // Get service metadata for current user's provider service
+                const serviceMetadata = await broker.inference.getServiceMetadata(userAddress);
+                // Create session for provider authentication
+                const session = await broker.inference.requestProcessor.getOrCreateSession(userAddress);
+                const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}/${options.component}/${options.filename}`;
+                const response = await axios_1.default.get(endpoint, {
+                    headers: {
+                        'Address': userAddress,
+                        'Session-Token': session.rawMessage,
+                        'Session-Signature': session.signature
+                    }
+                });
+                let content = response.data;
+                if (options.lines !== 'all') {
+                    const numLines = parseInt(options.lines);
+                    const lines = content.split('\n');
+                    if (options.tail) {
+                        content = lines.slice(-numLines).join('\n');
+                    }
+                    else {
+                        content = lines.slice(0, numLines).join('\n');
+                    }
+                }
+                console.log(`\n${chalk_1.default.blue('Log file:')} ${options.component}/${options.filename}`);
+                console.log(`${chalk_1.default.blue('Provider:')} ${userAddress}`);
+                console.log('─'.repeat(80));
+                console.log(content);
+                if (content && !content.endsWith('\n')) {
+                    console.log(); // Add newline if content doesn't end with one
+                }
+                process.exit(0);
+            }
+            catch (error) {
+                if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error;
+                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                }
+                else if (error instanceof Error) {
+                    console.error('Error:', error.message);
+                }
+                else {
+                    console.error('Error:', String(error));
+                }
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Error:', error.message);
+            }
+            else {
+                console.error('Error:', String(error));
+            }
+            process.exit(1);
+        }
     });
     program
         .command('ack-provider', { hidden: true })

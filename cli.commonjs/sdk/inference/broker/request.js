@@ -103,11 +103,16 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
     async acknowledgeProviderSigner(providerAddress, gasPrice) {
         try {
             // Ensure user has an account with the provider
+            let account;
             try {
-                await this.contract.getAccount(providerAddress);
+                account = await this.contract.getAccount(providerAddress);
             }
             catch {
                 await this.ledger.transferFund(providerAddress, 'inference', BigInt(0), gasPrice);
+            }
+            if (account && account.acknowledged) {
+                // Already acknowledged
+                return;
             }
             await this.contract.acknowledgeTEESigner(providerAddress, true, gasPrice);
         }

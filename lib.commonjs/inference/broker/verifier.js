@@ -141,6 +141,9 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             let signerMatches = 0;
             let totalSignerChecks = 0;
             for (const [reportType, report] of Object.entries(reports)) {
+                if (reportType === 'llm') {
+                    continue;
+                }
                 const reportSignerAddress = this.extractTeeSignerAddress(report);
                 if (reportSignerAddress) {
                     totalSignerChecks++;
@@ -345,7 +348,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
         let passedComposeVerifications = 0;
         for (const [reportType, report] of Object.entries(reports)) {
             console.log(`   Processing ${reportType} report...`);
-            if (!report.tcb_info || !report.event_log) {
+            if (!(report.tcb_info || report.info?.tcb_info) || !report.event_log) {
                 console.log(`   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`);
                 continue;
             }
@@ -356,7 +359,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                     tcbInfo = JSON.parse(report.tcb_info);
                 }
                 else {
-                    tcbInfo = report.tcb_info;
+                    tcbInfo = report.tcb_info || report.info?.tcb_info;
                 }
                 // Parse event_log if it's a string
                 let eventLog;

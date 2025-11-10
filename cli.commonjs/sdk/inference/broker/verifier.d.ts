@@ -34,6 +34,9 @@ export interface AdditionalInfo {
 }
 export interface AttestationReport {
     tcb_info?: Record<string, unknown>;
+    info?: {
+        tcb_info?: Record<string, unknown>;
+    };
     event_log?: EventLogEntry[];
     [key: string]: unknown;
 }

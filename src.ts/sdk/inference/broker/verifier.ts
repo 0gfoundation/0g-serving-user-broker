@@ -42,6 +42,9 @@ export interface AdditionalInfo {
 
 export interface AttestationReport {
     tcb_info?: Record<string, unknown>
+    info?: {
+        tcb_info?: Record<string, unknown>
+    }
     event_log?: EventLogEntry[]
     [key: string]: unknown
 }
@@ -227,6 +230,10 @@ export class Verifier extends ZGServingUserBrokerBase {
             let signerMatches = 0
             let totalSignerChecks = 0
             for (const [reportType, report] of Object.entries(reports)) {
+                if (reportType === 'llm') {
+                    continue
+                }
+
                 const reportSignerAddress = this.extractTeeSignerAddress(report)
                 if (reportSignerAddress) {
                     totalSignerChecks++
@@ -534,7 +541,8 @@ export class Verifier extends ZGServingUserBrokerBase {
         for (const [reportType, report] of Object.entries(reports)) {
             console.log(`   Processing ${reportType} report...`)
 
-            if (!report.tcb_info || !report.event_log) {
+
+            if (!(report.tcb_info || report.info?.tcb_info) || !report.event_log) {
                 console.log(
                     `   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`
                 )
@@ -550,7 +558,10 @@ export class Verifier extends ZGServingUserBrokerBase {
                         unknown
                     >
                 } else {
-                    tcbInfo = report.tcb_info
+                    tcbInfo = report.tcb_info || (report.info?.tcb_info as Record<
+                        string,
+                        unknown
+                    >)
                 }
 
                 // Parse event_log if it's a string

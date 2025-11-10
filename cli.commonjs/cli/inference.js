@@ -247,10 +247,10 @@ function inference(program) {
                 const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}?component=${options.component}`;
                 const response = await axios_1.default.get(endpoint, {
                     headers: {
-                        'Address': userAddress,
+                        Address: userAddress,
                         'Session-Token': session.rawMessage,
-                        'Session-Signature': session.signature
-                    }
+                        'Session-Signature': session.signature,
+                    },
                 });
                 const logs = response.data.logs || [];
                 if (logs.length === 0) {
@@ -258,8 +258,14 @@ function inference(program) {
                     return;
                 }
                 const table = new cli_table3_1.default({
-                    head: ['Component', 'Filename', 'Size (bytes)', 'Modified Time', 'Current'],
-                    colWidths: [12, 30, 15, 25, 10]
+                    head: [
+                        'Component',
+                        'Filename',
+                        'Size (bytes)',
+                        'Modified Time',
+                        'Current',
+                    ],
+                    colWidths: [12, 30, 15, 25, 10],
                 });
                 logs.forEach((log) => {
                     const modifiedTime = new Date(log.modifiedTime * 1000).toLocaleString();
@@ -270,7 +276,7 @@ function inference(program) {
                         log.name,
                         size,
                         modifiedTime,
-                        isCurrent ? chalk_1.default.green(isCurrent) : ''
+                        isCurrent ? chalk_1.default.green(isCurrent) : '',
                     ]);
                 });
                 console.log('\nAvailable Log Files:');
@@ -278,9 +284,12 @@ function inference(program) {
                 process.exit(0);
             }
             catch (error) {
-                if (error && typeof error === 'object' && 'response' in error) {
+                if (error &&
+                    typeof error === 'object' &&
+                    'response' in error) {
                     const axiosError = error;
-                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                    console.error('Error:', axiosError.response.data?.error ||
+                        axiosError.response.statusText);
                 }
                 else if (error instanceof Error) {
                     console.error('Error:', error.message);
@@ -329,11 +338,11 @@ function inference(program) {
                 const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}/${options.component}/${options.filename}`;
                 const response = await axios_1.default.get(endpoint, {
                     headers: {
-                        'Address': userAddress,
+                        Address: userAddress,
                         'Session-Token': session.rawMessage,
-                        'Session-Signature': session.signature
+                        'Session-Signature': session.signature,
                     },
-                    responseType: 'stream'
+                    responseType: 'stream',
                 });
                 const outputPath = options.output || options.filename;
                 const writer = fs_1.default.createWriteStream(outputPath);
@@ -348,9 +357,12 @@ function inference(program) {
                 });
             }
             catch (error) {
-                if (error && typeof error === 'object' && 'response' in error) {
+                if (error &&
+                    typeof error === 'object' &&
+                    'response' in error) {
                     const axiosError = error;
-                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                    console.error('Error:', axiosError.response.data?.error ||
+                        axiosError.response.statusText);
                 }
                 else if (error instanceof Error) {
                     console.error('Error:', error.message);
@@ -400,10 +412,10 @@ function inference(program) {
                 const endpoint = `${serviceMetadata.endpoint.replace('/proxy', '/logs')}/${options.component}/${options.filename}`;
                 const response = await axios_1.default.get(endpoint, {
                     headers: {
-                        'Address': userAddress,
+                        Address: userAddress,
                         'Session-Token': session.rawMessage,
-                        'Session-Signature': session.signature
-                    }
+                        'Session-Signature': session.signature,
+                    },
                 });
                 let content = response.data;
                 if (options.lines !== 'all') {
@@ -426,9 +438,12 @@ function inference(program) {
                 process.exit(0);
             }
             catch (error) {
-                if (error && typeof error === 'object' && 'response' in error) {
+                if (error &&
+                    typeof error === 'object' &&
+                    'response' in error) {
                     const axiosError = error;
-                    console.error('Error:', axiosError.response.data?.error || axiosError.response.statusText);
+                    console.error('Error:', axiosError.response.data?.error ||
+                        axiosError.response.statusText);
                 }
                 else if (error instanceof Error) {
                     console.error('Error:', error.message);

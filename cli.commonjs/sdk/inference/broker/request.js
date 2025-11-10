@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestProcessor = void 0;
 const base_1 = require("./base");
 const automata_1 = require("../../common/automata");
-const storage_1 = require("../../common/storage");
 const utils_1 = require("../../common/utils");
 /**
  * RequestProcessor is a subclass of ZGServingUserBroker.
@@ -71,14 +70,9 @@ class RequestProcessor extends base_1.ZGServingUserBrokerBase {
             }
             // Get service information (now contains TEE signer info)
             const service = await this.getService(providerAddress);
-            const userAddress = this.contract.getUserAddress();
-            const cacheKey = storage_1.CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
             if (service.teeSignerAcknowledged &&
                 service.teeSignerAddress !==
                     '0x0000000000000000000000000000000000000000') {
-                // Cache the acknowledgement status
-                this.cache.setItem(cacheKey, service.teeSignerAddress, 10 * 60 * 1000, // 10 minutes cache
-                storage_1.CacheValueTypeEnum.Other);
                 return {
                     isAcknowledged: true,
                     teeSignerAddress: service.teeSignerAddress,

@@ -23,6 +23,28 @@ export const zgTestnet = defineChain({
   testnet: true,
 });
 
+export const zgMainnet = defineChain({
+  id: 16661,
+  name: '0G Mainnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: '0G',
+    symbol: '0G',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://evmrpc.0g.ai'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: '0G Mainnet Explorer',
+      url: 'https://chainscan.0g.ai/',
+    },
+  },
+  testnet: false,
+});
+
 // // Local mock RPC configuration
 // export const localMockChain = defineChain({
 //   id: 31337, // Hardhat default chain ID
@@ -49,6 +71,6 @@ export const zgTestnet = defineChain({
 export const wagmiConfig = getDefaultConfig({
   appName: '0G Compute Network',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id',
-  chains: [zgTestnet],
+  chains: [zgMainnet, zgTestnet],
   ssr: true,
 });

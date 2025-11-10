@@ -90,7 +90,7 @@ class InferenceBroker {
      */
     acknowledged = async (providerAddress) => {
         try {
-            return await this.requestProcessor.acknowledged(providerAddress);
+            return await this.requestProcessor.userAcknowledged(providerAddress);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

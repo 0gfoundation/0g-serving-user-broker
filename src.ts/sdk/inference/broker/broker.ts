@@ -130,7 +130,7 @@ export class InferenceBroker {
      */
     public acknowledged = async (providerAddress: string) => {
         try {
-            return await this.requestProcessor.acknowledged(providerAddress)
+            return await this.requestProcessor.userAcknowledged(providerAddress)
         } catch (error) {
             throwFormattedError(error)
         }

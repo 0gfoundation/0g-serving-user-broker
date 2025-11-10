@@ -23,7 +23,7 @@ export declare const CacheKeyHelpers: {
     getCachedFeeKey(provider: string): string;
     getSigningKeyKey(key: string): string;
     getContentKey(id: string): string;
-    getSessionTokenKey(providerAddress: string): string;
+    getSessionTokenKey(userAddress: string, providerAddress: string): string;
 };
 export type CacheKey = (typeof CACHE_KEYS)[keyof typeof CACHE_KEYS];
 export type CacheKeyPrefix = (typeof CACHE_KEY_PREFIXES)[keyof typeof CACHE_KEY_PREFIXES];

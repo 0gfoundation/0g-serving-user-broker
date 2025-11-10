@@ -12,7 +12,7 @@ import {
     CacheKeyHelpers,
 } from '../../common/storage'
 import type { LedgerBroker } from '../../ledger'
-import { ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
+import { keccak256, toUtf8Bytes } from 'ethers'
 import { logger } from '../../common/logger'
 
 export interface TdxQuoteResponse {
@@ -130,10 +130,7 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    /**
-     * Check if provider's TEE signer is acknowledged by the contract owner.
-     */
-    async acknowledged(providerAddress: string): Promise<boolean> {
+    async userAcknowledged(providerAddress: string): Promise<boolean> {
         const userAddress = this.contract.getUserAddress()
         const key = CacheKeyHelpers.getUserAckKey(userAddress, providerAddress)
         const cachedSvc = await this.cache.getItem(key)
@@ -142,16 +139,11 @@ export abstract class ZGServingUserBrokerBase {
         }
 
         try {
-            // Get service information instead of account
-            const service = await this.getService(providerAddress)
-
-            if (
-                service.teeSignerAcknowledged &&
-                service.teeSignerAddress !== ZeroAddress
-            ) {
+            const account = await this.contract.getAccount(providerAddress)
+            if (account.acknowledged) {
                 await this.cache.setItem(
                     key,
-                    service.teeSignerAddress,
+                    '',
                     10 * 60 * 1000,
                     CacheValueTypeEnum.Other
                 )
@@ -284,7 +276,7 @@ export abstract class ZGServingUserBrokerBase {
         }
 
         // Cache the session using the existing cache with proper TTL
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress)
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress)
         await this.cache.setItem(
             cacheKey,
             session,
@@ -296,7 +288,8 @@ export abstract class ZGServingUserBrokerBase {
     }
 
     async getOrCreateSession(providerAddress: string): Promise<CachedSession> {
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress)
+        const userAddress = this.contract.getUserAddress()
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress)
         const cached = (await this.cache.getItem(
             cacheKey
         )) as CachedSession | null
@@ -314,7 +307,7 @@ export abstract class ZGServingUserBrokerBase {
         const userAddress = this.contract.getUserAddress()
 
         // Check if provider is acknowledged - this is still necessary
-        if (!(await this.acknowledged(providerAddress))) {
+        if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged')
         }
 

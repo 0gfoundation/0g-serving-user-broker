@@ -104,17 +104,13 @@ export function use0GBroker(): Use0GBrokerReturn {
                 }
             }
 
-            // Create broker instance with proper contract addresses
+            // Create broker instance (auto-detects network and contract addresses)
             if (!signer) {
                 throw new Error('Failed to create signer')
             }
-            // Validate contract addresses
 
             const brokerInstance = await createZGComputeNetworkBroker(
                 signer as any // TODO: Fix this type assertion when 0g-serving-broker types are available
-                // '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318',
-                // '0x0165878A594ca255338adfa4d48449f69242Eb8F',
-                // '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'
             )
             setBroker(brokerInstance as unknown as ZGComputeNetworkBroker)
         } catch (err: unknown) {

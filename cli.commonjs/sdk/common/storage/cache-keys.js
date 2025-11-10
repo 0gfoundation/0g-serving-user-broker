@@ -54,8 +54,8 @@ exports.CacheKeyHelpers = {
         return id; // Keep as is since it's already unique
     },
     // Session token key
-    getSessionTokenKey(providerAddress) {
-        return `${exports.CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`;
+    getSessionTokenKey(userAddress, providerAddress) {
+        return `${exports.CACHE_KEY_PREFIXES.SESSION_TOKEN}${userAddress}_${providerAddress}`;
     },
 };
 //# sourceMappingURL=cache-keys.js.map

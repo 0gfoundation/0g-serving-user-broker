@@ -1,4 +1,4 @@
-import { ethers, ContractFactory, Interface, Contract, ZeroAddress, keccak256, toUtf8Bytes, Wallet } from 'ethers';
+import { ethers, ContractFactory, Interface, Contract, keccak256, toUtf8Bytes, Wallet } from 'ethers';
 import * as fs$1 from 'fs/promises';
 import { createHash as createHash$1 } from 'crypto';
 import { spawn as spawn$1 } from 'child_process';
@@ -12493,8 +12493,8 @@ const CacheKeyHelpers = {
         return id; // Keep as is since it's already unique
     },
     // Session token key
-    getSessionTokenKey(providerAddress) {
-        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`;
+    getSessionTokenKey(userAddress, providerAddress) {
+        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${userAddress}_${providerAddress}`;
     },
 };
 
@@ -12857,10 +12857,7 @@ class ZGServingUserBrokerBase {
             throwFormattedError(error);
         }
     }
-    /**
-     * Check if provider's TEE signer is acknowledged by the contract owner.
-     */
-    async acknowledged(providerAddress) {
+    async userAcknowledged(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         const key = CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
         const cachedSvc = await this.cache.getItem(key);
@@ -12868,11 +12865,9 @@ class ZGServingUserBrokerBase {
             return true;
         }
         try {
-            // Get service information instead of account
-            const service = await this.getService(providerAddress);
-            if (service.teeSignerAcknowledged &&
-                service.teeSignerAddress !== ZeroAddress) {
-                await this.cache.setItem(key, service.teeSignerAddress, 10 * 60 * 1000, CacheValueTypeEnum.Other);
+            const account = await this.contract.getAccount(providerAddress);
+            if (account.acknowledged) {
+                await this.cache.setItem(key, '', 10 * 60 * 1000, CacheValueTypeEnum.Other);
                 return true;
             }
             else {
@@ -12980,12 +12975,13 @@ class ZGServingUserBrokerBase {
             rawMessage: message,
         };
         // Cache the session using the existing cache with proper TTL
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
         await this.cache.setItem(cacheKey, session, this.sessionDuration, CacheValueTypeEnum.Session);
         return session;
     }
     async getOrCreateSession(providerAddress) {
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const userAddress = this.contract.getUserAddress();
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
         const cached = (await this.cache.getItem(cacheKey));
         // Check if cached session exists and is not expired (with 1 hour buffer)
         if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
@@ -12997,7 +12993,7 @@ class ZGServingUserBrokerBase {
     async getHeader(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
-        if (!(await this.acknowledged(providerAddress))) {
+        if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
         }
         // Get or create session token
@@ -13552,14 +13548,9 @@ class RequestProcessor extends ZGServingUserBrokerBase {
             }
             // Get service information (now contains TEE signer info)
             const service = await this.getService(providerAddress);
-            const userAddress = this.contract.getUserAddress();
-            const cacheKey = CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
             if (service.teeSignerAcknowledged &&
                 service.teeSignerAddress !==
                     '0x0000000000000000000000000000000000000000') {
-                // Cache the acknowledgement status
-                this.cache.setItem(cacheKey, service.teeSignerAddress, 10 * 60 * 1000, // 10 minutes cache
-                CacheValueTypeEnum.Other);
                 return {
                     isAcknowledged: true,
                     teeSignerAddress: service.teeSignerAddress,
@@ -14356,7 +14347,7 @@ class InferenceBroker {
      */
     acknowledged = async (providerAddress) => {
         try {
-            return await this.requestProcessor.acknowledged(providerAddress);
+            return await this.requestProcessor.userAcknowledged(providerAddress);
         }
         catch (error) {
             throwFormattedError(error);
@@ -14941,7 +14932,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-c3902458.js');
+    const { download } = await import('./index-f870ccb5.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20288,4 +20279,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-36675a26.js.map
+//# sourceMappingURL=index-d4f899f0.js.map

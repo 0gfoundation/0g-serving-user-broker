@@ -2307,10 +2307,7 @@ declare abstract class ZGServingUserBrokerBase {
     protected getService(providerAddress: string, useCache?: boolean): Promise<ServiceStructOutput$1>;
     getQuote(providerAddress: string): Promise<TdxQuoteResponse>;
     downloadQuoteReport(providerAddress: string, outputPath: string): Promise<void>;
-    /**
-     * Check if provider's TEE signer is acknowledged by the contract owner.
-     */
-    acknowledged(providerAddress: string): Promise<boolean>;
+    userAcknowledged(providerAddress: string): Promise<boolean>;
     fetchText(endpoint: string, options: RequestInit): Promise<string>;
     protected getExtractor(providerAddress: string, useCache?: boolean): Promise<Extractor>;
     protected createExtractor(svc: ServiceStructOutput$1): Extractor;

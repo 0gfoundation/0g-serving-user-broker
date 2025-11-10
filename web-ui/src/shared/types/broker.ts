@@ -37,6 +37,7 @@ export interface Provider {
   outputPrice?: number;
   inputPriceNeuron?: bigint;
   outputPriceNeuron?: bigint;
+  teeSignerAcknowledged?: boolean;
 }
 
 /**

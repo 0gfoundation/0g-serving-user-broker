@@ -3,7 +3,6 @@ import type { Cache, Metadata } from '../../common/storage'
 import type { InferenceServingContract } from '../contract'
 import type { LedgerBroker } from '../../ledger'
 import { Automata } from '../../common/automata'
-import { CacheValueTypeEnum, CacheKeyHelpers } from '../../common/storage'
 import { throwFormattedError } from '../../common/utils'
 // import { Verifier } from './verifier'
 
@@ -142,25 +141,12 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
             // Get service information (now contains TEE signer info)
             const service = await this.getService(providerAddress)
 
-            const userAddress = this.contract.getUserAddress()
-            const cacheKey = CacheKeyHelpers.getUserAckKey(
-                userAddress,
-                providerAddress
-            )
 
             if (
                 service.teeSignerAcknowledged &&
                 service.teeSignerAddress !==
                     '0x0000000000000000000000000000000000000000'
             ) {
-                // Cache the acknowledgement status
-                this.cache.setItem(
-                    cacheKey,
-                    service.teeSignerAddress,
-                    10 * 60 * 1000, // 10 minutes cache
-                    CacheValueTypeEnum.Other
-                )
-
                 return {
                     isAcknowledged: true,
                     teeSignerAddress: service.teeSignerAddress,

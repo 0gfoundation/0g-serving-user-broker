@@ -74,10 +74,7 @@ class ZGServingUserBrokerBase {
             (0, utils_1.throwFormattedError)(error);
         }
     }
-    /**
-     * Check if provider's TEE signer is acknowledged by the contract owner.
-     */
-    async acknowledged(providerAddress) {
+    async userAcknowledged(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         const key = storage_1.CacheKeyHelpers.getUserAckKey(userAddress, providerAddress);
         const cachedSvc = await this.cache.getItem(key);
@@ -85,11 +82,9 @@ class ZGServingUserBrokerBase {
             return true;
         }
         try {
-            // Get service information instead of account
-            const service = await this.getService(providerAddress);
-            if (service.teeSignerAcknowledged &&
-                service.teeSignerAddress !== ethers_1.ZeroAddress) {
-                await this.cache.setItem(key, service.teeSignerAddress, 10 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
+            const account = await this.contract.getAccount(providerAddress);
+            if (account.acknowledged) {
+                await this.cache.setItem(key, '', 10 * 60 * 1000, storage_1.CacheValueTypeEnum.Other);
                 return true;
             }
             else {
@@ -197,12 +192,13 @@ class ZGServingUserBrokerBase {
             rawMessage: message,
         };
         // Cache the session using the existing cache with proper TTL
-        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
         await this.cache.setItem(cacheKey, session, this.sessionDuration, storage_1.CacheValueTypeEnum.Session);
         return session;
     }
     async getOrCreateSession(providerAddress) {
-        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(providerAddress);
+        const userAddress = this.contract.getUserAddress();
+        const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
         const cached = (await this.cache.getItem(cacheKey));
         // Check if cached session exists and is not expired (with 1 hour buffer)
         if (cached && cached.token.expiresAt > Date.now() + 60 * 60 * 1000) {
@@ -214,7 +210,7 @@ class ZGServingUserBrokerBase {
     async getHeader(providerAddress) {
         const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
-        if (!(await this.acknowledged(providerAddress))) {
+        if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
         }
         // Get or create session token

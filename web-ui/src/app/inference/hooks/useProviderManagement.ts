@@ -142,6 +142,7 @@ export function useProviderManagement(
                     const acknowledged = await broker.inference.acknowledged(
                         selectedProvider.address
                     )
+
                     setProviderAcknowledged(acknowledged)
 
                     // Check if we should show tutorial

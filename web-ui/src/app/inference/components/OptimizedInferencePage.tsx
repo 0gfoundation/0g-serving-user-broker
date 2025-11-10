@@ -248,11 +248,15 @@ main();`
               const isOfficial = OFFICIAL_PROVIDERS.some(
                 (op) => op.address === provider.address
               );
+              const isVerified = provider.teeSignerAcknowledged ?? false;
+              const isDisabled = !isVerified;
               
               return (
                 <div
                   key={provider.address}
-                  className="bg-white rounded-xl border border-gray-300 p-5 hover:shadow-lg transition-shadow relative"
+                  className={`bg-white rounded-xl border border-gray-300 p-5 transition-shadow relative ${
+                    isDisabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer'
+                  }`}
                 >
                   {/* Show loading indicator for individual provider data if still loading */}
                   {providersLoading && (
@@ -276,6 +280,11 @@ main();`
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
                           {provider.verifiability}
                         </span>
+                        {!isVerified && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 flex-shrink-0">
+                            Unverified
+                          </span>
+                        )}
                       </div>
                       
                       {/* Pricing and address with copy button */}
@@ -341,25 +350,58 @@ main();`
 
                   {/* Action buttons */}
                   <div className="flex space-x-1 mt-1">
-                    <button
-                      onClick={() => handleChatWithProvider(provider)}
-                      className="flex-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors rounded-md px-2 py-1.5 cursor-pointer text-xs flex items-center justify-center space-x-1 border border-gray-200 hover:border-purple-200"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>Chat</span>
-                    </button>
-                    <button
-                      onClick={() => handleBuildWithProvider(provider)}
-                      className="flex-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors rounded-md px-2 py-1.5 cursor-pointer text-xs flex items-center justify-center space-x-1 border border-gray-200 hover:border-purple-200"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                      </svg>
-                      <span>Build</span>
-                    </button>
+                    {isDisabled ? (
+                      <>
+                        <div className="flex-1 bg-gray-100 text-gray-400 rounded-md px-2 py-1.5 text-xs flex items-center justify-center space-x-1 border border-gray-200 cursor-not-allowed">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span>Chat</span>
+                        </div>
+                        <div className="flex-1 bg-gray-100 text-gray-400 rounded-md px-2 py-1.5 text-xs flex items-center justify-center space-x-1 border border-gray-200 cursor-not-allowed">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                          <span>Build</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleChatWithProvider(provider)}
+                          className="flex-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors rounded-md px-2 py-1.5 cursor-pointer text-xs flex items-center justify-center space-x-1 border border-gray-200 hover:border-purple-200"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span>Chat</span>
+                        </button>
+                        <button
+                          onClick={() => handleBuildWithProvider(provider)}
+                          className="flex-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors rounded-md px-2 py-1.5 cursor-pointer text-xs flex items-center justify-center space-x-1 border border-gray-200 hover:border-purple-200"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                          <span>Build</span>
+                        </button>
+                      </>
+                    )}
                   </div>
+                  
+                  {/* Unverified provider notice */}
+                  {!isVerified && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-start">
+                        <svg className="w-3 h-3 text-red-500 mr-1 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-xs text-red-700">
+                          This provider has not been verified and cannot be used until verification is complete.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -454,21 +496,31 @@ main();`
 
                       <div>
                         <h3 className="text-base font-medium text-gray-700 mb-2">2. Set environment variables</h3>
-                        <div className="relative">
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
-                            <code className="text-gray-800 text-sm font-mono">
-                              export ZG_PRIVATE_KEY=&lt;YOUR_PRIVATE_KEY&gt;
-                            </code>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
+                              <code className="text-gray-800 text-sm font-mono">
+                                export ZG_PRIVATE_KEY=&lt;YOUR_PRIVATE_KEY&gt;<br/>
+                                # For mainnet (default):<br/>
+                                export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai<br/>
+                                # For testnet:<br/>
+                                # export ZG_RPC_ENDPOINT=https://evmrpc-testnet.0g.ai
+                              </code>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`export ZG_PRIVATE_KEY=<YOUR_PRIVATE_KEY>
+# For mainnet (default):
+export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
+# For testnet:
+# export ZG_RPC_ENDPOINT=https://evmrpc-testnet.0g.ai`)}
+                              className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
+                              title="Copy to clipboard"
+                            >
+                              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => copyToClipboard('export ZG_PRIVATE_KEY=<YOUR_PRIVATE_KEY>')}
-                            className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
-                            title="Copy to clipboard"
-                          >
-                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          </button>
                         </div>
                       </div>
 

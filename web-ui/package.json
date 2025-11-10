@@ -9,7 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@0glabs/0g-serving-broker": "0.5.4",
+        "@0glabs/0g-serving-broker": "1.0.0-beta.2",
         "@rainbow-me/rainbowkit": "^2.2.8",
         "@tanstack/react-query": "^5.83.0",
         "@types/circomlibjs": "^0.1.6",

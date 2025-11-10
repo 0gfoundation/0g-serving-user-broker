@@ -42,7 +42,7 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
   const isHomePage = pathname === "/";
   const { isConnected, address } = useAccount();
   const { disconnect } = useDisconnect();
-  const { broker } = use0GBroker();
+  const { broker, isInitializing, error: brokerError } = use0GBroker();
   
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -54,14 +54,18 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
       if (broker && isConnected && !isHomePage) {
         try {
           const ledger = await broker.ledger.getLedger();
-          if (!ledger) {
+          // If we get here, it means ledger exists and has data
+          // Check if the balance is valid (totalBalance > 0 indicates a real ledger)
+          if (!ledger || ledger.totalBalance === BigInt(0)) {
             setShowDepositModal(true);
-          }
-        } catch {
+          } 
+        } catch (error) {
+          // If error occurs (e.g., ledger does not exist), prompt for deposit
           setShowDepositModal(true);
         }
       }
     };
+    
     checkLedger();
   }, [broker, isConnected, isHomePage]);
 

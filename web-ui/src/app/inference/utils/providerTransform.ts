@@ -16,6 +16,7 @@ export interface BrokerServiceObject {
   url?: string;
   inputPrice?: bigint | string | number;
   outputPrice?: bigint | string | number;
+  teeSignerAcknowledged?: boolean;
 }
 
 /**
@@ -33,12 +34,13 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
     url?: string;
     inputPrice?: bigint;
     outputPrice?: bigint;
+    teeSignerAcknowledged?: boolean;
   };
   
   // Type guard to ensure service has the required properties
   const providerAddress = serviceObj.provider || "";
-  const rawModel = serviceObj.model || "Unknown Model";
-  const modelName = rawModel.includes('/') ? rawModel.split('/').slice(1).join('/') : rawModel;
+  const modelName = serviceObj.model || "Unknown Model";
+  // const modelName = rawModel.includes('/') ? rawModel.split('/').slice(1).join('/') : rawModel;
   const rawProviderName = serviceObj.name || serviceObj.model || "Unknown Provider";
   const providerName = rawProviderName.includes('/') ? rawProviderName.split('/').slice(1).join('/') : rawProviderName;
   const verifiability = serviceObj.verifiability || "TEE";
@@ -63,6 +65,7 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
     outputPrice,
     inputPriceNeuron: serviceObj.inputPrice ? BigInt(serviceObj.inputPrice) : undefined,
     outputPriceNeuron: serviceObj.outputPrice ? BigInt(serviceObj.outputPrice) : undefined,
+    teeSignerAcknowledged: serviceObj.teeSignerAcknowledged ?? false,
   };
 }
 

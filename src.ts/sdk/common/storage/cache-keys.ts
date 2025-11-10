@@ -65,8 +65,8 @@ export const CacheKeyHelpers = {
     },
 
     // Session token key
-    getSessionTokenKey(providerAddress: string): string {
-        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${providerAddress}`
+    getSessionTokenKey(userAddress: string, providerAddress: string): string {
+        return `${CACHE_KEY_PREFIXES.SESSION_TOKEN}${userAddress}_${providerAddress}`
     },
 }
 

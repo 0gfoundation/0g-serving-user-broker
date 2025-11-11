@@ -276,7 +276,10 @@ export abstract class ZGServingUserBrokerBase {
         }
 
         // Cache the session using the existing cache with proper TTL
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress)
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(
+            userAddress,
+            providerAddress
+        )
         await this.cache.setItem(
             cacheKey,
             session,
@@ -289,7 +292,10 @@ export abstract class ZGServingUserBrokerBase {
 
     async getOrCreateSession(providerAddress: string): Promise<CachedSession> {
         const userAddress = this.contract.getUserAddress()
-        const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress)
+        const cacheKey = CacheKeyHelpers.getSessionTokenKey(
+            userAddress,
+            providerAddress
+        )
         const cached = (await this.cache.getItem(
             cacheKey
         )) as CachedSession | null

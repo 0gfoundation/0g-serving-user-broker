@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
 import type { Command } from 'commander';
-export default function webUIEmbedded(program: Command): void;
+export declare function startEmbeddedWebUI(port?: number): Promise<void>;
+export default function webUIEmbedded(cmd: Command): void;
 //# sourceMappingURL=web-ui-embedded.d.ts.map

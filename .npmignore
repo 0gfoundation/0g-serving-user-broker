@@ -5,7 +5,6 @@ web-ui/node_modules/**
 
 # Next.js build output
 web-ui/.next/
-web-ui/.next/**
 
 # Development files
 *.log
@@ -32,3 +31,37 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Development source and config files
+src.ts/
+web-ui/src/
+web-ui/public/
+web-ui/pnpm-lock.yaml
+web-ui/next.config.mjs
+web-ui/tailwind.config.js
+web-ui/postcss.config.mjs
+web-ui/tsconfig.json
+web-ui/*.config.*
+web-ui/.eslintrc.*
+
+# Documentation and development files
+*.md
+docs/
+.git/
+.github/
+.gitignore
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+# Test files
+**/__tests__/
+**/*.test.js
+**/*.test.ts
+
+# Large binary files (keep only essential ones)
+binary/
+!binary/0g-storage-client
+!binary/dcap-qvl-web_bg.wasm
+
+# Build maps
+**/*.map

@@ -141,7 +141,6 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
             // Get service information (now contains TEE signer info)
             const service = await this.getService(providerAddress)
 
-
             if (
                 service.teeSignerAcknowledged &&
                 service.teeSignerAddress !==

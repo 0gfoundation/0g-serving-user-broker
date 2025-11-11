@@ -541,8 +541,10 @@ export class Verifier extends ZGServingUserBrokerBase {
         for (const [reportType, report] of Object.entries(reports)) {
             console.log(`   Processing ${reportType} report...`)
 
-
-            if (!(report.tcb_info || report.info?.tcb_info) || !report.event_log) {
+            if (
+                !(report.tcb_info || report.info?.tcb_info) ||
+                !report.event_log
+            ) {
                 console.log(
                     `   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`
                 )
@@ -558,10 +560,9 @@ export class Verifier extends ZGServingUserBrokerBase {
                         unknown
                     >
                 } else {
-                    tcbInfo = report.tcb_info || (report.info?.tcb_info as Record<
-                        string,
-                        unknown
-                    >)
+                    tcbInfo =
+                        report.tcb_info ||
+                        (report.info?.tcb_info as Record<string, unknown>)
                 }
 
                 // Parse event_log if it's a string

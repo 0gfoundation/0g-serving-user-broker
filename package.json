@@ -1,21 +1,17 @@
 {
     "name": "@0glabs/0g-serving-broker",
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.4",
     "description": "TS SDK for 0G Compute Network",
     "main": "./lib.commonjs/index.js",
     "bin": {
-        "0g-compute-cli": "./cli.commonjs/cli/index.js"
+        "0g-compute-cli": "cli.commonjs/cli/index.js"
     },
     "files": [
         "types",
         "lib.commonjs",
         "lib.esm",
         "cli.commonjs",
-        "library",
-        "web-ui/**/*",
-        "!web-ui/node_modules",
-        "!web-ui/.next",
-        "!web-ui/**/node_modules",
+        "web-ui/out/**/*",
         "binary/0g-storage-client",
         "binary/dcap-qvl-web_bg.wasm"
     ],
@@ -48,7 +44,8 @@
         "test": "npm run build && mocha 'lib.commonjs/**/*.test.js'",
         "test:cli": "npm run build && mocha 'cli.commonjs/cli/__tests__/*.test.js' --timeout 20000",
         "test:all": "npm run test && npm run test:cli",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "prepublishOnly": "npm run build:with-ui"
     },
     "keywords": [],
     "author": "0G Labs",
@@ -122,8 +119,7 @@
         "ethers": "6.13.1"
     },
     "directories": {
-        "example": "examples",
-        "test": "tests"
+        "doc": "docs"
     },
     "repository": {
         "type": "git",

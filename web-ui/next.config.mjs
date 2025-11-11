@@ -5,6 +5,11 @@ const nextConfig = {
     poweredByHeader: false, // Remove X-Powered-By header
     compress: true, // Enable gzip compression
     
+    // Static export requires unoptimized images
+    images: {
+        unoptimized: true,
+    },
+    
     webpack: (config, { isServer }) => {
         if (!isServer) {
             config.resolve.fallback = {
@@ -25,18 +30,17 @@ const nextConfig = {
                 'node:util': false,
             }
             
-            // Dexie.js is already lightweight, no special bundling needed
-        } else {
-            // No server-side externals needed for Dexie.js
         }
+        
         return config
     },
     transpilePackages: ['@0glabs/0g-serving-broker'],
-    output: 'standalone',
+    output: 'export',
+    trailingSlash: true,
     
     // Optimize bundle splitting
     experimental: {
-        optimizePackageImports: ['dexie', '0g-serving-broker']
+        optimizePackageImports: ['dexie', '@0glabs/0g-serving-broker'],
     },
 }
 

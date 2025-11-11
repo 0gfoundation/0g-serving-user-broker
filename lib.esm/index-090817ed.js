@@ -13969,7 +13969,8 @@ class Verifier extends ZGServingUserBrokerBase {
         let passedComposeVerifications = 0;
         for (const [reportType, report] of Object.entries(reports)) {
             console.log(`   Processing ${reportType} report...`);
-            if (!(report.tcb_info || report.info?.tcb_info) || !report.event_log) {
+            if (!(report.tcb_info || report.info?.tcb_info) ||
+                !report.event_log) {
                 console.log(`   ⚠️  Warning: ${reportType} report missing tcb_info or event_log`);
                 continue;
             }
@@ -13980,7 +13981,9 @@ class Verifier extends ZGServingUserBrokerBase {
                     tcbInfo = JSON.parse(report.tcb_info);
                 }
                 else {
-                    tcbInfo = report.tcb_info || report.info?.tcb_info;
+                    tcbInfo =
+                        report.tcb_info ||
+                            report.info?.tcb_info;
                 }
                 // Parse event_log if it's a string
                 let eventLog;
@@ -14932,7 +14935,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-f870ccb5.js');
+    const { download } = await import('./index-f9b2f279.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20279,4 +20282,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-d4f899f0.js.map
+//# sourceMappingURL=index-090817ed.js.map

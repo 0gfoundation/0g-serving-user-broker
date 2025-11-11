@@ -9,14 +9,11 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@0glabs/0g-serving-broker": "1.0.0-beta.2",
+        "@0glabs/0g-serving-broker": "file:..",
         "@rainbow-me/rainbowkit": "^2.2.8",
         "@tanstack/react-query": "^5.83.0",
-        "@types/circomlibjs": "^0.1.6",
-        "@types/crypto-js": "4.2.2",
         "assert": "^2.1.0",
         "buffer": "^6.0.3",
-        "circomlibjs": "^0.1.6",
         "crypto-browserify": "^3.12.1",
         "crypto-js": "4.2.0",
         "dexie": "^4.2.1",
@@ -36,13 +33,14 @@
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3",
-        "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "eslint": "^9",
         "eslint-config-next": "15.4.3",
-        "tailwindcss": "^4",
+        "autoprefixer": "^10.4.14",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.4.1",
         "typescript": "^5"
     }
 }

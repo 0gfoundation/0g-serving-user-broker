@@ -1,324 +1,231 @@
-#!/usr/bin/env ts-node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.startEmbeddedWebUI = startEmbeddedWebUI;
 exports.default = webUIEmbedded;
 const tslib_1 = require("tslib");
 const child_process_1 = require("child_process");
 const path_1 = tslib_1.__importDefault(require("path"));
 const fs_1 = require("fs");
-function detectPackageManager() {
-    try {
-        (0, child_process_1.execSync)('pnpm --version', { stdio: 'ignore' });
-        return 'pnpm';
-    }
-    catch {
-        try {
-            (0, child_process_1.execSync)('yarn --version', { stdio: 'ignore' });
-            return 'yarn';
-        }
-        catch {
-            return 'npm';
-        }
-    }
-}
-function webUIEmbedded(program) {
-    program
-        .command('clean-web')
-        .description('Clean web UI build artifacts')
-        .option('--all', 'Also remove node_modules')
-        .action((options) => {
-        const embeddedUIPath = path_1.default.join(__dirname, '../../web-ui');
-        const defaultBuildPath = path_1.default.join(embeddedUIPath, '.next');
-        let cleaned = false;
-        // Check if .next is a symlink
-        if ((0, fs_1.existsSync)(defaultBuildPath)) {
+const express_1 = tslib_1.__importDefault(require("express"));
+function getPackageRoot() {
+    let currentDir = __dirname;
+    while (currentDir !== path_1.default.dirname(currentDir)) {
+        const packageJsonPath = path_1.default.join(currentDir, 'package.json');
+        if ((0, fs_1.existsSync)(packageJsonPath)) {
             try {
-                const stats = (0, fs_1.lstatSync)(defaultBuildPath);
-                if (stats.isSymbolicLink()) {
-                    const target = (0, fs_1.readlinkSync)(defaultBuildPath);
-                    const targetPath = path_1.default.isAbsolute(target)
-                        ? target
-                        : path_1.default.resolve(path_1.default.dirname(defaultBuildPath), target);
-                    console.log(`🔗 Found symlink .next -> ${targetPath}`);
-                    // Remove the symlink
-                    (0, fs_1.unlinkSync)(defaultBuildPath);
-                    console.log('✅ Symlink removed');
-                    // Remove the target directory if it exists
-                    if ((0, fs_1.existsSync)(targetPath)) {
-                        (0, child_process_1.execSync)(`rm -rf "${targetPath}"`);
-                        console.log(`✅ Target build directory removed: ${targetPath}`);
-                    }
-                    cleaned = true;
-                }
-                else {
-                    // It's a real directory
-                    (0, child_process_1.execSync)(`rm -rf "${defaultBuildPath}"`);
-                    console.log(`✅ Build directory removed: ${defaultBuildPath}`);
-                    cleaned = true;
-                }
-            }
-            catch (error) {
-                console.error('❌ Failed to clean build directory:', error);
-                process.exit(1);
-            }
-        }
-        // Clean node_modules if --all flag is used
-        if (options.all) {
-            const nodeModulesPath = path_1.default.join(embeddedUIPath, 'node_modules');
-            if ((0, fs_1.existsSync)(nodeModulesPath)) {
-                console.log('🗑️  Removing node_modules...');
-                (0, child_process_1.execSync)(`rm -rf "${nodeModulesPath}"`);
-                console.log('✅ node_modules removed');
-                cleaned = true;
-            }
-        }
-        if (!cleaned) {
-            console.log('ℹ️  No build artifacts found to clean');
-        }
-        else {
-            console.log('\n🎉 Cleanup completed successfully!');
-            console.log('   Run "0g-compute-cli start-web --auto-build" to rebuild');
-        }
-    });
-    program
-        .command('web-info')
-        .description('Show web UI build information')
-        .action(() => {
-        const embeddedUIPath = path_1.default.join(__dirname, '../../web-ui');
-        const defaultBuildPath = path_1.default.join(embeddedUIPath, '.next');
-        console.log('📊 Web UI Information:');
-        console.log(`   UI Source: ${embeddedUIPath}`);
-        if ((0, fs_1.existsSync)(defaultBuildPath)) {
-            try {
-                const stats = (0, fs_1.lstatSync)(defaultBuildPath);
-                if (stats.isSymbolicLink()) {
-                    const target = path_1.default.resolve(path_1.default.dirname(defaultBuildPath), (0, fs_1.readlinkSync)(defaultBuildPath));
-                    console.log(`   Build Directory: ${target} (symlinked)`);
-                }
-                else {
-                    console.log(`   Build Directory: ${defaultBuildPath}`);
-                }
-                const buildIdPath = path_1.default.join(defaultBuildPath, 'BUILD_ID');
-                if ((0, fs_1.existsSync)(buildIdPath)) {
-                    const buildId = (0, fs_1.readFileSync)(buildIdPath, 'utf-8').trim();
-                    console.log(`   Build ID: ${buildId}`);
-                    console.log(`   Build Status: ✅ Ready`);
-                    try {
-                        const size = (0, child_process_1.execSync)(`du -sh "${defaultBuildPath}" 2>/dev/null | cut -f1`, { encoding: 'utf-8' }).trim();
-                        console.log(`   Build Size: ${size}`);
-                    }
-                    catch { }
-                }
-                else {
-                    console.log(`   Build Status: ❌ Not built`);
+                const packageJsonContent = (0, fs_1.readFileSync)(packageJsonPath, 'utf-8');
+                const packageJson = JSON.parse(packageJsonContent);
+                if (packageJson.name === '0g-serving-broker') {
+                    return currentDir;
                 }
             }
             catch {
-                console.log(`   Build Directory: ${defaultBuildPath}`);
-                console.log(`   Build Status: ⚠️  Unknown`);
+                // Continue searching
             }
         }
+        currentDir = path_1.default.dirname(currentDir);
+    }
+    // Fallback to relative path
+    return path_1.default.resolve(__dirname, '../..');
+}
+async function startEmbeddedWebUI(port = 3090) {
+    const packageRoot = getPackageRoot();
+    console.log(`📦 Package root: ${packageRoot}`);
+    const webUIRoot = path_1.default.join(packageRoot, 'web-ui');
+    if (!(0, fs_1.existsSync)(webUIRoot)) {
+        console.error('❌ Web UI not found. Please ensure the package includes the web UI.');
+        return;
+    }
+    console.log(`🌐 Web UI root: ${webUIRoot}`);
+    // Check for static export first (new preferred method)
+    const staticExportPath = path_1.default.join(webUIRoot, 'out');
+    if ((0, fs_1.existsSync)(staticExportPath)) {
+        console.log('✅ Using static export build (fastest startup, smallest size)');
+        await serveStaticExport(staticExportPath, port);
+        return;
+    }
+    // Fallback to standalone build
+    const standaloneBuildPath = path_1.default.join(webUIRoot, '.next', 'standalone');
+    if ((0, fs_1.existsSync)(standaloneBuildPath)) {
+        console.log('⚠️  Using standalone build (fallback)');
+        await serveStandaloneBuild(standaloneBuildPath, webUIRoot, port);
+        return;
+    }
+    // No valid build found
+    console.error('❌ No valid build found.');
+    console.error(`Expected either:`);
+    console.error(`  - Static export: ${staticExportPath}`);
+    console.error(`  - Standalone build: ${standaloneBuildPath}`);
+    console.error('Please build the web UI first with: npm run build:with-ui-fast');
+}
+async function serveStaticExport(staticPath, port) {
+    console.log(`📁 Serving static files from: ${staticPath}`);
+    const app = (0, express_1.default)();
+    // Security headers
+    app.use((_req, res, next) => {
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-XSS-Protection', '1; mode=block');
+        next();
+    });
+    // Serve static files
+    app.use(express_1.default.static(staticPath, {
+        maxAge: '1y', // Cache static assets for 1 year
+        etag: true,
+        lastModified: true,
+        setHeaders: (res, filePath) => {
+            // Set proper MIME types
+            if (filePath.endsWith('.html')) {
+                res.setHeader('Cache-Control', 'no-cache');
+            }
+        },
+    }));
+    // Handle SPA routing - all non-static requests go to index.html
+    app.use((req, res, next) => {
+        // Skip if it's a static file request
+        if (req.path.includes('.')) {
+            next();
+            return;
+        }
+        // Serve index.html for SPA routes
+        const indexPath = path_1.default.join(staticPath, 'index.html');
+        if ((0, fs_1.existsSync)(indexPath)) {
+            res.sendFile(indexPath);
+        }
         else {
-            console.log(`   Build Status: ❌ Not found`);
-            console.log(`   Run "0g-compute-cli start-web --auto-build" to build`);
+            res.status(404).send('Static export not found');
         }
     });
-    program
-        .command('start-web')
-        .description('Start the embedded web UI')
-        .option('--port <port>', 'Port to run the web UI on', '3000')
-        .option('--host <host>', 'Host to bind the web UI', 'localhost')
-        .option('--mode <mode>', 'Run mode: "development" or "production"', 'production')
-        .option('--auto-build', 'Automatically build if needed in production mode')
-        .option('--build-dir <dir>', 'Custom directory for Next.js build artifacts')
-        .action(async (options) => {
-        // 检测包管理器
-        const packageManager = detectPackageManager();
-        // 查找嵌入的 Web UI
-        const embeddedUIPath = path_1.default.join(__dirname, '../../web-ui');
-        if (!(0, fs_1.existsSync)(embeddedUIPath)) {
-            console.error('❌ Embedded Web UI not found.');
-            console.error('This usually means the package was not built correctly.');
-            console.error(`Please run: ${packageManager} run build`);
-            process.exit(1);
-        }
-        if (!(0, fs_1.existsSync)(path_1.default.join(embeddedUIPath, 'package.json'))) {
-            console.error('❌ Invalid embedded Web UI structure.');
-            process.exit(1);
-        }
-        const defaultBuildPath = path_1.default.join(embeddedUIPath, '.next');
-        let actualBuildPath = defaultBuildPath;
-        if (options.buildDir) {
-            actualBuildPath = path_1.default.isAbsolute(options.buildDir)
-                ? options.buildDir
-                : path_1.default.resolve(process.cwd(), options.buildDir);
-            console.log(`📁 Using custom build directory: ${actualBuildPath}`);
-            if (!(0, fs_1.existsSync)(path_1.default.dirname(actualBuildPath))) {
-                (0, fs_1.mkdirSync)(path_1.default.dirname(actualBuildPath), {
-                    recursive: true,
-                });
+    const server = app.listen(port, () => {
+        console.log(`🚀 Static web UI server running on http://localhost:${port}`);
+        console.log(`📊 Serving from: ${staticPath}`);
+    });
+    // Handle process termination
+    const gracefulShutdown = () => {
+        console.log('\n🛑 Shutting down server...');
+        server.close(() => {
+            console.log('✅ Server shut down gracefully');
+            process.exit(0);
+        });
+    };
+    process.on('SIGINT', gracefulShutdown);
+    process.on('SIGTERM', gracefulShutdown);
+}
+async function serveStandaloneBuild(standalonePath, webUIRoot, port) {
+    const standaloneServerPath = path_1.default.join(standalonePath, 'server.js');
+    // Check if it's a valid embedded Web UI structure
+    const expectedFiles = [
+        path_1.default.join(standalonePath, 'package.json'),
+        standaloneServerPath,
+    ];
+    const missingFiles = expectedFiles.filter((file) => !(0, fs_1.existsSync)(file));
+    if (missingFiles.length > 0) {
+        console.error('❌ Invalid embedded Web UI structure');
+        console.error('Missing files:', missingFiles);
+        return;
+    }
+    // Smart dependency installation with fallback
+    const packageManagers = [
+        ['pnpm', ['install', '--prod']],
+        ['npm', ['install', '--production']],
+        ['yarn', ['install']],
+    ];
+    let installSuccess = false;
+    for (const [cmd, args] of packageManagers) {
+        try {
+            console.log(`🔧 Using ${cmd} to install dependencies...`);
+            const installProcess = (0, child_process_1.spawn)(cmd, args, {
+                cwd: standalonePath,
+                stdio: 'inherit',
+                shell: process.platform === 'win32',
+            });
+            const installCode = await new Promise((resolve) => {
+                installProcess.on('close', resolve);
+                installProcess.on('error', () => resolve(null));
+            });
+            if (installCode === 0) {
+                console.log(`✅ Dependencies installed successfully with ${cmd}`);
+                installSuccess = true;
+                break;
             }
-            if ((0, fs_1.existsSync)(defaultBuildPath)) {
-                try {
-                    const stats = (0, fs_1.lstatSync)(defaultBuildPath);
-                    if (stats.isSymbolicLink()) {
-                        (0, fs_1.unlinkSync)(defaultBuildPath);
+            else {
+                throw new Error(`Installation failed with code ${installCode}`);
+            }
+        }
+        catch (error) {
+            console.warn(`⚠️  ${cmd} installation failed: ${error.message}`);
+            continue;
+        }
+    }
+    if (!installSuccess) {
+        console.error('❌ Failed to install dependencies with any package manager');
+        return;
+    }
+    // Copy static files if they exist
+    const staticSourcePath = path_1.default.join(webUIRoot, '.next', 'static');
+    const staticTargetPath = path_1.default.join(standalonePath, '.next', 'static');
+    if ((0, fs_1.existsSync)(staticSourcePath) && !(0, fs_1.existsSync)(staticTargetPath)) {
+        try {
+            console.log('📁 Copying static files...');
+            // Ensure target directory exists
+            (0, fs_1.mkdirSync)(path_1.default.dirname(staticTargetPath), { recursive: true });
+            // Copy directory recursively
+            function copyDir(src, dest) {
+                (0, fs_1.mkdirSync)(dest, { recursive: true });
+                for (const file of (0, fs_1.readdirSync)(src)) {
+                    const srcPath = path_1.default.join(src, file);
+                    const destPath = path_1.default.join(dest, file);
+                    if ((0, fs_1.statSync)(srcPath).isDirectory()) {
+                        copyDir(srcPath, destPath);
+                    }
+                    else {
+                        (0, fs_1.copyFileSync)(srcPath, destPath);
                     }
                 }
-                catch { }
             }
-            if (!(0, fs_1.existsSync)(defaultBuildPath) &&
-                actualBuildPath !== defaultBuildPath) {
-                try {
-                    (0, fs_1.symlinkSync)(actualBuildPath, defaultBuildPath, 'dir');
-                    console.log(`🔗 Created symlink: .next -> ${actualBuildPath}`);
-                }
-                catch {
-                    console.warn('⚠️  Could not create symlink, Next.js will use the custom directory directly');
-                }
-            }
+            copyDir(staticSourcePath, staticTargetPath);
+            console.log('✅ Static files copied successfully');
         }
-        const nodeModulesPath = path_1.default.join(embeddedUIPath, 'node_modules');
-        if (!(0, fs_1.existsSync)(nodeModulesPath)) {
-            console.log('📦 Installing dependencies for embedded UI...');
-            try {
-                await new Promise((resolve, reject) => {
-                    const installProcess = (0, child_process_1.spawn)(packageManager, ['install'], {
-                        cwd: embeddedUIPath,
-                        stdio: 'inherit',
-                    });
-                    installProcess.on('close', (code) => {
-                        if (code === 0)
-                            resolve(undefined);
-                        else
-                            reject(new Error(`${packageManager} install failed with code ${code}`));
-                    });
-                });
-            }
-            catch (error) {
-                console.error('❌ Failed to install dependencies:', error.message);
-                process.exit(1);
-            }
+        catch (copyError) {
+            console.warn('⚠️  Failed to copy static files:', copyError);
         }
-        if (options.mode === 'production') {
-            const buildIdPath = path_1.default.join(actualBuildPath, 'BUILD_ID');
-            const shouldAutoBuild = options.autoBuild !== false;
-            if (!(0, fs_1.existsSync)(buildIdPath) && shouldAutoBuild) {
-                console.log('🔨 Building production version (this may take a few minutes)...');
-                if (actualBuildPath !== defaultBuildPath) {
-                    console.log(`   Build output will be saved to: ${actualBuildPath}`);
-                }
-                try {
-                    await new Promise((resolve, reject) => {
-                        const buildProcess = (0, child_process_1.spawn)(packageManager, ['run', 'build'], {
-                            cwd: embeddedUIPath,
-                            stdio: 'inherit',
-                            env: {
-                                ...process.env,
-                                NEXT_BUILD_DIR: actualBuildPath !== defaultBuildPath
-                                    ? actualBuildPath
-                                    : undefined,
-                            },
-                        });
-                        buildProcess.on('close', (code) => {
-                            if (code === 0) {
-                                console.log('✅ Production build completed successfully!');
-                                resolve(undefined);
-                            }
-                            else {
-                                reject(new Error(`Build failed with code ${code}`));
-                            }
-                        });
-                    });
-                }
-                catch (error) {
-                    console.error('❌ Failed to build production version:', error.message);
-                    console.log('💡 Falling back to development mode...');
-                    options.mode = 'development';
-                }
-            }
-            else if (!(0, fs_1.existsSync)(buildIdPath)) {
-                console.error('❌ Production build not found or incomplete.');
-                console.error('   Run with --auto-build flag to build automatically');
-                console.error('   Or use --mode development for development mode');
-                process.exit(1);
-            }
-        }
-        // 设置环境变量
-        const env = {
+    }
+    // Set environment and start the server
+    console.log(`🚀 Starting Next.js standalone server on http://localhost:${port}`);
+    const serverProcess = (0, child_process_1.spawn)('node', ['server.js'], {
+        cwd: standalonePath,
+        stdio: 'inherit',
+        env: {
             ...process.env,
-            NODE_ENV: options.mode === 'production'
-                ? 'production'
-                : 'development',
-            NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
-                'demo-project-id',
-            PORT: options.port,
-            HOSTNAME: options.host,
-        };
-        console.log(`🚀 Starting embedded 0G Compute Web UI in ${options.mode} mode...`);
-        console.log(`🌐 Server will start on http://${options.host}:${options.port}`);
-        let runCommand;
-        let runArgs;
-        if (options.mode === 'production') {
-            runCommand = packageManager === 'pnpm' ? 'pnpm' : 'npx';
-            runArgs =
-                packageManager === 'pnpm'
-                    ? [
-                        'next',
-                        'start',
-                        '--port',
-                        options.port,
-                        '--hostname',
-                        options.host,
-                    ]
-                    : [
-                        'next',
-                        'start',
-                        '--port',
-                        options.port,
-                        '--hostname',
-                        options.host,
-                    ];
-        }
-        else {
-            runCommand = packageManager === 'pnpm' ? 'pnpm' : 'npx';
-            runArgs =
-                packageManager === 'pnpm'
-                    ? [
-                        'next',
-                        'dev',
-                        '--port',
-                        options.port,
-                        '--hostname',
-                        options.host,
-                    ]
-                    : [
-                        'next',
-                        'dev',
-                        '--port',
-                        options.port,
-                        '--hostname',
-                        options.host,
-                    ];
-        }
-        const nextProcess = (0, child_process_1.spawn)(runCommand, runArgs, {
-            cwd: embeddedUIPath,
-            stdio: 'inherit',
-            env: env,
+            PORT: port.toString(),
+            NODE_ENV: 'production',
+        },
+        shell: process.platform === 'win32',
+    });
+    // Handle process termination
+    process.on('SIGINT', () => {
+        console.log('\n🛑 Shutting down server...');
+        serverProcess.kill('SIGTERM');
+    });
+    process.on('SIGTERM', () => {
+        console.log('\n🛑 Shutting down server...');
+        serverProcess.kill('SIGTERM');
+    });
+    // Wait for the server process to exit
+    await new Promise((resolve) => {
+        serverProcess.on('close', () => {
+            console.log('✅ Server shut down gracefully');
+            resolve();
         });
-        nextProcess.on('error', (err) => {
-            console.error('❌ Failed to start Web UI:', err);
-            process.exit(1);
-        });
-        process.on('SIGINT', () => {
-            console.log('\n🛑 Stopping Web UI...');
-            nextProcess.kill('SIGINT');
-            process.exit(0);
-        });
-        process.on('SIGTERM', () => {
-            nextProcess.kill('SIGTERM');
-            process.exit(0);
-        });
+    });
+}
+function webUIEmbedded(cmd) {
+    cmd.command('start-web')
+        .description('Start embedded web UI server')
+        .option('-p, --port <port>', 'Port to run the server on', '3090')
+        .action(async (options) => {
+        const port = parseInt(options.port, 10);
+        await startEmbeddedWebUI(port);
     });
 }
 //# sourceMappingURL=web-ui-embedded.js.map

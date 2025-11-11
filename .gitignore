@@ -7,5 +7,9 @@ node_modules
 token_counter
 token_counter.*
 
+# Next.js build outputs
 .next
+out
+dist
+
 .claude

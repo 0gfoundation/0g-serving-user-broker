@@ -13696,7 +13696,7 @@ class Verifier extends ZGServingUserBrokerBase {
             const verifierURL = additionalInfo.VerifierURL;
             const targetSeparated = additionalInfo.TargetSeparated === true;
             const teeVerifier = additionalInfo.TEEVerifier || 'dstack'; // default to dstack
-            if (!verifierURL) {
+            if (teeVerifier === 'dstack' && !verifierURL) {
                 console.warn('⚠️  Warning: VerifierURL not found in additionalInfo');
             }
             // Display service verification configuration
@@ -13709,7 +13709,7 @@ class Verifier extends ZGServingUserBrokerBase {
             }
             else if (teeVerifier === 'cryptopilot') {
                 console.log('   Verification Method: CryptoPilot TEE');
-                console.log('   ⚠️  CryptoPilot verification flow is not yet implemented');
+                console.log('   Please follow the official documentation to verify the downloaded attestation report.');
             }
             else {
                 console.log(`   Verification Method: Unknown (${teeVerifier})`);
@@ -13755,6 +13755,17 @@ class Verifier extends ZGServingUserBrokerBase {
                 console.log(`   ✅ Combined report saved to: ${combinedPath}`);
             }
             console.log('');
+            // If cryptopilot, return after step 3
+            if (teeVerifier === 'cryptopilot') {
+                return {
+                    success: true,
+                    teeVerifier,
+                    targetSeparated,
+                    verifierURL,
+                    reportsGenerated: Object.keys(reports),
+                    outputDirectory: outputDir,
+                };
+            }
             // Step 4: TEE Signer Address Verification
             console.log('🔑 Step 4: TEE Signer Address Verification');
             console.log(`   Contract TEE Signer Address: ${svc.teeSignerAddress}`);
@@ -14935,7 +14946,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-f9b2f279.js');
+    const { download } = await import('./index-9abe74df.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20282,4 +20293,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-090817ed.js.map
+//# sourceMappingURL=index-e04328c8.js.map

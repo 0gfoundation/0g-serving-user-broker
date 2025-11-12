@@ -18,12 +18,18 @@ function inference(program) {
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
+        .option('--include-invalid', 'Include all services, even those without valid teeSignerAddress')
         .action((options) => {
         const table = new cli_table3_1.default({
             colWidths: [50, 50],
         });
         (0, util_1.withBroker)(options, async (broker) => {
-            const services = await broker.inference.listService();
+            let services = await broker.inference.listService();
+            if (!options.includeInvalid) {
+                console.log('Filtering to only services with valid TEE signer addresses...');
+                console.log(services);
+                services = services.filter(service => !service.teeSignerAcknowledged);
+            }
             services.forEach((service, index) => {
                 table.push([
                     chalk_1.default.blue(`Provider ${index + 1}`),

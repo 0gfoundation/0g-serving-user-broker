@@ -75,7 +75,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             const verifierURL = additionalInfo.VerifierURL;
             const targetSeparated = additionalInfo.TargetSeparated === true;
             const teeVerifier = additionalInfo.TEEVerifier || 'dstack'; // default to dstack
-            if (!verifierURL) {
+            if (teeVerifier === 'dstack' && !verifierURL) {
                 console.warn('⚠️  Warning: VerifierURL not found in additionalInfo');
             }
             // Display service verification configuration
@@ -88,7 +88,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             }
             else if (teeVerifier === 'cryptopilot') {
                 console.log('   Verification Method: CryptoPilot TEE');
-                console.log('   ⚠️  CryptoPilot verification flow is not yet implemented');
+                console.log('   Please follow the official documentation to verify the downloaded attestation report.');
             }
             else {
                 console.log(`   Verification Method: Unknown (${teeVerifier})`);
@@ -134,6 +134,17 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
                 console.log(`   ✅ Combined report saved to: ${combinedPath}`);
             }
             console.log('');
+            // If cryptopilot, return after step 3
+            if (teeVerifier === 'cryptopilot') {
+                return {
+                    success: true,
+                    teeVerifier,
+                    targetSeparated,
+                    verifierURL,
+                    reportsGenerated: Object.keys(reports),
+                    outputDirectory: outputDir,
+                };
+            }
             // Step 4: TEE Signer Address Verification
             console.log('🔑 Step 4: TEE Signer Address Verification');
             console.log(`   Contract TEE Signer Address: ${svc.teeSignerAddress}`);

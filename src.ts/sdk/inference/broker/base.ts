@@ -14,6 +14,7 @@ import {
 import type { LedgerBroker } from '../../ledger'
 import { keccak256, toUtf8Bytes } from 'ethers'
 import { logger } from '../../common/logger'
+import { TextToImage } from '../extractor/textToImage'
 
 export interface TdxQuoteResponse {
     rawReport: string
@@ -187,6 +188,8 @@ export abstract class ZGServingUserBrokerBase {
         switch (svc.serviceType) {
             case 'chatbot':
                 return new ChatBot(svc)
+            case 'text-to-image':
+                return new TextToImage(svc)                
             default:
                 throw new Error('Unknown service type')
         }
@@ -310,8 +313,6 @@ export abstract class ZGServingUserBrokerBase {
     }
 
     async getHeader(providerAddress: string): Promise<ServingRequestHeaders> {
-        const userAddress = this.contract.getUserAddress()
-
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged')
@@ -321,9 +322,7 @@ export abstract class ZGServingUserBrokerBase {
         const session = await this.getOrCreateSession(providerAddress)
 
         return {
-            Address: userAddress,
-            'Session-Token': session.rawMessage,
-            'Session-Signature': session.signature,
+            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`
         }
     }
 

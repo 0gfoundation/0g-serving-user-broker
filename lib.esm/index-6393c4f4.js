@@ -12791,6 +12791,33 @@ class Logger {
 // Export singleton instance
 const logger = Logger.getInstance();
 
+class TextToImage extends Extractor {
+    svcInfo;
+    constructor(svcInfo) {
+        super();
+        this.svcInfo = svcInfo;
+    }
+    getSvcInfo() {
+        return Promise.resolve(this.svcInfo);
+    }
+    async getInputCount(content) {
+        if (!content) {
+            return 0;
+        }
+        const utf8Encoder = new TextEncoder();
+        const encoded = utf8Encoder.encode(content);
+        return encoded.length;
+    }
+    async getOutputCount(content) {
+        if (!content) {
+            return 0;
+        }
+        const utf8Encoder = new TextEncoder();
+        const encoded = utf8Encoder.encode(content);
+        return encoded.length;
+    }
+}
+
 class ZGServingUserBrokerBase {
     contract;
     metadata;
@@ -12905,6 +12932,8 @@ class ZGServingUserBrokerBase {
         switch (svc.serviceType) {
             case 'chatbot':
                 return new ChatBot(svc);
+            case 'text-to-image':
+                return new TextToImage(svc);
             default:
                 throw new Error('Unknown service type');
         }
@@ -12991,7 +13020,6 @@ class ZGServingUserBrokerBase {
         return await this.generateSessionToken(providerAddress);
     }
     async getHeader(providerAddress) {
-        const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
@@ -12999,9 +13027,7 @@ class ZGServingUserBrokerBase {
         // Get or create session token
         const session = await this.getOrCreateSession(providerAddress);
         return {
-            Address: userAddress,
-            'Session-Token': session.rawMessage,
-            'Session-Signature': session.signature,
+            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`
         };
     }
     async calculateInputFees(extractor, content) {
@@ -14228,11 +14254,13 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
     constructor(contract, ledger, metadata, cache) {
         super(contract, ledger, metadata, cache);
     }
-    async processResponse(providerAddress, content, chatID) {
+    async processResponse(providerAddress, chatID, content) {
         try {
             const extractor = await this.getExtractor(providerAddress);
-            const outputFee = await this.calculateOutputFees(extractor, content);
-            await this.updateCachedFee(providerAddress, outputFee);
+            if (content) {
+                const outputFee = await this.calculateOutputFees(extractor, content);
+                await this.updateCachedFee(providerAddress, outputFee);
+            }
             const svc = await extractor.getSvcInfo();
             if (!isVerifiability(svc.verifiability)) {
                 console.warn('this service is not verifiable');
@@ -14542,9 +14570,9 @@ class InferenceBroker {
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse = async (providerAddress, content, chatID) => {
+    processResponse = async (providerAddress, chatID, content) => {
         try {
-            return await this.responseProcessor.processResponse(providerAddress, content, chatID);
+            return await this.responseProcessor.processResponse(providerAddress, chatID, content);
         }
         catch (error) {
             throwFormattedError(error);
@@ -14946,7 +14974,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-9abe74df.js');
+    const { download } = await import('./index-27a53734.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20198,6 +20226,7 @@ async function createLedgerBroker(signer, ledgerCA, inferenceCA, fineTuningCA, g
 // Network configurations
 const TESTNET_CHAIN_ID = 16602n;
 const MAINNET_CHAIN_ID = 16661n;
+const HARDHAT_CHAIN_ID = 31337n;
 // Contract addresses for different networks
 const CONTRACT_ADDRESSES = {
     testnet: {
@@ -20211,6 +20240,11 @@ const CONTRACT_ADDRESSES = {
         inference: '0x0754221A9f2C11D820F827170249c3cc5cC3DC74',
         fineTuning: '0x0000000000000000000000000000000000000000',
     },
+    hardhat: {
+        ledger: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+        inference: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+        fineTuning: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',
+    },
 };
 /**
  * Helper function to determine network type from chain ID
@@ -20221,6 +20255,9 @@ function getNetworkType(chainId) {
     }
     else if (chainId === TESTNET_CHAIN_ID) {
         return 'testnet';
+    }
+    else if (chainId === HARDHAT_CHAIN_ID) {
+        return 'hardhat';
     }
     return 'unknown';
 }
@@ -20267,6 +20304,10 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
                 defaultAddresses = CONTRACT_ADDRESSES.testnet;
                 console.log(`Detected testnet (chain ID: ${chainId})`);
             }
+            else if (chainId === HARDHAT_CHAIN_ID) {
+                defaultAddresses = CONTRACT_ADDRESSES.hardhat;
+                console.log(`Detected hardhat (chain ID: ${chainId})`);
+            }
             else {
                 console.warn(`Unknown chain ID: ${chainId}. Using testnet addresses as default.`);
             }
@@ -20292,5 +20333,5 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
     }
 }
 
-export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-e04328c8.js.map
+export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
+//# sourceMappingURL=index-6393c4f4.js.map

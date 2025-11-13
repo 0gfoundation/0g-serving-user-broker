@@ -271,9 +271,9 @@ class InferenceBroker {
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse = async (providerAddress, content, chatID) => {
+    processResponse = async (providerAddress, chatID, content) => {
         try {
-            return await this.responseProcessor.processResponse(providerAddress, content, chatID);
+            return await this.responseProcessor.processResponse(providerAddress, chatID, content);
         }
         catch (error) {
             (0, utils_1.throwFormattedError)(error);

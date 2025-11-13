@@ -25,13 +25,18 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
 
     async processResponse(
         providerAddress: string,
-        content: string,
-        chatID?: string
+        chatID: string,
+        content?: string
     ): Promise<boolean | null> {
         try {
             const extractor = await this.getExtractor(providerAddress)
-            const outputFee = await this.calculateOutputFees(extractor, content)
-            await this.updateCachedFee(providerAddress, outputFee)
+            if (content) {
+            const outputFee = await this.calculateOutputFees(
+                    extractor,
+                    content
+                )
+                await this.updateCachedFee(providerAddress, outputFee)
+            }
 
             const svc = await extractor.getSvcInfo()
             if (!isVerifiability(svc.verifiability)) {

@@ -8,6 +8,7 @@ const fs = tslib_1.__importStar(require("fs/promises"));
 const storage_1 = require("../../common/storage");
 const ethers_1 = require("ethers");
 const logger_1 = require("../../common/logger");
+const textToImage_1 = require("../extractor/textToImage");
 class ZGServingUserBrokerBase {
     contract;
     metadata;
@@ -122,6 +123,8 @@ class ZGServingUserBrokerBase {
         switch (svc.serviceType) {
             case 'chatbot':
                 return new extractor_1.ChatBot(svc);
+            case 'text-to-image':
+                return new textToImage_1.TextToImage(svc);
             default:
                 throw new Error('Unknown service type');
         }
@@ -208,7 +211,6 @@ class ZGServingUserBrokerBase {
         return await this.generateSessionToken(providerAddress);
     }
     async getHeader(providerAddress) {
-        const userAddress = this.contract.getUserAddress();
         // Check if provider is acknowledged - this is still necessary
         if (!(await this.userAcknowledged(providerAddress))) {
             throw new Error('Provider signer is not acknowledged');
@@ -216,9 +218,7 @@ class ZGServingUserBrokerBase {
         // Get or create session token
         const session = await this.getOrCreateSession(providerAddress);
         return {
-            Address: userAddress,
-            'Session-Token': session.rawMessage,
-            'Session-Signature': session.signature,
+            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`
         };
     }
     async calculateInputFees(extractor, content) {

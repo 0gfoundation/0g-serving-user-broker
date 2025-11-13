@@ -359,14 +359,14 @@ export class InferenceBroker {
      */
     public processResponse = async (
         providerAddress: string,
-        content: string,
-        chatID?: string
+        chatID: string,
+        content?: string,
     ): Promise<boolean | null> => {
         try {
             return await this.responseProcessor.processResponse(
                 providerAddress,
-                content,
-                chatID
+                chatID,
+                content
             )
         } catch (error) {
             throwFormattedError(error)

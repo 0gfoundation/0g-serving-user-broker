@@ -15,11 +15,13 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
     constructor(contract, ledger, metadata, cache) {
         super(contract, ledger, metadata, cache);
     }
-    async processResponse(providerAddress, content, chatID) {
+    async processResponse(providerAddress, chatID, content) {
         try {
             const extractor = await this.getExtractor(providerAddress);
-            const outputFee = await this.calculateOutputFees(extractor, content);
-            await this.updateCachedFee(providerAddress, outputFee);
+            if (content) {
+                const outputFee = await this.calculateOutputFees(extractor, content);
+                await this.updateCachedFee(providerAddress, outputFee);
+            }
             const svc = await extractor.getSvcInfo();
             if (!(0, model_1.isVerifiability)(svc.verifiability)) {
                 console.warn('this service is not verifiable');

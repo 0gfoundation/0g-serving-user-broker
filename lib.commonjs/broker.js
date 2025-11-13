@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ZGComputeNetworkBroker = exports.CONTRACT_ADDRESSES = exports.MAINNET_CHAIN_ID = exports.TESTNET_CHAIN_ID = void 0;
+exports.ZGComputeNetworkBroker = exports.CONTRACT_ADDRESSES = exports.HARDHAT_CHAIN_ID = exports.MAINNET_CHAIN_ID = exports.TESTNET_CHAIN_ID = void 0;
 exports.getNetworkType = getNetworkType;
 exports.createZGComputeNetworkBroker = createZGComputeNetworkBroker;
 const ethers_1 = require("ethers");
@@ -10,6 +10,7 @@ const broker_2 = require("./inference/broker/broker");
 // Network configurations
 exports.TESTNET_CHAIN_ID = 16602n;
 exports.MAINNET_CHAIN_ID = 16661n;
+exports.HARDHAT_CHAIN_ID = 31337n;
 // Contract addresses for different networks
 exports.CONTRACT_ADDRESSES = {
     testnet: {
@@ -23,6 +24,11 @@ exports.CONTRACT_ADDRESSES = {
         inference: '0x0754221A9f2C11D820F827170249c3cc5cC3DC74',
         fineTuning: '0x0000000000000000000000000000000000000000',
     },
+    hardhat: {
+        ledger: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+        inference: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+        fineTuning: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',
+    },
 };
 /**
  * Helper function to determine network type from chain ID
@@ -33,6 +39,9 @@ function getNetworkType(chainId) {
     }
     else if (chainId === exports.TESTNET_CHAIN_ID) {
         return 'testnet';
+    }
+    else if (chainId === exports.HARDHAT_CHAIN_ID) {
+        return 'hardhat';
     }
     return 'unknown';
 }
@@ -79,6 +88,10 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
             else if (chainId === exports.TESTNET_CHAIN_ID) {
                 defaultAddresses = exports.CONTRACT_ADDRESSES.testnet;
                 console.log(`Detected testnet (chain ID: ${chainId})`);
+            }
+            else if (chainId === exports.HARDHAT_CHAIN_ID) {
+                defaultAddresses = exports.CONTRACT_ADDRESSES.hardhat;
+                console.log(`Detected hardhat (chain ID: ${chainId})`);
             }
             else {
                 console.warn(`Unknown chain ID: ${chainId}. Using testnet addresses as default.`);

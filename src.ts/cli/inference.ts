@@ -25,9 +25,7 @@ export default function inference(program: Command) {
             withBroker(options, async (broker) => {
                 let services = await broker.inference.listService()
                 if (!options.includeInvalid) {
-                    console.log('Filtering to only services with valid TEE signer addresses...')
-                    console.log(services)
-                    services = services.filter(service => !service.teeSignerAcknowledged)
+                    services = services.filter(service => service.teeSignerAcknowledged)
                 }
                 services.forEach((service, index) => {
                     table.push([

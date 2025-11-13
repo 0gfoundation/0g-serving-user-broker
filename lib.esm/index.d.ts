@@ -2197,9 +2197,9 @@ interface ServingRequestHeaders {
      */
     'X-Phala-Signature-Type'?: 'StandaloneApi';
     /**
-     * User's address
+     * @deprecated User's address - no longer used, it included in Authorization header
      */
-    Address: string;
+    Address?: string;
     /**
      * @deprecated Total fee for the request - no longer used
      */
@@ -2220,14 +2220,7 @@ interface ServingRequestHeaders {
      * @deprecated User's signature - no longer used
      */
     Signature?: string;
-    /**
-     * Session token containing user info and expiry
-     */
-    'Session-Token': string;
-    /**
-     * Signature of the session token
-     */
-    'Session-Signature': string;
+    Authorization: string;
 }
 /**
  * RequestProcessor is a subclass of ZGServingUserBroker.
@@ -2354,7 +2347,7 @@ declare class AccountProcessor extends ZGServingUserBrokerBase {
  */
 declare class ResponseProcessor extends ZGServingUserBrokerBase {
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    processResponse(providerAddress: string, content: string, chatID?: string): Promise<boolean | null>;
+    processResponse(providerAddress: string, chatID: string, content?: string): Promise<boolean | null>;
     private calculateOutputFees;
 }
 
@@ -2600,7 +2593,7 @@ declare class InferenceBroker {
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse: (providerAddress: string, content: string, chatID?: string) => Promise<boolean | null>;
+    processResponse: (providerAddress: string, chatID: string, content?: string) => Promise<boolean | null>;
     /**
      * verifyService is used to verify the reliability of the service.
      *
@@ -2725,6 +2718,7 @@ declare function createFineTuningBroker(signer: Wallet, contractAddress: string,
 
 declare const TESTNET_CHAIN_ID = 16602n;
 declare const MAINNET_CHAIN_ID = 16661n;
+declare const HARDHAT_CHAIN_ID = 31337n;
 declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
         readonly ledger: "0x327025B6435424735a3d97c4b1671FeFF0E8879B";
@@ -2736,11 +2730,16 @@ declare const CONTRACT_ADDRESSES: {
         readonly inference: "0x0754221A9f2C11D820F827170249c3cc5cC3DC74";
         readonly fineTuning: "0x0000000000000000000000000000000000000000";
     };
+    readonly hardhat: {
+        readonly ledger: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+        readonly inference: "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+        readonly fineTuning: "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0";
+    };
 };
 /**
  * Helper function to determine network type from chain ID
  */
-declare function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'unknown';
+declare function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'hardhat' | 'unknown';
 declare class ZGComputeNetworkBroker {
     ledger: LedgerBroker;
     inference: InferenceBroker;
@@ -2790,4 +2789,4 @@ interface CryptoAdapter {
 }
 declare function getCryptoAdapter(): CryptoAdapter;
 
-export { CONTRACT_ADDRESSES, type CryptoAdapter, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, LedgerBroker, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID, ZGComputeNetworkBroker, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, getCryptoAdapter, getNetworkType, hasWebCrypto, isBrowser, isNode, isWebWorker };
+export { CONTRACT_ADDRESSES, type CryptoAdapter, FineTuningBroker, type ServiceStructOutput as FineTuningServiceStructOutput, HARDHAT_CHAIN_ID, AccountProcessor as InferenceAccountProcessor, type AccountStructOutput as InferenceAccountStructOutput, InferenceBroker, ModelProcessor as InferenceModelProcessor, RequestProcessor as InferenceRequestProcessor, ResponseProcessor as InferenceResponseProcessor, type ServiceStructOutput$1 as InferenceServiceStructOutput, type ServingRequestHeaders as InferenceServingRequestHeaders, type SingerRAVerificationResult as InferenceSingerRAVerificationResult, Verifier as InferenceVerifier, LedgerBroker, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID, ZGComputeNetworkBroker, createFineTuningBroker, createInferenceBroker, createLedgerBroker, createZGComputeNetworkBroker, getCryptoAdapter, getNetworkType, hasWebCrypto, isBrowser, isNode, isWebWorker };

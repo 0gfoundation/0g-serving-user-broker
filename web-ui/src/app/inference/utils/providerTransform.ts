@@ -17,6 +17,7 @@ export interface BrokerServiceObject {
   inputPrice?: bigint | string | number;
   outputPrice?: bigint | string | number;
   teeSignerAcknowledged?: boolean;
+  serviceType?: string; // Added for UI conditional rendering
 }
 
 /**
@@ -35,6 +36,7 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
     inputPrice?: bigint;
     outputPrice?: bigint;
     teeSignerAcknowledged?: boolean;
+    serviceType?: string;
   };
   
   // Type guard to ensure service has the required properties
@@ -66,6 +68,7 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
     inputPriceNeuron: serviceObj.inputPrice ? BigInt(serviceObj.inputPrice) : undefined,
     outputPriceNeuron: serviceObj.outputPrice ? BigInt(serviceObj.outputPrice) : undefined,
     teeSignerAcknowledged: serviceObj.teeSignerAcknowledged ?? false,
+    serviceType: serviceObj.serviceType, // Pass through for UI conditional rendering
   };
 }
 

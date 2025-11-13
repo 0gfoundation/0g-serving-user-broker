@@ -564,7 +564,7 @@ export async function runRouterServer(options: RouterServerOptions) {
                 const isValid = await broker.inference.processResponse(
                     providerInfo.address,
                     id,
-                    completeContent,
+                    completeContent
                 )
                 res.json({
                     isValid,

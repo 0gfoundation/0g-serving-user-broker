@@ -13,9 +13,9 @@ export interface ServingRequestHeaders {
      */
     'X-Phala-Signature-Type'?: 'StandaloneApi';
     /**
-     * User's address
+     * @deprecated User's address - no longer used, it included in Authorization header
      */
-    Address: string;
+    Address?: string;
     /**
      * @deprecated Total fee for the request - no longer used
      */
@@ -36,14 +36,7 @@ export interface ServingRequestHeaders {
      * @deprecated User's signature - no longer used
      */
     Signature?: string;
-    /**
-     * Session token containing user info and expiry
-     */
-    'Session-Token': string;
-    /**
-     * Signature of the session token
-     */
-    'Session-Signature': string;
+    Authorization: string;
 }
 /**
  * RequestProcessor is a subclass of ZGServingUserBroker.

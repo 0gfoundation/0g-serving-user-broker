@@ -127,8 +127,8 @@
             console.log('Processing the response...')
             const isValid = await broker.inference.processResponse(
                 providerAddress,
-                receivedContent,
-                chatID
+                chatID,
+                receivedContent
             )
             console.log(`Response validity: ${isValid ? 'Valid' : 'Invalid'}\n`)
 

@@ -354,8 +354,8 @@ export function useMessageHandling(config: MessageHandlingConfig) {
       const [isValid] = await Promise.all([
         broker.inference.processResponse(
           selectedProvider.address,
-          message.content,
-          message.chatId
+          message.chatId,
+          message.content
         ),
         new Promise((resolve) => setTimeout(resolve, 1000)), // Minimum 1 second loading
       ]);

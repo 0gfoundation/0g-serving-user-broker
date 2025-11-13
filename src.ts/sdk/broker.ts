@@ -10,6 +10,7 @@ import type { FineTuningBroker } from './fine-tuning/broker'
 // Network configurations
 export const TESTNET_CHAIN_ID = 16602n
 export const MAINNET_CHAIN_ID = 16661n
+export const HARDHAT_CHAIN_ID = 31337n
 
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
@@ -24,6 +25,11 @@ export const CONTRACT_ADDRESSES = {
         inference: '0x0754221A9f2C11D820F827170249c3cc5cC3DC74',
         fineTuning: '0x0000000000000000000000000000000000000000',
     },
+    hardhat: {
+        ledger: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+        inference: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+        fineTuning: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0',
+    },
 } as const
 
 /**
@@ -31,11 +37,13 @@ export const CONTRACT_ADDRESSES = {
  */
 export function getNetworkType(
     chainId: bigint
-): 'mainnet' | 'testnet' | 'unknown' {
+): 'mainnet' | 'testnet' | 'hardhat' | 'unknown' {
     if (chainId === MAINNET_CHAIN_ID) {
         return 'mainnet'
     } else if (chainId === TESTNET_CHAIN_ID) {
         return 'testnet'
+    } else if (chainId === HARDHAT_CHAIN_ID) {
+        return 'hardhat'
     }
     return 'unknown'
 }
@@ -101,6 +109,9 @@ export async function createZGComputeNetworkBroker(
             } else if (chainId === TESTNET_CHAIN_ID) {
                 defaultAddresses = CONTRACT_ADDRESSES.testnet
                 console.log(`Detected testnet (chain ID: ${chainId})`)
+            } else if (chainId === HARDHAT_CHAIN_ID) {
+                defaultAddresses = CONTRACT_ADDRESSES.hardhat
+                console.log(`Detected hardhat (chain ID: ${chainId})`)
             } else {
                 console.warn(
                     `Unknown chain ID: ${chainId}. Using testnet addresses as default.`

@@ -376,7 +376,7 @@ async function runRouterServer(options) {
             if (providerInfo.type === 'onchain' &&
                 providerInfo.address &&
                 broker) {
-                const isValid = await broker.inference.processResponse(providerInfo.address, completeContent, id);
+                const isValid = await broker.inference.processResponse(providerInfo.address, id, completeContent);
                 res.json({
                     isValid,
                     provider: usedProvider,

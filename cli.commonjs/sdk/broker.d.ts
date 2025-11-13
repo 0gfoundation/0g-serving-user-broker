@@ -5,6 +5,7 @@ import type { LedgerBroker } from './ledger';
 import type { FineTuningBroker } from './fine-tuning/broker';
 export declare const TESTNET_CHAIN_ID = 16602n;
 export declare const MAINNET_CHAIN_ID = 16661n;
+export declare const HARDHAT_CHAIN_ID = 31337n;
 export declare const CONTRACT_ADDRESSES: {
     readonly testnet: {
         readonly ledger: "0x327025B6435424735a3d97c4b1671FeFF0E8879B";
@@ -16,11 +17,16 @@ export declare const CONTRACT_ADDRESSES: {
         readonly inference: "0x0754221A9f2C11D820F827170249c3cc5cC3DC74";
         readonly fineTuning: "0x0000000000000000000000000000000000000000";
     };
+    readonly hardhat: {
+        readonly ledger: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+        readonly inference: "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+        readonly fineTuning: "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0";
+    };
 };
 /**
  * Helper function to determine network type from chain ID
  */
-export declare function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'unknown';
+export declare function getNetworkType(chainId: bigint): 'mainnet' | 'testnet' | 'hardhat' | 'unknown';
 export declare class ZGComputeNetworkBroker {
     ledger: LedgerBroker;
     inference: InferenceBroker;

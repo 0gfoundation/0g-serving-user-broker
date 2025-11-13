@@ -189,7 +189,7 @@ export abstract class ZGServingUserBrokerBase {
             case 'chatbot':
                 return new ChatBot(svc)
             case 'text-to-image':
-                return new TextToImage(svc)                
+                return new TextToImage(svc)
             default:
                 throw new Error('Unknown service type')
         }
@@ -322,7 +322,9 @@ export abstract class ZGServingUserBrokerBase {
         const session = await this.getOrCreateSession(providerAddress)
 
         return {
-            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`
+            Authorization: `Bearer app-sk-${Buffer.from(
+                session.rawMessage + '|' + session.signature
+            ).toString('base64')}`,
         }
     }
 

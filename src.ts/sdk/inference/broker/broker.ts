@@ -360,7 +360,7 @@ export class InferenceBroker {
     public processResponse = async (
         providerAddress: string,
         chatID: string,
-        content?: string,
+        content?: string
     ): Promise<boolean | null> => {
         try {
             return await this.responseProcessor.processResponse(

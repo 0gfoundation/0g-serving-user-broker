@@ -38,6 +38,7 @@ export interface Provider {
   inputPriceNeuron?: bigint;
   outputPriceNeuron?: bigint;
   teeSignerAcknowledged?: boolean;
+  serviceType?: string; // Added for UI conditional rendering
 }
 
 /**

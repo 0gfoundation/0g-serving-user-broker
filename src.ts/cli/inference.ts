@@ -17,7 +17,10 @@ export default function inference(program: Command) {
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
-        .option('--include-invalid', 'Include all services, even those without valid teeSignerAddress')
+        .option(
+            '--include-invalid',
+            'Include all services, even those without valid teeSignerAddress'
+        )
         .action((options: any) => {
             const table = new Table({
                 colWidths: [50, 50],
@@ -25,7 +28,9 @@ export default function inference(program: Command) {
             withBroker(options, async (broker) => {
                 let services = await broker.inference.listService()
                 if (!options.includeInvalid) {
-                    services = services.filter(service => service.teeSignerAcknowledged)
+                    services = services.filter(
+                        (service) => service.teeSignerAcknowledged
+                    )
                 }
                 services.forEach((service, index) => {
                     table.push([

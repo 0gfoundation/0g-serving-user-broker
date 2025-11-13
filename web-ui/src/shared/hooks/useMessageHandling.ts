@@ -138,7 +138,6 @@ export function useMessageHandling(config: MessageHandlingConfig) {
       } catch (headerError) {
         throw headerError;
       }
-
       // Send request to service
       const { endpoint, model } = currentMetadata;
       const response = await fetch(`${endpoint}/chat/completions`, {
@@ -197,7 +196,7 @@ export function useMessageHandling(config: MessageHandlingConfig) {
       // Process streaming response
       const decoder = new TextDecoder();
       let buffer = "";
-      let chatId = "";
+      let chatId = response.headers.get("ZG-Res-Key") || "";
       let completeContent = "";
 
       try {

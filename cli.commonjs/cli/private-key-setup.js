@@ -44,7 +44,7 @@ async function promptPrivateKeyInput() {
     console.log(chalk_1.default.yellow('⚠ Your private key will be saved locally and never transmitted.'));
     console.log();
     while (true) {
-        const privateKey = await (0, interactive_selection_1.passwordInput)('Enter your wallet private key (0x...)', 'Private key (hidden)');
+        const privateKey = await (0, interactive_selection_1.passwordInput)('Enter your wallet private key', 'Private key (hidden)');
         if (!privateKey) {
             console.log(chalk_1.default.red('Private key cannot be empty'));
             continue;

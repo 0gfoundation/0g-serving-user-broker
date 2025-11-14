@@ -65,7 +65,7 @@ async function loginCommand(options: { force?: boolean }): Promise<void> {
 
     while (true) {
         const privateKey = await passwordInput(
-            'Enter your wallet private key (0x...)',
+            'Enter your wallet private key',
             'Private key (hidden)'
         )
 

@@ -13737,6 +13737,7 @@ class Verifier extends ZGServingUserBrokerBase {
             else if (teeVerifier === 'cryptopilot') {
                 console.log('   Verification Method: CryptoPilot TEE');
                 console.log('   Please follow the official documentation to verify the downloaded attestation report.');
+                console.log('   Official documentation: https://github.com/0gfoundation/0g-tapp-verifier/blob/main/audit/AUDIT_GUIDE.md');
             }
             else {
                 console.log(`   Verification Method: Unknown (${teeVerifier})`);
@@ -14975,7 +14976,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-db377620.js');
+    const { download } = await import('./index-15da4cc3.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20335,4 +20336,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-e2c2db1f.js.map
+//# sourceMappingURL=index-3e2d18ab.js.map

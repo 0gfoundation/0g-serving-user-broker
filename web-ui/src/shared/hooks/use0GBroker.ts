@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAccount, useWalletClient } from 'wagmi'
+import { useAccount, useWalletClient, useChainId } from 'wagmi'
 import type { ZGComputeNetworkBroker } from '@0glabs/0g-serving-broker'
 import { createZGComputeNetworkBroker } from '@0glabs/0g-serving-broker'
 import type { JsonRpcSigner } from 'ethers'
@@ -7,6 +7,7 @@ import { BrowserProvider } from 'ethers'
 import { APP_CONSTANTS } from '../constants/app'
 import { errorHandler } from '../utils/errorHandling'
 import { neuronToA0gi } from '../utils/currency'
+import { clearDataCache } from './useOptimizedDataFetching'
 
 const formatBalance = (value: number): string => {
     if (value === 0) return '0'
@@ -53,6 +54,7 @@ interface Use0GBrokerReturn {
 export function use0GBroker(): Use0GBrokerReturn {
     const { isConnected } = useAccount()
     const { data: walletClient } = useWalletClient()
+    const chainId = useChainId()
 
     const [broker, setBroker] = useState<ZGComputeNetworkBroker | null>(null)
     const [isInitializing, setIsInitializing] = useState(false)
@@ -251,7 +253,7 @@ export function use0GBroker(): Use0GBrokerReturn {
         }
     }, [isConnected, walletClient, broker, isInitializing, initializeBroker])
 
-    // Reset state when wallet disconnects
+    // Reset state when wallet disconnects or chain changes
     useEffect(() => {
         if (!isConnected) {
             setBroker(null)
@@ -259,6 +261,50 @@ export function use0GBroker(): Use0GBrokerReturn {
             setError(null)
         }
     }, [isConnected])
+
+    // Track current chainId to detect changes
+    const [currentChainId, setCurrentChainId] = useState<number | undefined>(chainId)
+    
+    // Reset broker and reinitialize when chain changes
+    useEffect(() => {
+        // Only react to actual chain changes, not initial load
+        if (currentChainId !== undefined && chainId !== currentChainId && isConnected && walletClient) {
+            console.log('Chain switched from', currentChainId, 'to', chainId)
+            
+            // Clear current data immediately to show loading state
+            setLedgerInfo(null)
+            setBroker(null)
+            setError(null)
+            
+            // Clear all cached data to prevent stale data from previous network
+            clearDataCache() // Clear all cache
+            
+            // Update tracked chain ID
+            setCurrentChainId(chainId)
+            
+            // Reinitialize broker for new chain
+            const reinitialize = async () => {
+                try {
+                    await initializeBroker()
+                } catch (err) {
+                    console.error('Failed to reinitialize broker after chain switch:', err)
+                }
+            }
+            
+            // Small delay to allow chain switch to complete
+            setTimeout(reinitialize, 1000)
+        } else if (currentChainId === undefined) {
+            // Set initial chain ID
+            setCurrentChainId(chainId)
+        }
+    }, [chainId, isConnected, walletClient, currentChainId, initializeBroker])
+
+    // Auto-refresh ledger info when broker is initialized
+    useEffect(() => {
+        if (broker && !isInitializing) {
+            refreshLedgerInfo()
+        }
+    }, [broker, isInitializing, refreshLedgerInfo])
 
     return {
         broker,

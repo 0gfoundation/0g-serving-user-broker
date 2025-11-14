@@ -40,7 +40,7 @@ export declare abstract class ZGServingUserBrokerBase {
     protected a0giToNeuron(value: number): bigint;
     protected neuronToA0gi(value: bigint): number;
     private generateNonce;
-    generateSessionToken(providerAddress: string): Promise<CachedSession>;
+    generateSessionToken(providerAddress: string, sessionDuration?: number): Promise<CachedSession>;
     getOrCreateSession(providerAddress: string): Promise<CachedSession>;
     getHeader(providerAddress: string): Promise<ServingRequestHeaders>;
     calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;

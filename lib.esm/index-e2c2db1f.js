@@ -12980,10 +12980,11 @@ class ZGServingUserBrokerBase {
             return `${timestamp}-${randomStr}`.padEnd(32, '0');
         }
     }
-    async generateSessionToken(providerAddress) {
+    async generateSessionToken(providerAddress, sessionDuration) {
         const userAddress = this.contract.getUserAddress();
         const timestamp = Date.now();
-        const expiresAt = timestamp + this.sessionDuration;
+        const duration = sessionDuration ?? this.sessionDuration;
+        const expiresAt = timestamp + duration;
         const nonce = this.generateNonce();
         const token = {
             address: userAddress,
@@ -13005,7 +13006,7 @@ class ZGServingUserBrokerBase {
         };
         // Cache the session using the existing cache with proper TTL
         const cacheKey = CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
-        await this.cache.setItem(cacheKey, session, this.sessionDuration, CacheValueTypeEnum.Session);
+        await this.cache.setItem(cacheKey, session, duration, CacheValueTypeEnum.Session);
         return session;
     }
     async getOrCreateSession(providerAddress) {
@@ -14974,7 +14975,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-4331a73b.js');
+    const { download } = await import('./index-db377620.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20334,4 +20335,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-32231540.js.map
+//# sourceMappingURL=index-e2c2db1f.js.map

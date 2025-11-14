@@ -4,11 +4,55 @@ import type { Command } from 'commander'
 import { withBroker, neuronToA0gi, initBroker } from './util'
 import { getRpcEndpoint } from './network-setup'
 import { ensurePrivateKeyConfiguration } from './private-key-setup'
+import { interactiveSelect, textInput } from './interactive-selection'
 import Table from 'cli-table3'
 import chalk from 'chalk'
 import axios from 'axios'
 import fs from 'fs'
 import { ethers } from 'ethers'
+
+async function promptDurationSelection(): Promise<number> {
+    console.log(chalk.blue('\n⏱️  Secret Duration Selection'))
+    console.log()
+
+    const durationChoice = await interactiveSelect({
+        message: 'Please select the secret expiration duration:',
+        options: [
+            {
+                title: '5 minutes',
+                value: '300000',
+                description: '300 seconds (5 minutes)',
+            },
+            {
+                title: '1 hour',
+                value: '3600000',
+                description: '3600 seconds (1 hour)',
+            },
+            {
+                title: '24 hours',
+                value: '86400000',
+                description: '86400 seconds (24 hours)',
+            },
+            {
+                title: 'Custom duration',
+                value: 'custom',
+                description: 'Enter custom duration in seconds',
+            },
+        ],
+    })
+
+    if (durationChoice === 'custom') {
+        console.log()
+        const customSeconds = await textInput('Enter duration in seconds:')
+        const seconds = parseInt(customSeconds)
+        if (isNaN(seconds) || seconds <= 0) {
+            throw new Error('Duration must be a positive number')
+        }
+        return seconds * 1000 // Convert to milliseconds
+    }
+
+    return parseInt(durationChoice)
+}
 
 export default function inference(program: Command) {
     program
@@ -695,5 +739,68 @@ export default function inference(program: Command) {
                     'Provider TEE signer acknowledgement revoked successfully!'
                 )
             })
+        })
+
+    program
+        .command('get-secret')
+        .description('Generate an authentication secret for API access')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options) => {
+            try {
+                const duration = await promptDurationSelection()
+                
+                withBroker(options, async (broker) => {
+                    const session = await broker.inference.requestProcessor.generateSessionToken(
+                        options.provider,
+                        duration
+                    )
+                    
+                    const rawData = session.rawMessage + '|' + session.signature
+                    const secret = Buffer.from(rawData, 'utf8').toString('base64')
+                    const bearerToken = `app-sk-${secret}`
+                    
+                    // Verify the base64 can be decoded back correctly
+                    try {
+                        const decoded = Buffer.from(secret, 'base64').toString('utf8')
+                        const isValid = decoded === rawData
+                        
+                        console.log()
+                        console.log(chalk.green('✓ Secret generated successfully!'))
+                        console.log(chalk.gray(`Provider: ${options.provider}`))
+                        console.log(chalk.gray(`Duration: ${duration}ms (${Math.round(duration / 1000 / 60 / 60 * 100) / 100} hours)`))
+                        console.log(chalk.gray(`Secret length: ${secret.length} characters`))
+                        console.log(chalk.gray(`Base64 verification: ${isValid ? 'PASS' : 'FAIL'}`))
+                        console.log()
+                        console.log(chalk.blue('Use this Authorization header:'))
+                        console.log()
+                        console.log(chalk.white('Authorization: Bearer ' + bearerToken))
+                        console.log()
+                        console.log(chalk.yellow('📋 Copy the complete token above (no line breaks!)'))
+                        console.log()
+                        console.log(chalk.red('⚠️  IMPORTANT SECURITY NOTES:'))
+                        console.log(chalk.red('   • This secret cannot be revoked once generated (temporarily)'))
+                        console.log(chalk.red('   • Keep it secure and do not share it'))
+                        console.log(chalk.red('   • It will expire automatically after the specified duration'))
+                        
+                        if (!isValid) {
+                            console.log()
+                            console.log(chalk.red('⚠️  Warning: Base64 encoding verification failed!'))
+                        }
+                    } catch (error) {
+                        console.log()
+                        console.log(chalk.red('⚠️  Error verifying base64 encoding:', error))
+                    }
+                })
+            } catch (error: unknown) {
+                if (error instanceof Error) {
+                    console.error(chalk.red('Error:'), error.message)
+                } else {
+                    console.error(chalk.red('Error:'), String(error))
+                }
+                process.exit(1)
+            }
         })
 }

@@ -6,11 +6,51 @@ const tslib_1 = require("tslib");
 const util_1 = require("./util");
 const network_setup_1 = require("./network-setup");
 const private_key_setup_1 = require("./private-key-setup");
+const interactive_selection_1 = require("./interactive-selection");
 const cli_table3_1 = tslib_1.__importDefault(require("cli-table3"));
 const chalk_1 = tslib_1.__importDefault(require("chalk"));
 const axios_1 = tslib_1.__importDefault(require("axios"));
 const fs_1 = tslib_1.__importDefault(require("fs"));
 const ethers_1 = require("ethers");
+async function promptDurationSelection() {
+    console.log(chalk_1.default.blue('\n⏱️  Secret Duration Selection'));
+    console.log();
+    const durationChoice = await (0, interactive_selection_1.interactiveSelect)({
+        message: 'Please select the secret expiration duration:',
+        options: [
+            {
+                title: '5 minutes',
+                value: '300000',
+                description: '300 seconds (5 minutes)',
+            },
+            {
+                title: '1 hour',
+                value: '3600000',
+                description: '3600 seconds (1 hour)',
+            },
+            {
+                title: '24 hours',
+                value: '86400000',
+                description: '86400 seconds (24 hours)',
+            },
+            {
+                title: 'Custom duration',
+                value: 'custom',
+                description: 'Enter custom duration in seconds',
+            },
+        ],
+    });
+    if (durationChoice === 'custom') {
+        console.log();
+        const customSeconds = await (0, interactive_selection_1.textInput)('Enter duration in seconds:');
+        const seconds = parseInt(customSeconds);
+        if (isNaN(seconds) || seconds <= 0) {
+            throw new Error('Duration must be a positive number');
+        }
+        return seconds * 1000; // Convert to milliseconds
+    }
+    return parseInt(durationChoice);
+}
 function inference(program) {
     program
         .command('list-providers')
@@ -495,6 +535,58 @@ function inference(program) {
             await broker.inference.revokeProviderTEESignerAcknowledgement(options.provider, options.gasPrice);
             console.log('Provider TEE signer acknowledgement revoked successfully!');
         });
+    });
+    program
+        .command('get-secret')
+        .description('Generate an authentication secret for API access')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options) => {
+        try {
+            const duration = await promptDurationSelection();
+            (0, util_1.withBroker)(options, async (broker) => {
+                const session = await broker.inference.requestProcessor.generateSessionToken(options.provider, duration);
+                const rawData = session.rawMessage + '|' + session.signature;
+                const secret = Buffer.from(rawData, 'utf8').toString('base64');
+                const bearerToken = `app-sk-${secret}`;
+                // Verify the base64 can be decoded back correctly
+                try {
+                    const decoded = Buffer.from(secret, 'base64').toString('utf8');
+                    const isValid = decoded === rawData;
+                    console.log();
+                    console.log(chalk_1.default.green('✓ Secret generated successfully!'));
+                    console.log(chalk_1.default.gray(`Provider: ${options.provider}`));
+                    console.log(chalk_1.default.gray(`Duration: ${duration}ms (${Math.round(duration / 1000 / 60 / 60 * 100) / 100} hours)`));
+                    console.log(chalk_1.default.gray(`Secret length: ${secret.length} characters`));
+                    console.log(chalk_1.default.gray(`Base64 verification: ${isValid ? 'PASS' : 'FAIL'}`));
+                    console.log();
+                    console.log(chalk_1.default.blue('Use this Authorization header:'));
+                    console.log();
+                    console.log(chalk_1.default.white('Authorization: Bearer ' + bearerToken));
+                    console.log();
+                    console.log(chalk_1.default.yellow('📋 Copy the complete token above (no line breaks!)'));
+                    if (!isValid) {
+                        console.log();
+                        console.log(chalk_1.default.red('⚠️  Warning: Base64 encoding verification failed!'));
+                    }
+                }
+                catch (error) {
+                    console.log();
+                    console.log(chalk_1.default.red('⚠️  Error verifying base64 encoding:', error));
+                }
+            });
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error(chalk_1.default.red('Error:'), error.message);
+            }
+            else {
+                console.error(chalk_1.default.red('Error:'), String(error));
+            }
+            process.exit(1);
+        }
     });
 }
 //# sourceMappingURL=inference.js.map

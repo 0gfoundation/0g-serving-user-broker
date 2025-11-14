@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useAccount, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect, useChainId } from "wagmi";
 import { Sidebar } from "./Sidebar";
 import { use0GBroker } from "../../hooks/use0GBroker";
 import { NavigationProvider, useNavigation } from "../navigation/OptimizedNavigation";
@@ -42,6 +42,7 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
   const isHomePage = pathname === "/";
   const { isConnected, address } = useAccount();
   const { disconnect } = useDisconnect();
+  const chainId = useChainId();
   const { broker, isInitializing, error: brokerError } = use0GBroker();
   
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -58,7 +59,10 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
           // Check if the balance is valid (totalBalance > 0 indicates a real ledger)
           if (!ledger || ledger.totalBalance === BigInt(0)) {
             setShowDepositModal(true);
-          } 
+          } else {
+            // Ledger exists and has balance, hide modal
+            setShowDepositModal(false);
+          }
         } catch (error) {
           // If error occurs (e.g., ledger does not exist), prompt for deposit
           setShowDepositModal(true);
@@ -67,7 +71,7 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
     };
     
     checkLedger();
-  }, [broker, isConnected, isHomePage]);
+  }, [broker, isConnected, isHomePage, chainId]); // Added chainId to dependencies
 
   // Clear modals and errors when wallet is disconnected
   useEffect(() => {
@@ -77,6 +81,16 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
       setError(null);
     }
   }, [isConnected]);
+
+  // Reset state when network changes to ensure clean state for new network
+  useEffect(() => {
+    if (isConnected) {
+      setError(null);
+      setIsLoading(false);
+      // Note: Don't close modals here immediately as checkLedger effect will handle it
+      // This just ensures we have clean error/loading state for the new network
+    }
+  }, [chainId, isConnected]);
 
   const handleCreateAccount = async () => {
     if (!broker) return;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useChainId } from 'wagmi'
 import { transformBrokerServicesToProviders } from '../utils/providerTransform'
 import { neuronToA0gi } from '../../../shared/utils/currency'
 import type { Provider } from '../../../shared/types/broker'
@@ -37,6 +38,7 @@ export function useProviderManagement(
     setErrorWithTimeout: (error: string | null) => void
 ): ProviderManagementState & ProviderManagementActions {
     const searchParams = useSearchParams()
+    const chainId = useChainId()
 
     // Provider state
     const [providers, setProviders] = useState<Provider[]>([])
@@ -57,6 +59,32 @@ export function useProviderManagement(
         number | null
     >(null)
     const [isInitializing, setIsInitializing] = useState(true)
+    
+    // Track current chainId to detect changes
+    const [currentChainId, setCurrentChainId] = useState<number | undefined>(chainId)
+
+    // Reset all provider-related state when chain changes
+    useEffect(() => {
+        if (currentChainId !== undefined && chainId !== currentChainId) {
+            console.log('Provider management: Chain switched from', currentChainId, 'to', chainId)
+            
+            // Clear all provider-related data
+            setProviders([])
+            setSelectedProvider(null)
+            setServiceMetadata(null)
+            setProviderAcknowledged(null)
+            setProviderBalance(null)
+            setProviderBalanceNeuron(null)
+            setProviderPendingRefund(null)
+            setIsInitializing(true)
+            
+            // Update tracked chain ID
+            setCurrentChainId(chainId)
+        } else if (currentChainId === undefined) {
+            // Set initial chain ID
+            setCurrentChainId(chainId)
+        }
+    }, [chainId, currentChainId])
 
     // Fetch providers list
     useEffect(() => {

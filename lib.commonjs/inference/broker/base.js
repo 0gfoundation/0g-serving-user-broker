@@ -171,10 +171,11 @@ class ZGServingUserBrokerBase {
             return `${timestamp}-${randomStr}`.padEnd(32, '0');
         }
     }
-    async generateSessionToken(providerAddress) {
+    async generateSessionToken(providerAddress, sessionDuration) {
         const userAddress = this.contract.getUserAddress();
         const timestamp = Date.now();
-        const expiresAt = timestamp + this.sessionDuration;
+        const duration = sessionDuration ?? this.sessionDuration;
+        const expiresAt = timestamp + duration;
         const nonce = this.generateNonce();
         const token = {
             address: userAddress,
@@ -196,7 +197,7 @@ class ZGServingUserBrokerBase {
         };
         // Cache the session using the existing cache with proper TTL
         const cacheKey = storage_1.CacheKeyHelpers.getSessionTokenKey(userAddress, providerAddress);
-        await this.cache.setItem(cacheKey, session, this.sessionDuration, storage_1.CacheValueTypeEnum.Session);
+        await this.cache.setItem(cacheKey, session, duration, storage_1.CacheValueTypeEnum.Session);
         return session;
     }
     async getOrCreateSession(providerAddress) {

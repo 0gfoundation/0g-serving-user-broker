@@ -246,11 +246,13 @@ export abstract class ZGServingUserBrokerBase {
     }
 
     async generateSessionToken(
-        providerAddress: string
+        providerAddress: string,
+        sessionDuration?: number
     ): Promise<CachedSession> {
         const userAddress = this.contract.getUserAddress()
         const timestamp = Date.now()
-        const expiresAt = timestamp + this.sessionDuration
+        const duration = sessionDuration ?? this.sessionDuration
+        const expiresAt = timestamp + duration
         const nonce = this.generateNonce()
 
         const token: SessionToken = {
@@ -286,7 +288,7 @@ export abstract class ZGServingUserBrokerBase {
         await this.cache.setItem(
             cacheKey,
             session,
-            this.sessionDuration,
+            duration,
             CacheValueTypeEnum.Session
         )
 

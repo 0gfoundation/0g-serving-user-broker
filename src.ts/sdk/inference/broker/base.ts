@@ -95,16 +95,9 @@ export abstract class ZGServingUserBrokerBase {
                 method: 'GET',
             })
 
-            const ret = JSON.parse(rawReport)
-            const decodedData = Buffer.from(
-                ret['report_data'],
-                'base64'
-            ).toString('utf-8')
-            // Remove NULL characters that pad the address
-            const signingAddress = decodedData.replace(/\0/g, '')
             return {
                 rawReport,
-                signingAddress: signingAddress,
+                signingAddress: '',
             } as TdxQuoteResponse
         } catch (error) {
             throwFormattedError(error)

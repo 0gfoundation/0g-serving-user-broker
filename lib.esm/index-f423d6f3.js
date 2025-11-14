@@ -12857,13 +12857,9 @@ class ZGServingUserBrokerBase {
             const rawReport = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(rawReport);
-            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8');
-            // Remove NULL characters that pad the address
-            const signingAddress = decodedData.replace(/\0/g, '');
             return {
                 rawReport,
-                signingAddress: signingAddress,
+                signingAddress: '',
             };
         }
         catch (error) {
@@ -14976,7 +14972,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-15da4cc3.js');
+    const { download } = await import('./index-b41f5ffb.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20336,4 +20332,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-3e2d18ab.js.map
+//# sourceMappingURL=index-f423d6f3.js.map

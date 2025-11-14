@@ -778,12 +778,10 @@ export default function inference(program: Command) {
                         console.log()
                         console.log(chalk.white('Authorization: Bearer ' + bearerToken))
                         console.log()
-                        console.log(chalk.yellow('📋 Copy the complete token above (no line breaks!)'))
-                        console.log()
-                        console.log(chalk.red('⚠️  IMPORTANT SECURITY NOTES:'))
-                        console.log(chalk.red('   • This secret cannot be revoked once generated (temporarily)'))
-                        console.log(chalk.red('   • Keep it secure and do not share it'))
-                        console.log(chalk.red('   • It will expire automatically after the specified duration'))
+                        console.log(chalk.yellow('⚠️  IMPORTANT SECURITY NOTES:'))
+                        console.log(chalk.yellow('   • This secret cannot be revoked once generated (temporarily)'))
+                        console.log(chalk.yellow('   • Keep it secure and do not share it'))
+                        console.log(chalk.yellow('   • It will expire automatically after the specified duration'))
                         
                         if (!isValid) {
                             console.log()

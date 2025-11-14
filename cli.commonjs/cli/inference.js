@@ -566,7 +566,10 @@ function inference(program) {
                     console.log();
                     console.log(chalk_1.default.white('Authorization: Bearer ' + bearerToken));
                     console.log();
-                    console.log(chalk_1.default.yellow('📋 Copy the complete token above (no line breaks!)'));
+                    console.log(chalk_1.default.yellow('⚠️  IMPORTANT SECURITY NOTES:'));
+                    console.log(chalk_1.default.yellow('   • This secret cannot be revoked once generated (temporarily)'));
+                    console.log(chalk_1.default.yellow('   • Keep it secure and do not share it'));
+                    console.log(chalk_1.default.yellow('   • It will expire automatically after the specified duration'));
                     if (!isValid) {
                         console.log();
                         console.log(chalk_1.default.red('⚠️  Warning: Base64 encoding verification failed!'));

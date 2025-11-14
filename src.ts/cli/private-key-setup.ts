@@ -56,7 +56,7 @@ async function promptPrivateKeyInput(): Promise<string> {
 
     while (true) {
         const privateKey = await passwordInput(
-            'Enter your wallet private key (0x...)',
+            'Enter your wallet private key',
             'Private key (hidden)'
         )
 

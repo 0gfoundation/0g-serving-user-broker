@@ -89,6 +89,7 @@ class Verifier extends base_1.ZGServingUserBrokerBase {
             else if (teeVerifier === 'cryptopilot') {
                 console.log('   Verification Method: CryptoPilot TEE');
                 console.log('   Please follow the official documentation to verify the downloaded attestation report.');
+                console.log('   Official documentation: https://github.com/0gfoundation/0g-tapp-verifier/blob/main/audit/AUDIT_GUIDE.md');
             }
             else {
                 console.log(`   Verification Method: Unknown (${teeVerifier})`);

@@ -48,13 +48,9 @@ class ZGServingUserBrokerBase {
             const rawReport = await this.fetchText(endpoint, {
                 method: 'GET',
             });
-            const ret = JSON.parse(rawReport);
-            const decodedData = Buffer.from(ret['report_data'], 'base64').toString('utf-8');
-            // Remove NULL characters that pad the address
-            const signingAddress = decodedData.replace(/\0/g, '');
             return {
                 rawReport,
-                signingAddress: signingAddress,
+                signingAddress: '',
             };
         }
         catch (error) {

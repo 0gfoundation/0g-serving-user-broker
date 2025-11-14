@@ -676,4 +676,24 @@ export default function inference(program: Command) {
                 console.log('Provider acknowledged successfully!')
             })
         })
+
+    program
+        .command('revoke', { hidden: true })
+        .description('Revoke TEE signer acknowledgement for a provider')
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .option('--gas-price <price>', 'Gas price for transactions')
+        .action((options) => {
+            withBroker(options, async (broker) => {
+                await broker.inference.revokeProviderTEESignerAcknowledgement(
+                    options.provider,
+                    options.gasPrice
+                )
+                console.log(
+                    'Provider TEE signer acknowledgement revoked successfully!'
+                )
+            })
+        })
 }

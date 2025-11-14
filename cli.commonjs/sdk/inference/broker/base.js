@@ -218,7 +218,7 @@ class ZGServingUserBrokerBase {
         // Get or create session token
         const session = await this.getOrCreateSession(providerAddress);
         return {
-            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`
+            Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`,
         };
     }
     async calculateInputFees(extractor, content) {

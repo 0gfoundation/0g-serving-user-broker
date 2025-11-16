@@ -131,7 +131,7 @@ function LedgerContent() {
       
       // Use depositFund which now handles both creation and deposit intelligently
       await depositFund(amount);
-      alert(`Successfully added ${addAmount} A0GI tokens to your account!`);
+      alert(`Successfully added ${addAmount} 0G tokens to your account!`);
       
       setAddAmount("");
     } catch (err: unknown) {
@@ -226,7 +226,7 @@ function LedgerContent() {
                     )}
                   </div>
                   <div className="text-xl font-semibold text-gray-900">
-                    {formatNumber(displayLedgerInfo.totalBalance)} <span className="text-sm text-gray-500 font-normal">A0GI</span>
+                    {formatNumber(displayLedgerInfo.totalBalance)} <span className="text-sm text-gray-500 font-normal">0G</span>
                   </div>
                 </div>
 
@@ -254,7 +254,7 @@ function LedgerContent() {
                             className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                           />
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500 text-sm">A0GI</span>
+                            <span className="text-gray-500 text-sm">0G</span>
                           </div>
                         </div>
                       </div>
@@ -339,7 +339,7 @@ function LedgerContent() {
                       Total Balance:
                     </h2>
                     <div className="text-sm font-medium text-gray-600">
-                      {formatNumber(displayLedgerInfo.totalBalance)} <span className="text-xs text-gray-500 font-normal">A0GI</span>
+                      {formatNumber(displayLedgerInfo.totalBalance)} <span className="text-xs text-gray-500 font-normal">0G</span>
                     </div>
                   </div>
                   
@@ -364,7 +364,7 @@ function LedgerContent() {
                         </button>
                       </div>
                       <div className="text-xl font-semibold text-gray-900">
-                        {formatNumber(displayLedgerInfo.availableBalance)} <span className="text-sm text-gray-500 font-normal">A0GI</span>
+                        {formatNumber(displayLedgerInfo.availableBalance)} <span className="text-sm text-gray-500 font-normal">0G</span>
                       </div>
                     </div>
 
@@ -470,7 +470,7 @@ function LedgerContent() {
                         </button>
                       </div>
                       <div className="text-xl font-semibold text-gray-900">
-                        {formatNumber(displayLedgerInfo.locked)} <span className="text-sm text-gray-500 font-normal">A0GI</span>
+                        {formatNumber(displayLedgerInfo.locked)} <span className="text-sm text-gray-500 font-normal">0G</span>
                       </div>
                       
                       {/* Integrated Sub-accounts Details - Full width when expanded */}
@@ -522,7 +522,7 @@ function LedgerContent() {
                                         </div>
                                         <div>
                                           <div className="text-xs font-medium text-gray-500 mb-1">Current Fund</div>
-                                          <div className="text-sm font-medium text-gray-900">{formatNumber(inference.balance)} A0GI</div>
+                                          <div className="text-sm font-medium text-gray-900">{formatNumber(inference.balance)} 0G</div>
                                         </div>
                                         <div>
                                           <div className="text-xs font-medium text-gray-500 mb-1">Pending Retrieval</div>
@@ -530,7 +530,7 @@ function LedgerContent() {
                                             onClick={() => toggleRefundDetails(inference.provider, 'inference')}
                                             className="text-sm font-medium text-gray-900 hover:text-purple-600 transition-colors cursor-pointer"
                                           >
-                                            {formatNumber(inference.requestedReturn)} A0GI
+                                            {formatNumber(inference.requestedReturn)} 0G
                                             {parseFloat(inference.requestedReturn) > 0 && (
                                               <svg className={`inline w-3 h-3 ml-1 transition-transform ${expandedRefunds[`inference-${inference.provider}`] ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -567,7 +567,7 @@ function LedgerContent() {
                                                   <div className="grid grid-cols-3 gap-4">
                                                     <div>
                                                       <div className="text-xs font-medium text-gray-500 mb-1">Amount</div>
-                                                      <div className="text-xs font-medium text-gray-900">{formatNumber((Number(refund.amount) / 1e18).toString())} A0GI</div>
+                                                      <div className="text-xs font-medium text-gray-900">{formatNumber((Number(refund.amount) / 1e18).toString())} 0G</div>
                                                     </div>
                                                     <div>
                                                       <div className="text-xs font-medium text-gray-500 mb-1">Lock Time</div>
@@ -634,7 +634,7 @@ function LedgerContent() {
                                         </div>
                                         <div>
                                           <div className="text-xs font-medium text-gray-500 mb-1">Current Fund</div>
-                                          <div className="text-sm font-medium text-gray-900">{formatNumber(fineTuning.balance)} A0GI</div>
+                                          <div className="text-sm font-medium text-gray-900">{formatNumber(fineTuning.balance)} 0G</div>
                                         </div>
                                         <div>
                                           <div className="text-xs font-medium text-gray-500 mb-1">Pending Retrieval</div>
@@ -642,7 +642,7 @@ function LedgerContent() {
                                             onClick={() => toggleRefundDetails(fineTuning.provider, 'fine-tuning')}
                                             className="text-sm font-medium text-gray-900 hover:text-purple-600 transition-colors cursor-pointer"
                                           >
-                                            {formatNumber(fineTuning.requestedReturn)} A0GI
+                                            {formatNumber(fineTuning.requestedReturn)} 0G
                                             {parseFloat(fineTuning.requestedReturn) > 0 && (
                                               <svg className={`inline w-3 h-3 ml-1 transition-transform ${expandedRefunds[`fine-tuning-${fineTuning.provider}`] ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -679,7 +679,7 @@ function LedgerContent() {
                                                   <div className="grid grid-cols-3 gap-4">
                                                     <div>
                                                       <div className="text-xs font-medium text-gray-500 mb-1">Amount</div>
-                                                      <div className="text-xs font-medium text-gray-900">{formatNumber((Number(refund.amount) / 1e18).toString())} A0GI</div>
+                                                      <div className="text-xs font-medium text-gray-900">{formatNumber((Number(refund.amount) / 1e18).toString())} 0G</div>
                                                     </div>
                                                     <div>
                                                       <div className="text-xs font-medium text-gray-500 mb-1">Lock Time</div>
@@ -767,11 +767,11 @@ function LedgerContent() {
                           className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                         />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                          <span className="text-gray-500 text-sm">A0GI</span>
+                          <span className="text-gray-500 text-sm">0G</span>
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Available: {formatNumber(displayLedgerInfo.availableBalance)} A0GI
+                        Available: {formatNumber(displayLedgerInfo.availableBalance)} 0G
                       </p>
                     </div>
 

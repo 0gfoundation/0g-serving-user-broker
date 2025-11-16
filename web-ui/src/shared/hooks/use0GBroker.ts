@@ -130,8 +130,8 @@ export function use0GBroker(): Use0GBrokerReturn {
             const { ledgerInfo, infers, fines } =
                 await broker.ledger.ledger.getLedgerWithDetail()
 
-            const totalBalance = neuronToA0gi(BigInt(ledgerInfo[0])) // Convert from neuron to A0GI
-            const locked = neuronToA0gi(BigInt(ledgerInfo[1])) // Convert from neuron to A0GI
+            const totalBalance = neuronToA0gi(BigInt(ledgerInfo[0])) // Convert from neuron to 0G
+            const locked = neuronToA0gi(BigInt(ledgerInfo[1])) // Convert from neuron to 0G
             const available = totalBalance - locked
 
             // Process inference information

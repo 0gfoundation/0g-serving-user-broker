@@ -83,7 +83,7 @@ Before using the provider's services, you need to create an account specifically
 /**
  * 'addAccount' creates a new account in the contract.
  *
- * @param {number} balance - The initial balance to be assigned to the new account. The unit is A0GI.
+ * @param {number} balance - The initial balance to be assigned to the new account. The unit is 0G.
  *
  * @throws  An error if the account creation fails.
  */
@@ -96,7 +96,7 @@ await broker.ledger.addLedger(balance)
 /**
  * 'depositFund' deposits a specified amount of funds into an existing account.
  *
- * @param {number} amount - The amount of funds to be deposited. The unit is A0GI.
+ * @param {number} amount - The amount of funds to be deposited. The unit is 0G.
  *
  * @throws  An error if the deposit fails.
  */

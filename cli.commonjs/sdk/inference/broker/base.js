@@ -9,6 +9,7 @@ const storage_1 = require("../../common/storage");
 const ethers_1 = require("ethers");
 const logger_1 = require("../../common/logger");
 const textToImage_1 = require("../extractor/textToImage");
+const speech_to_text_1 = require("../extractor/speech-to-text");
 class ZGServingUserBrokerBase {
     contract;
     metadata;
@@ -121,6 +122,8 @@ class ZGServingUserBrokerBase {
                 return new extractor_1.ChatBot(svc);
             case 'text-to-image':
                 return new textToImage_1.TextToImage(svc);
+            case 'speech-to-text':
+                return new speech_to_text_1.SpeechToText(svc);
             default:
                 throw new Error('Unknown service type');
         }
@@ -267,9 +270,11 @@ class ZGServingUserBrokerBase {
                 await this.handleFirstRound(provider, triggerThreshold, targetThreshold, gasPrice);
                 return;
             }
-            // Calculate new fee and update cached fee
-            const newFee = await this.calculateInputFees(extractor, content);
-            await this.updateCachedFee(provider, newFee);
+            let newFee = BigInt(0);
+            if (content) {
+                newFee = await this.calculateInputFees(extractor, content);
+                await this.updateCachedFee(provider, newFee);
+            }
             // Check if we need to check the account
             if (!(await this.shouldCheckAccount(svc)))
                 return;

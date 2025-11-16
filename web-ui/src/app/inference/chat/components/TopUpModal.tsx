@@ -171,7 +171,7 @@ export function TopUpModal({
             {/* Transfer Amount Input */}
             <div>
               <p className="mb-3 text-sm text-gray-600">
-                Transfer funds from your available balance to pay for this provider's services. Current funds: <span className="font-semibold">{(providerBalance ?? 0).toFixed(6)} A0GI</span>
+                Transfer funds from your available balance to pay for this provider's services. Current funds: <span className="font-semibold">{(providerBalance ?? 0).toFixed(6)} 0G</span>
               </p>
               
               {/* Check if there's pending refund */}
@@ -179,7 +179,7 @@ export function TopUpModal({
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="text-sm text-yellow-800">
                     <p className="mb-2">
-                      <span className="font-semibold">Pending Refund: {formatNumber(providerPendingRefund)} A0GI</span>
+                      <span className="font-semibold">Pending Refund: {formatNumber(providerPendingRefund)} 0G</span>
                     </p>
                     <p className="text-xs mb-3">
                       You previously requested to withdraw funds from this provider. Please cancel the withdrawal request to replenish the fund.
@@ -194,7 +194,7 @@ export function TopUpModal({
                       className="px-3 py-1 bg-yellow-600 text-white text-xs font-medium rounded hover:bg-yellow-700 transition-colors cursor-pointer"
                       disabled={isTopping}
                     >
-                      Use Pending Refund ({formatNumber(providerPendingRefund)} A0GI)
+                      Use Pending Refund ({formatNumber(providerPendingRefund)} 0G)
                     </button>
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export function TopUpModal({
               
               <div className="text-xs text-gray-500 mb-3">
                 Available for Transfer: {ledgerInfo && providerPendingRefund !== null ? (
-                  <span className="font-medium">{(parseFloat(ledgerInfo.availableBalance) + (providerPendingRefund || 0)).toFixed(6)} A0GI</span>
+                  <span className="font-medium">{(parseFloat(ledgerInfo.availableBalance) + (providerPendingRefund || 0)).toFixed(6)} 0G</span>
                 ) : (
                   <span>Loading...</span>
                 )} 
@@ -227,7 +227,7 @@ export function TopUpModal({
                   disabled={isTopping}
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">A0GI</span>
+                  <span className="text-gray-500 sm:text-sm">0G</span>
                 </div>
               </div>
             </div>

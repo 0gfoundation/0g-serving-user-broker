@@ -15,6 +15,7 @@ import type { LedgerBroker } from '../../ledger'
 import { keccak256, toUtf8Bytes } from 'ethers'
 import { logger } from '../../common/logger'
 import { TextToImage } from '../extractor/textToImage'
+import { SpeechToText } from '../extractor/speech-to-text'
 
 export interface TdxQuoteResponse {
     rawReport: string
@@ -183,6 +184,8 @@ export abstract class ZGServingUserBrokerBase {
                 return new ChatBot(svc)
             case 'text-to-image':
                 return new TextToImage(svc)
+            case 'speech-to-text':
+                return new SpeechToText(svc)
             default:
                 throw new Error('Unknown service type')
         }
@@ -365,7 +368,7 @@ export abstract class ZGServingUserBrokerBase {
      */
     async topUpAccountIfNeeded(
         provider: string,
-        content: string,
+        content?: string,
         gasPrice?: number
     ) {
         try {
@@ -401,9 +404,11 @@ export abstract class ZGServingUserBrokerBase {
                 return
             }
 
-            // Calculate new fee and update cached fee
-            const newFee = await this.calculateInputFees(extractor, content)
-            await this.updateCachedFee(provider, newFee)
+            let newFee = BigInt(0)
+            if (content) {
+                newFee = await this.calculateInputFees(extractor, content)
+                await this.updateCachedFee(provider, newFee)
+            }
 
             // Check if we need to check the account
             if (!(await this.shouldCheckAccount(svc))) return

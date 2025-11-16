@@ -23,10 +23,10 @@ export function OptimizedInferencePage() {
     const [selectedProviderForBuild, setSelectedProviderForBuild] =
         useState<Provider | null>(null)
     const [selectedTab, setSelectedTab] = useState<
-        'curl' | 'javascript' | 'python' | 'node'
+        'curl' | 'javascript' | 'python'
     >('curl')
 
-    type TabType = 'curl' | 'javascript' | 'python' | 'node'
+    type TabType = 'curl' | 'javascript' | 'python'
 
     // Optimized providers data fetching
     const {
@@ -101,47 +101,7 @@ export function OptimizedInferencePage() {
       }
     ]
   }'`,
-            javascript: `const response = await fetch('http://127.0.0.1:3000/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    messages: [
-      {
-        role: 'system',
-        content: 'You are a helpful assistant.'
-      },
-      {
-        role: 'user',
-        content: 'Hello!'
-      }
-    ]
-  })
-});
-
-const data = await response.json();
-console.log(data);`,
-            python: `import requests
-
-response = requests.post('http://127.0.0.1:3000/v1/chat/completions', 
-  headers={'Content-Type': 'application/json'},
-  json={
-    "messages": [
-      {
-        "role": "system",
-        "content": "You are a helpful assistant."
-      },
-      {
-        "role": "user", 
-        "content": "Hello!"
-      }
-    ]
-  }
-)
-
-print(response.json())`,
-            node: `const OpenAI = require('openai');
+            javascript: `const OpenAI = require('openai');
 
 const client = new OpenAI({
   baseURL: 'http://127.0.0.1:3000/v1',
@@ -166,14 +126,39 @@ async function main() {
 }
 
 main();`,
+            python: `from openai import OpenAI
+
+client = OpenAI(
+    base_url='http://127.0.0.1:3000/v1',
+    api_key=''
+)
+
+completion = client.chat.completions.create(
+    messages=[
+        {
+            'role': 'system',
+            'content': 'You are a helpful assistant.'
+        },
+        {
+            'role': 'user',
+            'content': 'Hello!'
+        }
+    ]
+)
+
+print(completion.choices[0].message)`,
         }
         return examples[tab as keyof typeof examples] || examples.curl
     }
 
-    const getSDKExample = (tab: string, serviceType?: string, provider?: Provider | null) => {
+    const getSDKExample = (
+        tab: string,
+        serviceType?: string,
+        provider?: Provider | null
+    ) => {
         const serviceUrl = provider?.url || '<service.url>'
         const serviceModel = provider?.model || '<service.model>'
-        
+
         if (serviceType === 'text-to-image') {
             const examples = {
                 curl: `curl ${serviceUrl}/v1/proxy/images/generations \\
@@ -185,40 +170,7 @@ main();`,
     "n": 1,
     "size": "1024x1024"
   }'`,
-                javascript: `const response = await fetch('${serviceUrl}/v1/proxy/images/generations', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer app-sk-<SECRET>'
-  },
-  body: JSON.stringify({
-    model: '${serviceModel}',
-    prompt: 'A cute baby sea otter',
-    n: 1,
-    size: '1024x1024'
-  })
-});
-
-const data = await response.json();
-console.log(data);`,
-                python: `import requests
-
-response = requests.post(
-    '${serviceUrl}/v1/proxy/images/generations',
-    headers={
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer app-sk-<SECRET>'
-    },
-    json={
-        'model': '${serviceModel}',
-        'prompt': 'A cute baby sea otter',
-        'n': 1,
-        'size': '1024x1024'
-    }
-)
-
-print(response.json())`,
-                node: `const OpenAI = require('openai');
+                javascript: `const OpenAI = require('openai');
 
 const client = new OpenAI({
   baseURL: '${serviceUrl}/v1/proxy',
@@ -236,7 +188,22 @@ async function main() {
   console.log(response.data);
 }
 
-main();`
+main();`,
+                python: `from openai import OpenAI
+
+client = OpenAI(
+    base_url='${serviceUrl}/v1/proxy',
+    api_key='app-sk-<SECRET>'
+)
+
+response = client.images.generate(
+    model='${serviceModel}',
+    prompt='A cute baby sea otter',
+    n=1,
+    size='1024x1024'
+)
+
+print(response.data)`,
             }
             return examples[tab as keyof typeof examples] || examples.curl
         } else {
@@ -258,54 +225,7 @@ main();`
       }
     ]
   }'`,
-                javascript: `const response = await fetch('${serviceUrl}/v1/proxy/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer app-sk-<SECRET>'
-  },
-  body: JSON.stringify({
-    model: '${serviceModel}',
-    messages: [
-      {
-        role: 'system',
-        content: 'You are a helpful assistant.'
-      },
-      {
-        role: 'user',
-        content: 'Hello!'
-      }
-    ]
-  })
-});
-
-const data = await response.json();
-console.log(data);`,
-                python: `import requests
-
-response = requests.post(
-    '${serviceUrl}/v1/proxy/chat/completions',
-    headers={
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer app-sk-<SECRET>'
-    },
-    json={
-        'model': '${serviceModel}',
-        'messages': [
-            {
-                'role': 'system',
-                'content': 'You are a helpful assistant.'
-            },
-            {
-                'role': 'user',
-                'content': 'Hello!'
-            }
-        ]
-    }
-)
-
-print(response.json())`,
-                node: `const OpenAI = require('openai');
+                javascript: `const OpenAI = require('openai');
 
 const client = new OpenAI({
   baseURL: '${serviceUrl}/v1/proxy',
@@ -330,7 +250,29 @@ async function main() {
   console.log(completion.choices[0].message);
 }
 
-main();`
+main();`,
+                python: `from openai import OpenAI
+
+client = OpenAI(
+    base_url='${serviceUrl}/v1/proxy',
+    api_key='app-sk-<SECRET>'
+)
+
+completion = client.chat.completions.create(
+    model='${serviceModel}',
+    messages=[
+        {
+            'role': 'system',
+            'content': 'You are a helpful assistant.'
+        },
+        {
+            'role': 'user',
+            'content': 'Hello!'
+        }
+    ]
+)
+
+print(completion.choices[0].message)`,
             }
             return examples[tab as keyof typeof examples] || examples.curl
         }
@@ -507,7 +449,7 @@ main();`
                                                             </div>
                                                         )}
                                                         <span className="text-gray-500">
-                                                            A0GI
+                                                            0G
                                                         </span>
                                                     </div>
                                                 )}
@@ -789,12 +731,15 @@ main();`
                                         <div className="space-y-4">
                                             <div>
                                                 <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                    1. Install the 0G Compute CLI
+                                                    1. Install the 0G Compute
+                                                    CLI
                                                 </h3>
                                                 <div className="relative">
                                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
                                                         <code className="text-gray-800 text-sm font-mono">
-                                                            pnpm install @0glabs/0g-serving-broker -g
+                                                            pnpm install
+                                                            @0glabs/0g-serving-broker
+                                                            -g
                                                         </code>
                                                     </div>
                                                     <button
@@ -825,18 +770,20 @@ main();`
 
                                             <div>
                                                 <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                    2. Deposit funds to your account
+                                                    2. Deposit funds to your
+                                                    account
                                                 </h3>
                                                 <div className="relative">
                                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
                                                         <code className="text-gray-800 text-sm font-mono">
-                                                            0g-compute-cli deposit --amount 1
+                                                            0g-compute-cli
+                                                            deposit --amount 5
                                                         </code>
                                                     </div>
                                                     <button
                                                         onClick={() =>
                                                             copyToClipboard(
-                                                                '0g-compute-cli deposit --amount 1'
+                                                                '0g-compute-cli deposit --amount 5'
                                                             )
                                                         }
                                                         className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
@@ -858,13 +805,63 @@ main();`
                                                     </button>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
-                                                    (If your account balance is insufficient, please deposit first)
+                                                    (If your account balance is
+                                                    insufficient, please deposit
+                                                    funds first.)
                                                 </p>
                                             </div>
 
                                             <div>
                                                 <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                    3. Transfer funds to provider account
+                                                    3. Verify provider
+                                                    (Optional)
+                                                </h3>
+                                                <div className="relative">
+                                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
+                                                        <code className="text-gray-800 text-sm font-mono">
+                                                            {selectedProviderForBuild
+                                                                ? `0g-compute-cli inference verify --provider ${selectedProviderForBuild.address}`
+                                                                : '0g-compute-cli inference verify --provider <provider_address>'}
+                                                        </code>
+                                                    </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                selectedProviderForBuild
+                                                                    ? `0g-compute-cli inference verify --provider ${selectedProviderForBuild.address}`
+                                                                    : '0g-compute-cli inference verify --provider <provider_address>'
+                                                            )
+                                                        }
+                                                        className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
+                                                        title="Copy to clipboard"
+                                                    >
+                                                        <svg
+                                                            className="w-4 h-4 text-gray-500"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    (This will output the
+                                                    provider's report and allow
+                                                    you to further verify the
+                                                    provider as instructed)
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-base font-medium text-gray-700 mb-2">
+                                                    4. Transfer funds to
+                                                    provider account
                                                 </h3>
                                                 <div className="relative">
                                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
@@ -901,13 +898,65 @@ main();`
                                                     </button>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
-                                                    (Transfer funds from main account to sub-account for the specified provider)
+                                                    (Transfer funds from main
+                                                    account to sub-account for
+                                                    the specified provider. We
+                                                    recommend depositing more
+                                                    than 5 0G, as the provider
+                                                    requires a minimum balance
+                                                    to respond.)
                                                 </p>
                                             </div>
 
                                             <div>
                                                 <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                    4. Get secret for the provider
+                                                    5. Accredit provider
+                                                </h3>
+                                                <div className="relative">
+                                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
+                                                        <code className="text-gray-800 text-sm font-mono">
+                                                            {selectedProviderForBuild
+                                                                ? `0g-compute-cli inference acknowledge-provider --provider ${selectedProviderForBuild.address}`
+                                                                : '0g-compute-cli inference acknowledge-provider --provider <provider_address>'}
+                                                        </code>
+                                                    </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                selectedProviderForBuild
+                                                                    ? `0g-compute-cli inference acknowledge-provider --provider ${selectedProviderForBuild.address}`
+                                                                    : '0g-compute-cli inference acknowledge-provider --provider <provider_address>'
+                                                            )
+                                                        }
+                                                        className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
+                                                        title="Copy to clipboard"
+                                                    >
+                                                        <svg
+                                                            className="w-4 h-4 text-gray-500"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    (This step indicates that
+                                                    the user acknowledges the
+                                                    provider)
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-base font-medium text-gray-700 mb-2">
+                                                    6. Get secret for the
+                                                    provider
                                                 </h3>
                                                 <div className="relative">
                                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
@@ -944,33 +993,52 @@ main();`
                                                     </button>
                                                 </div>
                                                 <p className="text-xs text-gray-600 mt-1">
-                                                    (Get the secret and use it in various SDKs)
+                                                    (Get the secret and use it
+                                                    in various SDKs)
                                                 </p>
                                             </div>
 
                                             {/* For text-to-image and chatbot, show SDK examples */}
-                                            {(selectedProviderForBuild?.serviceType === 'text-to-image' || selectedProviderForBuild?.serviceType === 'chatbot') && (
+                                            {(selectedProviderForBuild?.serviceType ===
+                                                'text-to-image' ||
+                                                selectedProviderForBuild?.serviceType ===
+                                                    'chatbot') && (
                                                 <div>
                                                     <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                        5. SDK Examples
+                                                        7. SDK Examples
                                                     </h3>
                                                     <p className="text-xs text-gray-600 mb-3">
-                                                        Use your secret obtained from step 4 in the examples below:
+                                                        Use your secret obtained
+                                                        from step 6 in the
+                                                        examples below:
                                                     </p>
 
                                                     {/* Tab Navigation */}
                                                     <div className="flex space-x-1 mb-3 bg-gray-100 rounded-lg p-1">
                                                         {[
-                                                            { key: 'curl', label: 'cURL' },
-                                                            { key: 'javascript', label: 'JavaScript' },
-                                                            { key: 'python', label: 'Python' },
-                                                            { key: 'node', label: 'Node.js' }
+                                                            {
+                                                                key: 'curl',
+                                                                label: 'cURL',
+                                                            },
+                                                            {
+                                                                key: 'javascript',
+                                                                label: 'JavaScript',
+                                                            },
+                                                            {
+                                                                key: 'python',
+                                                                label: 'Python',
+                                                            },
                                                         ].map((tab) => (
                                                             <button
                                                                 key={tab.key}
-                                                                onClick={() => setSelectedTab(tab.key as TabType)}
+                                                                onClick={() =>
+                                                                    setSelectedTab(
+                                                                        tab.key as TabType
+                                                                    )
+                                                                }
                                                                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                                                                    selectedTab === tab.key
+                                                                    selectedTab ===
+                                                                    tab.key
                                                                         ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
                                                                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                                                 }`}
@@ -985,30 +1053,48 @@ main();`
                                                         <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-x-auto">
                                                             <ReactMarkdown
                                                                 components={{
-                                                                    code: ({ children, className }) => {
-                                                                        const isInline = !className
-                                                                        if (isInline) {
+                                                                    code: ({
+                                                                        children,
+                                                                        className,
+                                                                    }) => {
+                                                                        const isInline =
+                                                                            !className
+                                                                        if (
+                                                                            isInline
+                                                                        ) {
                                                                             return (
                                                                                 <code className="bg-purple-50 text-purple-600 px-1 py-0.5 rounded text-xs font-mono">
-                                                                                    {children}
+                                                                                    {
+                                                                                        children
+                                                                                    }
                                                                                 </code>
                                                                             )
                                                                         }
                                                                         return (
                                                                             <code className="text-gray-800 text-sm font-mono block whitespace-pre">
-                                                                                {children}
+                                                                                {
+                                                                                    children
+                                                                                }
                                                                             </code>
                                                                         )
                                                                     },
-                                                                    pre: ({ children }) => (
+                                                                    pre: ({
+                                                                        children,
+                                                                    }) => (
                                                                         <pre className="p-4 overflow-x-auto text-sm">
-                                                                            {children}
+                                                                            {
+                                                                                children
+                                                                            }
                                                                         </pre>
-                                                                    )
+                                                                    ),
                                                                 }}
                                                             >
                                                                 {formatCodeAsMarkdown(
-                                                                    getSDKExample(selectedTab, selectedProviderForBuild?.serviceType, selectedProviderForBuild),
+                                                                    getSDKExample(
+                                                                        selectedTab,
+                                                                        selectedProviderForBuild?.serviceType,
+                                                                        selectedProviderForBuild
+                                                                    ),
                                                                     selectedTab
                                                                 )}
                                                             </ReactMarkdown>
@@ -1016,7 +1102,11 @@ main();`
                                                         <button
                                                             onClick={() =>
                                                                 copyToClipboard(
-                                                                    getSDKExample(selectedTab, selectedProviderForBuild?.serviceType, selectedProviderForBuild)
+                                                                    getSDKExample(
+                                                                        selectedTab,
+                                                                        selectedProviderForBuild?.serviceType,
+                                                                        selectedProviderForBuild
+                                                                    )
                                                                 )
                                                             }
                                                             className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
@@ -1031,7 +1121,9 @@ main();`
                                                                 <path
                                                                     strokeLinecap="round"
                                                                     strokeLinejoin="round"
-                                                                    strokeWidth={2}
+                                                                    strokeWidth={
+                                                                        2
+                                                                    }
                                                                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                                                                 />
                                                             </svg>
@@ -1043,7 +1135,8 @@ main();`
                                     </div>
 
                                     {/* Quick Start section - only show for chatbot type */}
-                                    {selectedProviderForBuild?.serviceType === 'chatbot' && (
+                                    {selectedProviderForBuild?.serviceType ===
+                                        'chatbot' && (
                                         <div className="mb-8">
                                             <h2 className="text-lg font-semibold text-gray-800 mb-4">
                                                 Quick Start a Service
@@ -1052,70 +1145,22 @@ main();`
                                             <div className="space-y-4">
                                                 <div>
                                                     <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                        1. Set environment variables
-                                                    </h3>
-                                                    <div className="relative">
-                                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
-                                                            <code className="text-gray-800 text-sm font-mono">
-                                                                export
-                                                                ZG_PRIVATE_KEY=&lt;YOUR_PRIVATE_KEY&gt;
-                                                                <br />
-                                                                # For mainnet (default):
-                                                                <br />
-                                                                export
-                                                                ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
-                                                                <br />
-                                                                # For testnet:
-                                                                <br /># export
-                                                                ZG_RPC_ENDPOINT=https://evmrpc-testnet.0g.ai
-                                                            </code>
-                                                        </div>
-                                                        <button
-                                                            onClick={() =>
-                                                                copyToClipboard(`export ZG_PRIVATE_KEY=<YOUR_PRIVATE_KEY>
-# For mainnet (default):
-export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
-# For testnet:
-# export ZG_RPC_ENDPOINT=https://evmrpc-testnet.0g.ai`)
-                                                            }
-                                                            className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
-                                                            title="Copy to clipboard"
-                                                        >
-                                                            <svg
-                                                                className="w-4 h-4 text-gray-500"
-                                                                fill="none"
-                                                                stroke="currentColor"
-                                                                viewBox="0 0 24 24"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                                                />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                        2. Start the server
+                                                        1. Start the server
                                                     </h3>
                                                     <div className="relative">
                                                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
                                                             <code className="text-gray-800 text-sm font-mono">
                                                                 {selectedProviderForBuild
-                                                                    ? `0g-compute-cli serve --provider ${selectedProviderForBuild.address}`
-                                                                    : '0g-compute-cli serve --provider <PROVIDER_ADDRESS>'}
+                                                                    ? `0g-compute-cli inference serve --provider ${selectedProviderForBuild.address}`
+                                                                    : '0g-compute-cli inference serve --provider <PROVIDER_ADDRESS>'}
                                                             </code>
                                                         </div>
                                                         <button
                                                             onClick={() =>
                                                                 copyToClipboard(
                                                                     selectedProviderForBuild
-                                                                        ? `0g-compute-cli serve --provider ${selectedProviderForBuild.address}`
-                                                                        : '0g-compute-cli serve --provider <PROVIDER_ADDRESS>'
+                                                                        ? `0g-compute-cli inference serve --provider ${selectedProviderForBuild.address}`
+                                                                        : '0g-compute-cli inference serve --provider <PROVIDER_ADDRESS>'
                                                                 )
                                                             }
                                                             className="absolute top-2 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
@@ -1142,8 +1187,8 @@ export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
 
                                                 <div>
                                                     <h3 className="text-base font-medium text-gray-700 mb-2">
-                                                        3. Use OpenAI API format to
-                                                        make a request
+                                                        2. Use OpenAI API format
+                                                        to make a request
                                                     </h3>
 
                                                     {/* Tab Navigation */}
@@ -1160,10 +1205,6 @@ export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
                                                             {
                                                                 key: 'python',
                                                                 label: 'Python',
-                                                            },
-                                                            {
-                                                                key: 'node',
-                                                                label: 'Node.js SDK',
                                                             },
                                                         ].map((tab) => (
                                                             <button
@@ -1256,7 +1297,9 @@ export ZG_RPC_ENDPOINT=https://evmrpc.0g.ai
                                                                 <path
                                                                     strokeLinecap="round"
                                                                     strokeLinejoin="round"
-                                                                    strokeWidth={2}
+                                                                    strokeWidth={
+                                                                        2
+                                                                    }
                                                                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                                                                 />
                                                             </svg>

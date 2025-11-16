@@ -12818,6 +12818,33 @@ class TextToImage extends Extractor {
     }
 }
 
+class SpeechToText extends Extractor {
+    svcInfo;
+    constructor(svcInfo) {
+        super();
+        this.svcInfo = svcInfo;
+    }
+    getSvcInfo() {
+        return Promise.resolve(this.svcInfo);
+    }
+    async getInputCount(content) {
+        if (!content) {
+            return 0;
+        }
+        const utf8Encoder = new TextEncoder();
+        const encoded = utf8Encoder.encode(content);
+        return encoded.length;
+    }
+    async getOutputCount(content) {
+        if (!content) {
+            return 0;
+        }
+        const utf8Encoder = new TextEncoder();
+        const encoded = utf8Encoder.encode(content);
+        return encoded.length;
+    }
+}
+
 class ZGServingUserBrokerBase {
     contract;
     metadata;
@@ -12930,6 +12957,8 @@ class ZGServingUserBrokerBase {
                 return new ChatBot(svc);
             case 'text-to-image':
                 return new TextToImage(svc);
+            case 'speech-to-text':
+                return new SpeechToText(svc);
             default:
                 throw new Error('Unknown service type');
         }
@@ -13076,9 +13105,11 @@ class ZGServingUserBrokerBase {
                 await this.handleFirstRound(provider, triggerThreshold, targetThreshold, gasPrice);
                 return;
             }
-            // Calculate new fee and update cached fee
-            const newFee = await this.calculateInputFees(extractor, content);
-            await this.updateCachedFee(provider, newFee);
+            let newFee = BigInt(0);
+            if (content) {
+                newFee = await this.calculateInputFees(extractor, content);
+                await this.updateCachedFee(provider, newFee);
+            }
             // Check if we need to check the account
             if (!(await this.shouldCheckAccount(svc)))
                 return;
@@ -14972,7 +15003,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-b41f5ffb.js');
+    const { download } = await import('./index-5511484a.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20332,4 +20363,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-f423d6f3.js.map
+//# sourceMappingURL=index-27ab3e12.js.map

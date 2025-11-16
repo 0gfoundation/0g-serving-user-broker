@@ -49,7 +49,7 @@ export declare abstract class ZGServingUserBrokerBase {
     /**
      * Transfer fund from ledger if fund in the inference account is less than a topUpTriggerThreshold * (inputPrice + outputPrice)
      */
-    topUpAccountIfNeeded(provider: string, content: string, gasPrice?: number): Promise<void>;
+    topUpAccountIfNeeded(provider: string, content?: string, gasPrice?: number): Promise<void>;
     private handleFirstRound;
     /**
      * Check the cache fund for this provider, return true if the fund is above checkAccountThreshold * (inputPrice + outputPrice)

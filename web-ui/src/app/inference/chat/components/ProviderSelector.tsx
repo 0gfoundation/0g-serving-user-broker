@@ -163,14 +163,14 @@ export function ProviderSelector({
                 provider.outputPrice !== undefined ? (
                   <div className="mt-1 text-xs text-gray-500">
                     {provider.inputPrice !== undefined && (
-                      <span>Input: {provider.inputPrice.toFixed(2)} A0GI/M</span>
+                      <span>Input: {provider.inputPrice.toFixed(2)} 0G/M</span>
                     )}
                     {provider.inputPrice !== undefined &&
                       provider.outputPrice !== undefined && (
                         <span className="mx-1">•</span>
                       )}
                     {provider.outputPrice !== undefined && (
-                      <span>Output: {provider.outputPrice.toFixed(2)} A0GI/M</span>
+                      <span>Output: {provider.outputPrice.toFixed(2)} 0G/M</span>
                     )}
                   </div>
                 ) : null}
@@ -262,17 +262,17 @@ export function ProviderSelector({
                   {selectedProvider.outputPrice !== undefined && (
                     <span>{selectedProvider.outputPrice.toFixed(2)}</span>
                   )}
-                  <span className="ml-1 text-gray-500">A0GI/M</span>
+                  <span className="ml-1 text-gray-500">0G/M</span>
                 </span>
               </div>
               {/* Price Tooltip */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20 whitespace-nowrap">
                 <div className="font-semibold mb-1">Price per Million Tokens</div>
                 {selectedProvider.inputPrice !== undefined && (
-                  <div>Input: {selectedProvider.inputPrice.toFixed(2)} A0GI</div>
+                  <div>Input: {selectedProvider.inputPrice.toFixed(2)} 0G</div>
                 )}
                 {selectedProvider.outputPrice !== undefined && (
-                  <div>Output: {selectedProvider.outputPrice.toFixed(2)} A0GI</div>
+                  <div>Output: {selectedProvider.outputPrice.toFixed(2)} 0G</div>
                 )}
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                   <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
@@ -349,7 +349,7 @@ export function ProviderSelector({
                   }`}>
                     {providerBalance !== null ? (
                       <>
-                        {formatNumber(providerBalance)} A0GI
+                        {formatNumber(providerBalance)} 0G
                         {providerPendingRefund !== null && providerPendingRefund > 0 && (
                           <span className="text-orange-600"> (+{formatNumber(providerPendingRefund)} pending)</span>
                         )}

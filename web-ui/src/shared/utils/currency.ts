@@ -1,9 +1,9 @@
 import { APP_CONSTANTS } from '../constants/app';
 
 /**
- * Converts neuron units to A0GI units
+ * Converts neuron units to 0G units
  * @param value - Value in neuron (wei equivalent for 0G)
- * @returns Value in A0GI (ether equivalent for 0G)
+ * @returns Value in 0G (ether equivalent for 0G)
  * @example
  * ```typescript
  * const a0gi = neuronToA0gi(BigInt('1000000000000000000')); // Returns 1
@@ -18,8 +18,8 @@ export const neuronToA0gi = (value: bigint): number => {
 };
 
 /**
- * Converts A0GI units to neuron units
- * @param value - Value in A0GI (ether equivalent for 0G)
+ * Converts 0G units to neuron units
+ * @param value - Value in 0G (ether equivalent for 0G)
  * @returns Value in neuron (wei equivalent for 0G)
  * @example
  * ```typescript
@@ -53,7 +53,7 @@ export const a0giToNeuron = (value: number): bigint => {
 
 /**
  * Formats a balance for display with appropriate decimal places
- * @param balance - Balance in A0GI
+ * @param balance - Balance in 0G
  * @param maxDecimals - Maximum decimal places to show (default: 4)
  * @returns Formatted balance string
  */

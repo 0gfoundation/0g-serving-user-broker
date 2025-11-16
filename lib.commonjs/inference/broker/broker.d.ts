@@ -160,7 +160,7 @@ export declare class InferenceBroker {
      *
      * @throws An error if errors occur during the processing of the request.
      */
-    getRequestHeaders: (providerAddress: string, content: string) => Promise<import("./request").ServingRequestHeaders>;
+    getRequestHeaders: (providerAddress: string, content?: string) => Promise<import("./request").ServingRequestHeaders>;
     /**
      * processResponse is used after the user successfully obtains a response from the provider service.
      *

@@ -274,28 +274,28 @@ export const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
                   disabled={isLoading}
                   className="px-4 py-3 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "Adding..." : "0.1 A0GI"}
+                  {isLoading ? "Adding..." : "0.1 0G"}
                 </button>
                 <button
                   onClick={() => handleDeposit(1)}
                   disabled={isLoading}
                   className="px-4 py-3 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "Adding..." : "1 A0GI"}
+                  {isLoading ? "Adding..." : "1 0G"}
                 </button>
                 <button
                   onClick={() => handleDeposit(5)}
                   disabled={isLoading}
                   className="px-4 py-3 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "Adding..." : "5 A0GI"}
+                  {isLoading ? "Adding..." : "5 0G"}
                 </button>
                 <button
                   onClick={() => handleDeposit(10)}
                   disabled={isLoading}
                   className="px-4 py-3 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "Adding..." : "10 A0GI"}
+                  {isLoading ? "Adding..." : "10 0G"}
                 </button>
               </div>
               

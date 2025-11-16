@@ -69,7 +69,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                 {selectedProvider.inputPrice && selectedProvider.outputPrice && (
                   <span className="text-green-600 font-medium">
                     {formatBalance(selectedProvider.inputPrice)}/
-                    {formatBalance(selectedProvider.outputPrice)} A0GI per 1M tokens
+                    {formatBalance(selectedProvider.outputPrice)} 0G per 1M tokens
                   </span>
                 )}
               </div>
@@ -135,7 +135,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                   {provider.inputPrice && provider.outputPrice && (
                     <div className="text-green-600 font-medium">
                       Cost: {formatBalance(provider.inputPrice)}/
-                      {formatBalance(provider.outputPrice)} A0GI per 1M tokens
+                      {formatBalance(provider.outputPrice)} 0G per 1M tokens
                     </div>
                   )}
                 </div>

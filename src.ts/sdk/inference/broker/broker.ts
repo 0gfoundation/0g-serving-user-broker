@@ -326,7 +326,7 @@ export class InferenceBroker {
      */
     public getRequestHeaders = async (
         providerAddress: string,
-        content: string
+        content?: string
     ) => {
         try {
             return await this.requestProcessor.getRequestHeaders(

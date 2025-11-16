@@ -50,7 +50,7 @@ export declare class RequestProcessor extends ZGServingUserBrokerBase {
         endpoint: string;
         model: string;
     }>;
-    getRequestHeaders(providerAddress: string, content: string): Promise<ServingRequestHeaders>;
+    getRequestHeaders(providerAddress: string, content?: string): Promise<ServingRequestHeaders>;
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
      * This method no longer performs acknowledgement (which is owner-only),

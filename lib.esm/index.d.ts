@@ -2234,7 +2234,7 @@ declare class RequestProcessor extends ZGServingUserBrokerBase {
         endpoint: string;
         model: string;
     }>;
-    getRequestHeaders(providerAddress: string, content: string): Promise<ServingRequestHeaders>;
+    getRequestHeaders(providerAddress: string, content?: string): Promise<ServingRequestHeaders>;
     /**
      * Check if provider's TEE signer is acknowledged by the contract owner.
      * This method no longer performs acknowledgement (which is owner-only),
@@ -2316,7 +2316,7 @@ declare abstract class ZGServingUserBrokerBase {
     /**
      * Transfer fund from ledger if fund in the inference account is less than a topUpTriggerThreshold * (inputPrice + outputPrice)
      */
-    topUpAccountIfNeeded(provider: string, content: string, gasPrice?: number): Promise<void>;
+    topUpAccountIfNeeded(provider: string, content?: string, gasPrice?: number): Promise<void>;
     private handleFirstRound;
     /**
      * Check the cache fund for this provider, return true if the fund is above checkAccountThreshold * (inputPrice + outputPrice)
@@ -2573,7 +2573,7 @@ declare class InferenceBroker {
      *
      * @throws An error if errors occur during the processing of the request.
      */
-    getRequestHeaders: (providerAddress: string, content: string) => Promise<ServingRequestHeaders>;
+    getRequestHeaders: (providerAddress: string, content?: string) => Promise<ServingRequestHeaders>;
     /**
      * processResponse is used after the user successfully obtains a response from the provider service.
      *

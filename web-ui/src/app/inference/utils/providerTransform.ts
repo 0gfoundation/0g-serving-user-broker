@@ -48,7 +48,7 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
   const verifiability = serviceObj.verifiability || "TEE";
   const serviceUrl = serviceObj.url || "";
 
-  // Convert prices from neuron to A0GI per million tokens
+  // Convert prices from neuron to 0G per million tokens
   // EXACTLY as in original ChatPage - with BigInt() wrapper
   const inputPrice = serviceObj.inputPrice
     ? neuronToA0gi(serviceObj.inputPrice * BigInt(1000000))

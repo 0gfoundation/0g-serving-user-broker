@@ -159,7 +159,51 @@ print(completion.choices[0].message)`,
         const serviceUrl = provider?.url || '<service.url>'
         const serviceModel = provider?.model || '<service.model>'
 
-        if (serviceType === 'text-to-image') {
+        if (serviceType === 'speech-to-text') {
+            const examples = {
+                curl: `curl ${serviceUrl}/v1/proxy/audio/transcriptions \\
+  -H "Authorization: Bearer app-sk-<SECRET>" \\
+  -H "Content-Type: multipart/form-data" \\
+  -F "file=@audio.ogg" \\
+  -F "model=${serviceModel}" \\
+  -F "response_format=json"`,
+                javascript: `const OpenAI = require('openai');
+const fs = require('fs');
+
+const client = new OpenAI({
+  baseURL: '${serviceUrl}/v1/proxy',
+  apiKey: 'app-sk-<SECRET>'
+});
+
+async function main() {
+  const transcription = await client.audio.transcriptions.create({
+    file: fs.createReadStream('audio.ogg'),
+    model: '${serviceModel}',
+    response_format: 'json'
+  });
+  
+  console.log(transcription.text);
+}
+
+main();`,
+                python: `from openai import OpenAI
+
+client = OpenAI(
+    base_url='${serviceUrl}/v1/proxy',
+    api_key='app-sk-<SECRET>'
+)
+
+with open('audio.ogg', 'rb') as audio_file:
+    transcription = client.audio.transcriptions.create(
+        file=audio_file,
+        model='${serviceModel}',
+        response_format='json'
+    )
+    
+print(transcription.text)`,
+            }
+            return examples[tab as keyof typeof examples] || examples.curl
+        } else if (serviceType === 'text-to-image') {
             const examples = {
                 curl: `curl ${serviceUrl}/v1/proxy/images/generations \\
   -H "Content-Type: application/json" \\
@@ -814,7 +858,7 @@ print(completion.choices[0].message)`,
                                             <div>
                                                 <h3 className="text-base font-medium text-gray-700 mb-2">
                                                     3. Verify provider
-                                                    (Optional)
+                                                    (optional)
                                                 </h3>
                                                 <div className="relative">
                                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
@@ -998,11 +1042,13 @@ print(completion.choices[0].message)`,
                                                 </p>
                                             </div>
 
-                                            {/* For text-to-image and chatbot, show SDK examples */}
+                                            {/* For text-to-image, chatbot, and speech-to-text, show SDK examples */}
                                             {(selectedProviderForBuild?.serviceType ===
                                                 'text-to-image' ||
                                                 selectedProviderForBuild?.serviceType ===
-                                                    'chatbot') && (
+                                                    'chatbot' ||
+                                                selectedProviderForBuild?.serviceType ===
+                                                    'speech-to-text') && (
                                                 <div>
                                                     <h3 className="text-base font-medium text-gray-700 mb-2">
                                                         7. SDK Examples

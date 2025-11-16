@@ -2310,9 +2310,10 @@ declare abstract class ZGServingUserBrokerBase {
     generateSessionToken(providerAddress: string, sessionDuration?: number): Promise<CachedSession>;
     getOrCreateSession(providerAddress: string): Promise<CachedSession>;
     getHeader(providerAddress: string): Promise<ServingRequestHeaders>;
-    calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
+    calculateFee(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
-    clearCacheFee(provider: string, fee: bigint): Promise<void>;
+    clearBalanceCheckFee(provider: string): Promise<void>;
+    clearCacheFee(provider: string): Promise<void>;
     /**
      * Transfer fund from ledger if fund in the inference account is less than a topUpTriggerThreshold * (inputPrice + outputPrice)
      */
@@ -2347,8 +2348,7 @@ declare class AccountProcessor extends ZGServingUserBrokerBase {
  */
 declare class ResponseProcessor extends ZGServingUserBrokerBase {
     constructor(contract: InferenceServingContract, ledger: LedgerBroker, metadata: Metadata, cache: Cache);
-    processResponse(providerAddress: string, chatID: string, content?: string): Promise<boolean | null>;
-    private calculateOutputFees;
+    processResponse(providerAddress: string, chatID?: string, content?: string): Promise<boolean | null>;
 }
 
 interface ResponseSignature {
@@ -2593,7 +2593,7 @@ declare class InferenceBroker {
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse: (providerAddress: string, chatID: string, content?: string) => Promise<boolean | null>;
+    processResponse: (providerAddress: string, chatID?: string, content?: string) => Promise<boolean | null>;
     /**
      * verifyService is used to verify the reliability of the service.
      *

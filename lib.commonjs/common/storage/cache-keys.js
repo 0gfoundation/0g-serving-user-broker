@@ -22,6 +22,8 @@ exports.CACHE_KEY_PREFIXES = {
     USER_ACK: '_ack',
     // Cached fee
     CACHED_FEE: '_cachedFee',
+    // Check balance
+    CHECK_BALANCE: '_checkBalance',
     // Session token cache
     SESSION_TOKEN: 'session_',
 };
@@ -43,6 +45,9 @@ exports.CacheKeyHelpers = {
     // Cached fee key
     getCachedFeeKey(provider) {
         return `${provider}${exports.CACHE_KEY_PREFIXES.CACHED_FEE}`;
+    },
+    getCheckBalanceKey(provider) {
+        return `${provider}${exports.CACHE_KEY_PREFIXES.CHECK_BALANCE}`;
     },
     // getSettleSignerPrivateKeyKey removed - no longer needed
     // Metadata: signing key

@@ -1,5 +1,4 @@
 import type { InferenceServingContract } from '../contract'
-import type { Extractor } from '../extractor'
 import type { Metadata, Cache } from '../../common/storage'
 import { ZGServingUserBrokerBase } from './base'
 import { isVerifiability } from './model'
@@ -25,17 +24,23 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
 
     async processResponse(
         providerAddress: string,
-        chatID: string,
-        content?: string
+        chatID?: string,
+        content?: string // For chatbot/speech-to-text: usage JSON string with input_tokens/output_tokens; For text-to-image: empty/undefined
     ): Promise<boolean | null> {
         try {
             const extractor = await this.getExtractor(providerAddress)
             if (content) {
-                const outputFee = await this.calculateOutputFees(
+                const fee = await this.calculateFee(
                     extractor,
                     content
                 )
-                await this.updateCachedFee(providerAddress, outputFee)
+                logger.debug(`Calculated fee: ${fee.toString()}`)
+                await this.updateCachedFee(providerAddress, fee)
+            }
+
+            if (!chatID) {
+                // If no chatID provided, skip verifiability check
+                return null
             }
 
             const svc = await extractor.getSvcInfo()
@@ -96,13 +101,5 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
         }
     }
 
-    private async calculateOutputFees(
-        extractor: Extractor,
-        content: string
-    ): Promise<bigint> {
-        const svc = await extractor.getSvcInfo()
-        logger.debug('Service Info:', svc)
-        const outputCount = await extractor.getOutputCount(content)
-        return BigInt(outputCount) * BigInt(svc.outputPrice)
-    }
+ 
 }

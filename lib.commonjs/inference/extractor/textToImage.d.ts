@@ -5,6 +5,6 @@ export declare class TextToImage extends Extractor {
     constructor(svcInfo: ServiceStructOutput);
     getSvcInfo(): Promise<ServiceStructOutput>;
     getInputCount(content: string): Promise<number>;
-    getOutputCount(content: string): Promise<number>;
+    getOutputCount(_content: string): Promise<number>;
 }
 //# sourceMappingURL=textToImage.d.ts.map

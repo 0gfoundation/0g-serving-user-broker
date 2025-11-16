@@ -12,6 +12,7 @@ export declare const CACHE_KEY_PREFIXES: {
     readonly SERVICE: "service_";
     readonly USER_ACK: "_ack";
     readonly CACHED_FEE: "_cachedFee";
+    readonly CHECK_BALANCE: "_checkBalance";
     readonly SESSION_TOKEN: "session_";
 };
 export declare const METADATA_KEY_SUFFIXES: {
@@ -21,6 +22,7 @@ export declare const CacheKeyHelpers: {
     getServiceKey(providerAddress: string): string;
     getUserAckKey(userAddress: string, providerAddress: string): string;
     getCachedFeeKey(provider: string): string;
+    getCheckBalanceKey(provider: string): string;
     getSigningKeyKey(key: string): string;
     getContentKey(id: string): string;
     getSessionTokenKey(userAddress: string, providerAddress: string): string;

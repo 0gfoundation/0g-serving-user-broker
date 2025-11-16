@@ -7,13 +7,10 @@ const ethers_1 = require("ethers");
 const http_1 = require("http");
 const sdk_1 = require("../sdk");
 const const_1 = require("../cli/const");
-const cache_1 = require("../sdk/common/storage/cache");
-const cache_keys_1 = require("../sdk/common/storage/cache-keys");
 const logger_1 = require("../sdk/common/logger");
 async function runInferenceServer(options) {
     const app = (0, express_1.default)();
     app.use(express_1.default.json());
-    const cache = new cache_1.Cache();
     let broker;
     let providerAddress;
     let endpoint;
@@ -70,46 +67,48 @@ async function runInferenceServer(options) {
                 res.setHeader('Cache-Control', 'no-cache');
                 res.setHeader('Connection', 'keep-alive');
                 if (result.body) {
-                    let rawBody = '';
-                    const decoder = new TextDecoder();
                     const reader = result.body.getReader();
+                    const decoder = new TextDecoder();
+                    let accumulatedUsage = null;
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done)
                             break;
-                        res.write(value);
-                        rawBody += decoder.decode(value, {
-                            stream: true,
-                        });
-                    }
-                    res.end();
-                    // Parse rawBody and cache it after the stream ends
-                    let completeContent = '';
-                    let id;
-                    for (const line of rawBody.split('\n')) {
-                        const trimmed = line.trim();
-                        if (!trimmed)
-                            continue;
-                        const jsonStr = trimmed.startsWith('data:')
-                            ? trimmed.slice(5).trim()
-                            : trimmed;
-                        if (jsonStr === '[DONE]')
-                            continue;
+                        // Try to extract usage information from the stream
+                        const chunk = decoder.decode(value, { stream: true });
                         try {
-                            const message = JSON.parse(jsonStr);
-                            if (!id && message.id)
-                                id = message.id;
-                            const receivedContent = message.choices?.[0]?.delta?.content;
-                            if (receivedContent) {
-                                completeContent += receivedContent;
+                            // Look for usage information in the stream chunks
+                            const lines = chunk.split('\n').filter(line => line.trim());
+                            for (const line of lines) {
+                                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                                    const jsonStr = line.substring(6).trim();
+                                    if (jsonStr) {
+                                        const data = JSON.parse(jsonStr);
+                                        if (data.usage) {
+                                            accumulatedUsage = data.usage;
+                                        }
+                                    }
+                                }
                             }
                         }
-                        catch (e) { }
+                        catch {
+                            // Ignore parsing errors for stream chunks
+                        }
+                        res.write(value);
                     }
-                    // Cache the complete content
-                    if (id) {
-                        cache.setItem(cache_keys_1.CacheKeyHelpers.getContentKey(id), completeContent, 1 * 10 * 1000, cache_1.CacheValueTypeEnum.Other);
+                    // Process the accumulated usage information
+                    if (accumulatedUsage) {
+                        try {
+                            logger_1.logger.debug('Processing streaming response usage for fee calculation:', accumulatedUsage);
+                            await broker.inference.processResponse(providerAddress, undefined, // chatID is undefined for non-verifiable responses
+                            JSON.stringify(accumulatedUsage) // Pass usage as JSON string
+                            );
+                        }
+                        catch (processErr) {
+                            logger_1.logger.warn('Failed to process streaming response for fee calculation:', processErr.message);
+                        }
                     }
+                    res.end();
                 }
                 else {
                     res.status(500).json({
@@ -119,9 +118,18 @@ async function runInferenceServer(options) {
             }
             else {
                 const data = await result.json();
-                const key = data.id;
-                const value = data.choices?.[0]?.message?.content;
-                cache.setItem(cache_keys_1.CacheKeyHelpers.getContentKey(key), value, 5 * 60 * 1000, cache_1.CacheValueTypeEnum.Other);
+                // Process the response for fee calculation
+                try {
+                    if (data.usage) {
+                        logger_1.logger.debug('Processing response usage for fee calculation:', data.usage);
+                        await broker.inference.processResponse(providerAddress, undefined, // chatID is undefined for non-verifiable responses
+                        JSON.stringify(data.usage) // Pass usage as JSON string
+                        );
+                    }
+                }
+                catch (processErr) {
+                    logger_1.logger.warn('Failed to process response for fee calculation:', processErr.message);
+                }
                 res.json(data);
             }
         }
@@ -135,13 +143,8 @@ async function runInferenceServer(options) {
             res.status(400).json({ error: 'Missing id in request body' });
             return;
         }
-        const completeContent = cache.getItem(cache_keys_1.CacheKeyHelpers.getContentKey(id));
-        if (!completeContent) {
-            res.status(404).json({ error: 'No cached content for this id' });
-            return;
-        }
         try {
-            const isValid = await broker.inference.processResponse(providerAddress, completeContent, id);
+            const isValid = await broker.inference.processResponse(providerAddress, id);
             res.json({ isValid });
         }
         catch (err) {

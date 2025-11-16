@@ -4,7 +4,7 @@ export declare class SpeechToText extends Extractor {
     svcInfo: ServiceStructOutput;
     constructor(svcInfo: ServiceStructOutput);
     getSvcInfo(): Promise<ServiceStructOutput>;
-    getInputCount(content: string): Promise<number>;
+    getInputCount(_content: string): Promise<number>;
     getOutputCount(content: string): Promise<number>;
 }
 //# sourceMappingURL=speech-to-text.d.ts.map

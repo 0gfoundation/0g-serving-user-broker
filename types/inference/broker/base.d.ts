@@ -43,9 +43,10 @@ export declare abstract class ZGServingUserBrokerBase {
     generateSessionToken(providerAddress: string, sessionDuration?: number): Promise<CachedSession>;
     getOrCreateSession(providerAddress: string): Promise<CachedSession>;
     getHeader(providerAddress: string): Promise<ServingRequestHeaders>;
-    calculateInputFees(extractor: Extractor, content: string): Promise<bigint>;
+    calculateFee(extractor: Extractor, content: string): Promise<bigint>;
     updateCachedFee(provider: string, fee: bigint): Promise<void>;
-    clearCacheFee(provider: string, fee: bigint): Promise<void>;
+    clearBalanceCheckFee(provider: string): Promise<void>;
+    clearCacheFee(provider: string): Promise<void>;
     /**
      * Transfer fund from ledger if fund in the inference account is less than a topUpTriggerThreshold * (inputPrice + outputPrice)
      */

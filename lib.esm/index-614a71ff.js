@@ -18,20 +18,44 @@ class ChatBot extends Extractor {
         return Promise.resolve(this.svcInfo);
     }
     async getInputCount(content) {
+        // For chatbot, parse the usage field to get token counts
+        // content should be a JSON string with usage field containing prompt_tokens and output_tokens
         if (!content) {
             return 0;
         }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+        try {
+            const usage = JSON.parse(content);
+            // We only care about prompt_tokens from the usage object
+            if (usage && usage.prompt_tokens !== undefined) {
+                const tokens = typeof usage.prompt_tokens === 'string' ? parseInt(usage.prompt_tokens, 10) : usage.prompt_tokens;
+                return typeof tokens === 'number' && !isNaN(tokens) ? tokens : 0;
+            }
+            return 0;
+        }
+        catch {
+            // If parsing fails, return 0
+            return 0;
+        }
     }
     async getOutputCount(content) {
+        // For chatbot, parse the usage field to get token counts
+        // content should be a JSON string with usage field containing prompt_tokens and completion_tokens
         if (!content) {
             return 0;
         }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+        try {
+            const usage = JSON.parse(content);
+            // We only care about completion_tokens from the usage object
+            if (usage && usage.completion_tokens !== undefined) {
+                const tokens = typeof usage.completion_tokens === 'string' ? parseInt(usage.completion_tokens, 10) : usage.completion_tokens;
+                return typeof tokens === 'number' && !isNaN(tokens) ? tokens : 0;
+            }
+            return 0;
+        }
+        catch {
+            // If parsing fails, return 0
+            return 0;
+        }
     }
 }
 
@@ -12461,6 +12485,8 @@ const CACHE_KEY_PREFIXES = {
     USER_ACK: '_ack',
     // Cached fee
     CACHED_FEE: '_cachedFee',
+    // Check balance
+    CHECK_BALANCE: '_checkBalance',
     // Session token cache
     SESSION_TOKEN: 'session_',
 };
@@ -12482,6 +12508,9 @@ const CacheKeyHelpers = {
     // Cached fee key
     getCachedFeeKey(provider) {
         return `${provider}${CACHE_KEY_PREFIXES.CACHED_FEE}`;
+    },
+    getCheckBalanceKey(provider) {
+        return `${provider}${CACHE_KEY_PREFIXES.CHECK_BALANCE}`;
     },
     // getSettleSignerPrivateKeyKey removed - no longer needed
     // Metadata: signing key
@@ -12801,20 +12830,27 @@ class TextToImage extends Extractor {
         return Promise.resolve(this.svcInfo);
     }
     async getInputCount(content) {
+        // For text-to-image, parse the request payload to extract 'n' value
         if (!content) {
-            return 0;
+            return 1; // Default to 1 image if no content
         }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+        try {
+            const payload = JSON.parse(content);
+            // Extract 'n' (number of images) from the payload
+            if (payload && payload.n !== undefined) {
+                const n = typeof payload.n === 'string' ? parseInt(payload.n, 10) : payload.n;
+                return typeof n === 'number' && !isNaN(n) ? n : 1;
+            }
+            return 1; // Default to 1 if 'n' is not specified
+        }
+        catch {
+            // If parsing fails, default to 1
+            return 1;
+        }
     }
-    async getOutputCount(content) {
-        if (!content) {
-            return 0;
-        }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+    async getOutputCount(_content) {
+        // For text-to-image, output should always be empty (0)
+        return 0;
     }
 }
 
@@ -12827,21 +12863,30 @@ class SpeechToText extends Extractor {
     getSvcInfo() {
         return Promise.resolve(this.svcInfo);
     }
-    async getInputCount(content) {
-        if (!content) {
-            return 0;
-        }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+    async getInputCount(_content) {
+        // For speech-to-text, inputCount should always be 0
+        // as the actual token counts come from the usage field
+        return 0;
     }
     async getOutputCount(content) {
+        // For speech-to-text, parse the usage field to get token counts
+        // content should be a JSON string with usage field containing input_tokens and output_tokens
         if (!content) {
             return 0;
         }
-        const utf8Encoder = new TextEncoder();
-        const encoded = utf8Encoder.encode(content);
-        return encoded.length;
+        try {
+            const usage = JSON.parse(content);
+            // We only care about output_tokens from the usage object
+            if (usage && usage.output_tokens !== undefined) {
+                const tokens = typeof usage.output_tokens === 'string' ? parseInt(usage.output_tokens, 10) : usage.output_tokens;
+                return typeof tokens === 'number' && !isNaN(tokens) ? tokens : 0;
+            }
+            return 0;
+        }
+        catch {
+            // If parsing fails, return 0
+            return 0;
+        }
     }
 }
 
@@ -13056,27 +13101,39 @@ class ZGServingUserBrokerBase {
             Authorization: `Bearer app-sk-${Buffer.from(session.rawMessage + '|' + session.signature).toString('base64')}`,
         };
     }
-    async calculateInputFees(extractor, content) {
+    async calculateFee(extractor, content) {
         const svc = await extractor.getSvcInfo();
+        const outputCount = await extractor.getOutputCount(content);
         const inputCount = await extractor.getInputCount(content);
-        const inputFee = BigInt(inputCount) * BigInt(svc.inputPrice);
-        return inputFee;
+        return (BigInt(outputCount) * BigInt(svc.outputPrice) +
+            BigInt(inputCount) * BigInt(svc.inputPrice));
     }
     async updateCachedFee(provider, fee) {
         try {
-            const key = CacheKeyHelpers.getCachedFeeKey(provider);
-            const curFee = (await this.cache.getItem(key)) || BigInt(0);
-            await this.cache.setItem(key, BigInt(curFee) + fee, 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
+            const cacheFundKey = CacheKeyHelpers.getCachedFeeKey(provider);
+            const balanceCheckKey = CacheKeyHelpers.getCheckBalanceKey(provider);
+            const accumulatedCheckFee = (await this.cache.getItem(balanceCheckKey)) || BigInt(0);
+            await this.cache.setItem(balanceCheckKey, BigInt(accumulatedCheckFee) + fee, 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
+            const curFee = (await this.cache.getItem(cacheFundKey)) || BigInt(0);
+            await this.cache.setItem(cacheFundKey, BigInt(curFee) + fee, 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
         }
         catch (error) {
             throwFormattedError(error);
         }
     }
-    async clearCacheFee(provider, fee) {
+    async clearBalanceCheckFee(provider) {
+        try {
+            const key = CacheKeyHelpers.getCheckBalanceKey(provider);
+            await this.cache.setItem(key, BigInt(0), 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
+        }
+        catch (error) {
+            throwFormattedError(error);
+        }
+    }
+    async clearCacheFee(provider) {
         try {
             const key = CacheKeyHelpers.getCachedFeeKey(provider);
-            const curFee = (await this.cache.getItem(key)) || BigInt(0);
-            await this.cache.setItem(key, BigInt(curFee) + fee, 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
+            await this.cache.setItem(key, BigInt(0), 1 * 60 * 1000, CacheValueTypeEnum.BigInt);
         }
         catch (error) {
             throwFormattedError(error);
@@ -13107,17 +13164,19 @@ class ZGServingUserBrokerBase {
             }
             let newFee = BigInt(0);
             if (content) {
-                newFee = await this.calculateInputFees(extractor, content);
+                newFee = await this.calculateFee(extractor, content);
                 await this.updateCachedFee(provider, newFee);
             }
             // Check if we need to check the account
             if (!(await this.shouldCheckAccount(svc)))
                 return;
+            await this.clearBalanceCheckFee(provider);
             // Re-check the account balance
             let needTransfer = false;
             try {
                 const acc = await this.contract.getAccount(provider);
                 const lockedFund = acc.balance - acc.pendingRefund;
+                logger.debug(`Locked fund for provider ${provider}: ${lockedFund.toString()}, trigger threshold: ${triggerThreshold.toString()}`);
                 needTransfer = lockedFund < triggerThreshold;
             }
             catch {
@@ -13127,6 +13186,7 @@ class ZGServingUserBrokerBase {
             if (needTransfer) {
                 try {
                     await this.ledger.transferFund(provider, 'inference', targetThreshold, gasPrice);
+                    await this.clearCacheFee(provider);
                 }
                 catch (error) {
                     // Check if it's an insufficient balance error
@@ -13139,7 +13199,6 @@ class ZGServingUserBrokerBase {
                     return;
                 }
             }
-            await this.clearCacheFee(provider, newFee);
         }
         catch (error) {
             console.warn(`Warning: Top up account failed: ${error?.message || error}`);
@@ -13179,9 +13238,11 @@ class ZGServingUserBrokerBase {
      */
     async shouldCheckAccount(svc) {
         try {
-            const key = CacheKeyHelpers.getCachedFeeKey(svc.provider);
-            const usedFund = (await this.cache.getItem(key)) || BigInt(0);
-            return (usedFund >
+            const key = CacheKeyHelpers.getCheckBalanceKey(svc.provider);
+            const accumulatedFund = (await this.cache.getItem(key)) || BigInt(0);
+            logger.debug(`Accumulated fund for provider before checking balance ${svc.provider}: ${accumulatedFund.toString()} and threshold to check account balance: ${this.checkAccountThreshold *
+                (svc.inputPrice + svc.outputPrice)}`);
+            return (accumulatedFund >
                 this.checkAccountThreshold * (svc.inputPrice + svc.outputPrice));
         }
         catch (error) {
@@ -14283,12 +14344,18 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
     constructor(contract, ledger, metadata, cache) {
         super(contract, ledger, metadata, cache);
     }
-    async processResponse(providerAddress, chatID, content) {
+    async processResponse(providerAddress, chatID, content // For chatbot/speech-to-text: usage JSON string with input_tokens/output_tokens; For text-to-image: empty/undefined
+    ) {
         try {
             const extractor = await this.getExtractor(providerAddress);
             if (content) {
-                const outputFee = await this.calculateOutputFees(extractor, content);
-                await this.updateCachedFee(providerAddress, outputFee);
+                const fee = await this.calculateFee(extractor, content);
+                logger.debug(`Calculated fee: ${fee.toString()}`);
+                await this.updateCachedFee(providerAddress, fee);
+            }
+            if (!chatID) {
+                // If no chatID provided, skip verifiability check
+                return null;
             }
             const svc = await extractor.getSvcInfo();
             if (!isVerifiability(svc.verifiability)) {
@@ -14329,12 +14396,6 @@ class ResponseProcessor extends ZGServingUserBrokerBase {
         catch (error) {
             throwFormattedError(error);
         }
-    }
-    async calculateOutputFees(extractor, content) {
-        const svc = await extractor.getSvcInfo();
-        logger.debug('Service Info:', svc);
-        const outputCount = await extractor.getOutputCount(content);
-        return BigInt(outputCount) * BigInt(svc.outputPrice);
     }
 }
 
@@ -15003,7 +15064,7 @@ async function safeDynamicImport() {
     if (isBrowser()) {
         throw new Error('ZG Storage operations are not available in browser environment.');
     }
-    const { download } = await import('./index-5511484a.js');
+    const { download } = await import('./index-7d666689.js');
     return { download };
 }
 async function calculateTokenSizeViaExe(tokenizerRootHash, datasetPath, datasetType, tokenCounterMerkleRoot, tokenCounterFileHash) {
@@ -20363,4 +20424,4 @@ async function createZGComputeNetworkBroker(signer, ledgerCA, inferenceCA, fineT
 }
 
 export { AccountProcessor as A, CONTRACT_ADDRESSES as C, FineTuningBroker as F, HARDHAT_CHAIN_ID as H, InferenceBroker as I, LedgerBroker as L, ModelProcessor$1 as M, RequestProcessor as R, TESTNET_CHAIN_ID as T, Verifier as V, ZGComputeNetworkBroker as Z, ResponseProcessor as a, createFineTuningBroker as b, createInferenceBroker as c, download as d, createLedgerBroker as e, MAINNET_CHAIN_ID as f, getNetworkType as g, createZGComputeNetworkBroker as h, isBrowser as i, isNode as j, isWebWorker as k, hasWebCrypto as l, getCryptoAdapter as m, upload as u };
-//# sourceMappingURL=index-27ab3e12.js.map
+//# sourceMappingURL=index-614a71ff.js.map

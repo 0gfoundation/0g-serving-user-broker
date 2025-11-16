@@ -326,19 +326,31 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    async calculateInputFees(extractor: Extractor, content: string) {
+    async calculateFee(extractor: Extractor, content: string): Promise<bigint> {
         const svc = await extractor.getSvcInfo()
+        const outputCount = await extractor.getOutputCount(content)
         const inputCount = await extractor.getInputCount(content)
-        const inputFee = BigInt(inputCount) * BigInt(svc.inputPrice)
-        return inputFee
+        return (
+            BigInt(outputCount) * BigInt(svc.outputPrice) +
+            BigInt(inputCount) * BigInt(svc.inputPrice)
+        )
     }
 
     async updateCachedFee(provider: string, fee: bigint) {
         try {
-            const key = CacheKeyHelpers.getCachedFeeKey(provider)
-            const curFee = (await this.cache.getItem(key)) || BigInt(0)
+            const cacheFundKey = CacheKeyHelpers.getCachedFeeKey(provider)
+            const balanceCheckKey = CacheKeyHelpers.getCheckBalanceKey(provider)
+            const accumulatedCheckFee =
+                (await this.cache.getItem(balanceCheckKey)) || BigInt(0)
             await this.cache.setItem(
-                key,
+                balanceCheckKey,
+                BigInt(accumulatedCheckFee) + fee,
+                1 * 60 * 1000,
+                CacheValueTypeEnum.BigInt
+            )
+            const curFee = (await this.cache.getItem(cacheFundKey)) || BigInt(0)
+            await this.cache.setItem(
+                cacheFundKey,
                 BigInt(curFee) + fee,
                 1 * 60 * 1000,
                 CacheValueTypeEnum.BigInt
@@ -348,13 +360,26 @@ export abstract class ZGServingUserBrokerBase {
         }
     }
 
-    async clearCacheFee(provider: string, fee: bigint) {
+    async clearBalanceCheckFee(provider: string) {
         try {
-            const key = CacheKeyHelpers.getCachedFeeKey(provider)
-            const curFee = (await this.cache.getItem(key)) || BigInt(0)
+            const key = CacheKeyHelpers.getCheckBalanceKey(provider)
             await this.cache.setItem(
                 key,
-                BigInt(curFee) + fee,
+                BigInt(0),
+                1 * 60 * 1000,
+                CacheValueTypeEnum.BigInt
+            )
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    async clearCacheFee(provider: string) {
+        try {
+            const key = CacheKeyHelpers.getCachedFeeKey(provider)
+            await this.cache.setItem(
+                key,
+                BigInt(0),
                 1 * 60 * 1000,
                 CacheValueTypeEnum.BigInt
             )
@@ -406,18 +431,24 @@ export abstract class ZGServingUserBrokerBase {
 
             let newFee = BigInt(0)
             if (content) {
-                newFee = await this.calculateInputFees(extractor, content)
+                newFee = await this.calculateFee(extractor, content)
                 await this.updateCachedFee(provider, newFee)
             }
 
             // Check if we need to check the account
             if (!(await this.shouldCheckAccount(svc))) return
 
+            await this.clearBalanceCheckFee(provider)
+
             // Re-check the account balance
             let needTransfer = false
             try {
                 const acc = await this.contract.getAccount(provider)
                 const lockedFund = acc.balance - acc.pendingRefund
+
+                logger.debug(
+                    `Locked fund for provider ${provider}: ${lockedFund.toString()}, trigger threshold: ${triggerThreshold.toString()}`
+                )
                 needTransfer = lockedFund < triggerThreshold
             } catch {
                 // Account doesn't exist, need to create it by transferring funds
@@ -432,6 +463,7 @@ export abstract class ZGServingUserBrokerBase {
                         targetThreshold,
                         gasPrice
                     )
+                    await this.clearCacheFee(provider)
                 } catch (error: any) {
                     // Check if it's an insufficient balance error
                     const errorMessage = error?.message?.toLowerCase() || ''
@@ -449,8 +481,6 @@ export abstract class ZGServingUserBrokerBase {
                     return
                 }
             }
-
-            await this.clearCacheFee(provider, newFee)
         } catch (error: any) {
             console.warn(
                 `Warning: Top up account failed: ${error?.message || error}`
@@ -515,10 +545,18 @@ export abstract class ZGServingUserBrokerBase {
      */
     async shouldCheckAccount(svc: ServiceStructOutput) {
         try {
-            const key = CacheKeyHelpers.getCachedFeeKey(svc.provider)
-            const usedFund = (await this.cache.getItem(key)) || BigInt(0)
+            const key = CacheKeyHelpers.getCheckBalanceKey(svc.provider)
+            const accumulatedFund = (await this.cache.getItem(key)) || BigInt(0)
+            logger.debug(
+                `Accumulated fund for provider before checking balance ${
+                    svc.provider
+                }: ${accumulatedFund.toString()} and threshold to check account balance: ${
+                    this.checkAccountThreshold *
+                    (svc.inputPrice + svc.outputPrice)
+                }`
+            )
             return (
-                usedFund >
+                accumulatedFund >
                 this.checkAccountThreshold * (svc.inputPrice + svc.outputPrice)
             )
         } catch (error) {

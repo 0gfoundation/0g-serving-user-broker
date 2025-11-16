@@ -180,7 +180,7 @@ export declare class InferenceBroker {
      *
      * @throws An error if any issues occur during the processing of the response.
      */
-    processResponse: (providerAddress: string, chatID: string, content?: string) => Promise<boolean | null>;
+    processResponse: (providerAddress: string, chatID?: string, content?: string) => Promise<boolean | null>;
     /**
      * verifyService is used to verify the reliability of the service.
      *

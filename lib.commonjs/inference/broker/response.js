@@ -15,12 +15,18 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
     constructor(contract, ledger, metadata, cache) {
         super(contract, ledger, metadata, cache);
     }
-    async processResponse(providerAddress, chatID, content) {
+    async processResponse(providerAddress, chatID, content // For chatbot/speech-to-text: usage JSON string with input_tokens/output_tokens; For text-to-image: empty/undefined
+    ) {
         try {
             const extractor = await this.getExtractor(providerAddress);
             if (content) {
-                const outputFee = await this.calculateOutputFees(extractor, content);
-                await this.updateCachedFee(providerAddress, outputFee);
+                const fee = await this.calculateFee(extractor, content);
+                logger_1.logger.debug(`Calculated fee: ${fee.toString()}`);
+                await this.updateCachedFee(providerAddress, fee);
+            }
+            if (!chatID) {
+                // If no chatID provided, skip verifiability check
+                return null;
             }
             const svc = await extractor.getSvcInfo();
             if (!(0, model_1.isVerifiability)(svc.verifiability)) {
@@ -61,12 +67,6 @@ class ResponseProcessor extends base_1.ZGServingUserBrokerBase {
         catch (error) {
             (0, utils_1.throwFormattedError)(error);
         }
-    }
-    async calculateOutputFees(extractor, content) {
-        const svc = await extractor.getSvcInfo();
-        logger_1.logger.debug('Service Info:', svc);
-        const outputCount = await extractor.getOutputCount(content);
-        return BigInt(outputCount) * BigInt(svc.outputPrice);
     }
 }
 exports.ResponseProcessor = ResponseProcessor;

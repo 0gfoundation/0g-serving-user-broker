@@ -359,7 +359,7 @@ export class InferenceBroker {
      */
     public processResponse = async (
         providerAddress: string,
-        chatID: string,
+        chatID?: string,
         content?: string
     ): Promise<boolean | null> => {
         try {

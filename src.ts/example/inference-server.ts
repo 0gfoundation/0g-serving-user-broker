@@ -60,6 +60,7 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                 ? body.messages.map((m: any) => m.content).join('\n')
                 : ''
         )
+        
         body.model = model
         if (stream) {
             body.stream = true
@@ -69,6 +70,8 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                 body
             )} and headers: ${JSON.stringify(headers)}`
         )
+        
+        // Use fetch to get raw response for transparent proxying
         const response = await fetch(`${endpoint}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -84,7 +87,10 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         '/v1/chat/completions',
         async (req: any, res: any): Promise<void> => {
             const body = req.body
-            const stream = body.stream === true
+            const stream = body.stream === true || body.stream === 'true'
+            logger.debug(`Received chat/completions request: ${JSON.stringify(
+                body
+            )}, stream: ${stream}`)
             if (!Array.isArray(body.messages) || body.messages.length === 0) {
                 res.status(400).json({
                     error: 'Missing or invalid messages in request body',
@@ -97,53 +103,51 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                     res.setHeader('Content-Type', 'text/event-stream')
                     res.setHeader('Cache-Control', 'no-cache')
                     res.setHeader('Connection', 'keep-alive')
+                    
                     if (result.body) {
-                        const reader = result.body.getReader()
+                        let rawBody = ''
                         const decoder = new TextDecoder()
-                        let accumulatedUsage: any = null
-                        
+                        const reader = result.body.getReader()
                         while (true) {
                             const { done, value } = await reader.read()
                             if (done) break
-                            
-                            // Try to extract usage information from the stream
-                            const chunk = decoder.decode(value, { stream: true })
-                            try {
-                                // Look for usage information in the stream chunks
-                                const lines = chunk.split('\n').filter(line => line.trim())
-                                for (const line of lines) {
-                                    if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-                                        const jsonStr = line.substring(6).trim()
-                                        if (jsonStr) {
-                                            const data = JSON.parse(jsonStr)
-                                            if (data.usage) {
-                                                accumulatedUsage = data.usage
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch {
-                                // Ignore parsing errors for stream chunks
-                            }
-                            
                             res.write(value)
+                            rawBody += decoder.decode(value, {
+                                stream: true,
+                            })
+                        }
+                        res.end()
+                        
+                        // Parse rawBody to extract usage information for fee calculation
+                        let usage: any = null
+                        for (const line of rawBody.split('\n')) {
+                            const trimmed = line.trim()
+                            if (!trimmed) continue
+                            const jsonStr = trimmed.startsWith('data:')
+                                ? trimmed.slice(5).trim()
+                                : trimmed
+                            if (jsonStr === '[DONE]') continue
+                            try {
+                                const message = JSON.parse(jsonStr)
+                                if (message.usage) {
+                                    usage = message.usage
+                                }
+                            } catch {}
                         }
                         
-                        // Process the accumulated usage information
-                        if (accumulatedUsage) {
+                        // Process the usage information for fee calculation
+                        if (usage) {
                             try {
-                                logger.debug('Processing streaming response usage for fee calculation:', accumulatedUsage)
+                                logger.debug('Processing streaming response usage for fee calculation:', usage)
                                 await broker.inference.processResponse(
                                     providerAddress,
                                     undefined, // chatID is undefined for non-verifiable responses
-                                    JSON.stringify(accumulatedUsage) // Pass usage as JSON string
+                                    JSON.stringify(usage) // Pass usage as JSON string
                                 )
                             } catch (processErr: any) {
                                 logger.warn('Failed to process streaming response for fee calculation:', processErr.message)
                             }
                         }
-                        
-                        res.end()
                     } else {
                         res.status(500).json({
                             error: 'No stream body from remote server',
@@ -151,11 +155,14 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                     }
                 } else {
                     const data = await result.json()
-                    
+
                     // Process the response for fee calculation
                     try {
                         if (data.usage) {
-                            logger.debug('Processing response usage for fee calculation:', data.usage)
+                            logger.debug(
+                                'Processing response usage for fee calculation:',
+                                data.usage
+                            )
                             await broker.inference.processResponse(
                                 providerAddress,
                                 undefined, // chatID is undefined for non-verifiable responses
@@ -163,9 +170,12 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                             )
                         }
                     } catch (processErr: any) {
-                        logger.warn('Failed to process response for fee calculation:', processErr.message)
+                        logger.warn(
+                            'Failed to process response for fee calculation:',
+                            processErr.message
+                        )
                     }
-                    
+
                     res.json(data)
                 }
             } catch (err: any) {
@@ -183,7 +193,7 @@ export async function runInferenceServer(options: InferenceServerOptions) {
         try {
             const isValid = await broker.inference.processResponse(
                 providerAddress,
-                id,
+                id
             )
             res.json({ isValid })
         } catch (err: any) {

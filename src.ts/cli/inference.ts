@@ -11,7 +11,7 @@ import axios from 'axios'
 import fs from 'fs'
 import { ethers } from 'ethers'
 import { formatError } from '../sdk/common/utils/error-handler'
-import { parseTieredPricing, parseCacheTokenBilling } from '../sdk/inference'
+import { parseTieredPricing, parseCacheTokenBilling, parseMultiModelInfo } from '../sdk/inference'
 import type { TieredPricingInfo, CacheTokenBillingInfo } from '../sdk/inference'
 
 /**
@@ -156,7 +156,22 @@ export default function inference(program: Command) {
                         chalk.blue(`Provider ${index + 1}`),
                         chalk.blue(service.provider),
                     ])
-                    table.push(['Model', service.model || 'N/A'])
+                    // Multi-model providers serve N models behind one address;
+                    // the on-chain `model` is only the default. Surface the flag
+                    // and point to `get-models` for the full catalog.
+                    const multi = parseMultiModelInfo(service.additionalInfo)
+                    if (multi.multiModel) {
+                        table.push([
+                            'Models',
+                            chalk.green(
+                                `multi-model${multi.priceDenomination ? ` (${multi.priceDenomination})` : ''}`
+                            ) +
+                                `\ndefault: ${service.model || 'N/A'}` +
+                                `\n→ get-models --provider ${service.provider}`,
+                        ])
+                    } else {
+                        table.push(['Model', service.model || 'N/A'])
+                    }
 
 
                     // Check for tiered pricing and cache billing in additionalInfo
@@ -226,6 +241,63 @@ export default function inference(program: Command) {
                         service.verifiability || 'N/A',
                     ])
                 })
+                console.log(table.toString())
+            })
+        })
+
+    program
+        .command('get-models')
+        .description(
+            "Get the models a provider serves (live from its /v1/models endpoint)"
+        )
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options: any) => {
+            await withROBroker(options, async (broker) => {
+                const result = await broker.inference.getProviderModels(
+                    options.provider
+                )
+                console.log(chalk.blue(`Provider:      ${result.provider}`))
+                console.log(
+                    `Multi-model:   ${result.multiModel ? chalk.green('yes') : 'no'}` +
+                        (result.priceDenomination
+                            ? ` (${result.priceDenomination})`
+                            : '')
+                )
+                console.log(`Default model: ${result.defaultModel || 'N/A'}`)
+
+                if (result.models.length === 0) {
+                    console.log(
+                        chalk.yellow(
+                            'No models returned by the provider /v1/models endpoint.'
+                        )
+                    )
+                    return
+                }
+
+                const table = new Table({
+                    head: ['Model ID', 'Canonical', 'Type', 'Pricing'],
+                    colWidths: [32, 18, 18, 40],
+                    wordWrap: true,
+                })
+                for (const m of result.models) {
+                    let pricing = 'N/A'
+                    if (m.pricing?.video) {
+                        pricing = `${m.pricing.video} / sec`
+                    } else if (m.pricing?.image) {
+                        pricing = `${m.pricing.image} / image`
+                    } else if (m.pricing?.prompt || m.pricing?.completion) {
+                        pricing = `in ${m.pricing.prompt ?? '-'} / out ${m.pricing.completion ?? '-'} (per token)`
+                    }
+                    table.push([
+                        m.id,
+                        m.canonical_id ?? '-',
+                        m.type ?? '-',
+                        pricing,
+                    ])
+                }
                 console.log(table.toString())
             })
         })

@@ -53,6 +53,12 @@ export interface ServiceHealthMetric {
 export interface ProviderModelInfo {
     id: string
     provider?: string
+    /**
+     * Router-owned canonical model id this model maps to (bare lowercase, e.g.
+     * "glm-5.1"). Emitted per-model by multi-model providers so a catalog can
+     * group endpoints under a canonical model. Optional.
+     */
+    canonical_id?: string
     object?: string
     created?: number
     owned_by?: string
@@ -82,6 +88,8 @@ export interface ProviderModelInfo {
         completion?: string
         /** Price per generated image (text-to-image services) */
         image?: string
+        /** Price per effective output second (video-generation services) */
+        video?: string
         /** Tiered pricing tiers based on input token count */
         tiered_pricing?: Array<{
             max_input_tokens: number
@@ -104,6 +112,8 @@ export interface ProviderModelInfo {
         completion?: string
         /** USD price per generated image (image services) */
         image?: string
+        /** USD price per effective output second (video-generation services) */
+        video?: string
         /** Tiered pricing tiers based on input token count */
         tiered_pricing?: Array<{
             max_input_tokens: number
@@ -249,6 +259,66 @@ export function parseCacheTokenBillingFromModelInfo(
 }
 
 /**
+ * Multi-model serving info parsed from service additionalInfo.
+ *
+ * A centralized provider that serves N models advertises `MultiModel: true`
+ * (and its price denomination) on-chain. The full per-model catalog is NOT
+ * on-chain — fetch it from the provider's /v1/models endpoint via
+ * {@link ReadOnlyModelProcessor.getProviderModels}.
+ */
+export interface MultiModelInfo {
+    /** True if this provider serves multiple models behind one address. */
+    multiModel: boolean
+    /** Price denomination advertised on-chain ("USD" | "NATIVE"); undefined when absent. */
+    priceDenomination?: string
+}
+
+/**
+ * Parse multi-model serving info from a service's additionalInfo JSON string.
+ * Returns { multiModel: false } when absent or the JSON is invalid (so a
+ * single-model / legacy provider degrades cleanly).
+ */
+export function parseMultiModelInfo(additionalInfo: string): MultiModelInfo {
+    try {
+        const parsed = JSON.parse(additionalInfo)
+        if (parsed?.MultiModel === true) {
+            return {
+                multiModel: true,
+                priceDenomination:
+                    typeof parsed.priceDenomination === 'string'
+                        ? parsed.priceDenomination
+                        : undefined,
+            }
+        }
+    } catch {
+        // additionalInfo not valid JSON / no MultiModel flag
+    }
+    return { multiModel: false }
+}
+
+/**
+ * A provider's served-model catalog, fetched live from its public /v1/models
+ * endpoint. Authoritative per-provider view (per-model pricing, canonical id,
+ * type) for both single-model and multi-model providers.
+ */
+export interface ProviderModels {
+    provider: string
+    /** Provider base URL (the on-chain service.url). */
+    url: string
+    /** True if the provider advertises multi-model serving on-chain. */
+    multiModel: boolean
+    /** Price denomination advertised on-chain ("USD" | "NATIVE"), if any. */
+    priceDenomination?: string
+    /**
+     * The on-chain default model — billed/forwarded when a request omits `model`.
+     * For multi-model providers, callers should pick one of `models[].id` instead.
+     */
+    defaultModel: string
+    /** Models served by this provider (exactly one for single-model providers). */
+    models: ProviderModelInfo[]
+}
+
+/**
  * Service information with optional health metrics and provider model info
  */
 export interface ServiceWithDetail {
@@ -272,6 +342,17 @@ export interface ServiceWithDetail {
     modelInfo?: ProviderModelInfo
     tieredPricing?: TieredPricingInfo
     cacheTokenBilling?: CacheTokenBillingInfo
+    /** True if this provider serves multiple models (from on-chain additionalInfo). */
+    multiModel?: boolean
+    /** Price denomination advertised on-chain ("USD" | "NATIVE"), if any. */
+    priceDenomination?: string
+    /**
+     * All models this provider serves, when known from the status API. For a
+     * multi-model provider this has the full catalog; for a single-model
+     * provider it is the one model (or omitted if the status API had none).
+     * Authoritative live data is available via getProviderModels().
+     */
+    models?: ProviderModelInfo[]
 }
 
 /**
@@ -425,11 +506,58 @@ export class ReadOnlyModelProcessor {
                         cacheTokenBilling:
                             parseCacheTokenBilling(service.additionalInfo) ??
                             parseCacheTokenBillingFromModelInfo(modelInfo),
+                        multiModel: parseMultiModelInfo(service.additionalInfo)
+                            .multiModel,
+                        priceDenomination: parseMultiModelInfo(
+                            service.additionalInfo
+                        ).priceDenomination,
+                        models:
+                            providerModels.length > 0
+                                ? providerModels
+                                : undefined,
                     }
                 }
             )
 
             return servicesWithDetail
+        } catch (error) {
+            throwFormattedError(error)
+        }
+    }
+
+    /**
+     * Fetch the models a single provider serves, live from its public
+     * /v1/models endpoint (no authentication required). Authoritative
+     * per-provider view including per-model pricing, canonical id, and type —
+     * works for both single-model and multi-model providers.
+     *
+     * Backward-compatible: a single-model provider returns exactly one model
+     * with multiModel=false. The on-chain default model (used when a request
+     * omits `model`) is returned as `defaultModel`.
+     *
+     * @param providerAddress - The provider's on-chain address.
+     * @returns The provider's model catalog plus its multi-model flag.
+     * @throws If the on-chain service read or the /v1/models fetch fails.
+     */
+    async getProviderModels(providerAddress: string): Promise<ProviderModels> {
+        try {
+            const service = await this.contract.getService(providerAddress)
+            const meta = parseMultiModelInfo(service.additionalInfo)
+            const base = service.url.replace(/\/+$/, '')
+            const resp = await axios.get(`${base}/v1/models`, {
+                timeout: 10000,
+            })
+            const models: ProviderModelInfo[] = Array.isArray(resp.data?.data)
+                ? resp.data.data
+                : []
+            return {
+                provider: service.provider,
+                url: service.url,
+                multiModel: meta.multiModel,
+                priceDenomination: meta.priceDenomination,
+                defaultModel: service.model,
+                models,
+            }
         } catch (error) {
             throwFormattedError(error)
         }

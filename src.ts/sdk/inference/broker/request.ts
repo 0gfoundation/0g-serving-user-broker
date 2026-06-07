@@ -60,14 +60,20 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
         this.automata = new Automata()
     }
 
-    async getServiceMetadata(providerAddress: string): Promise<{
+    async getServiceMetadata(
+        providerAddress: string,
+        model?: string
+    ): Promise<{
         endpoint: string
         model: string
     }> {
         const service = await this.getService(providerAddress)
         return {
             endpoint: `${service.url}/v1/proxy`,
-            model: service.model,
+            // Requested model (multi-model selection) wins; otherwise the
+            // on-chain default. The broker validates the model against its
+            // allowlist and bills the resolved model's price.
+            model: model ?? service.model,
         }
     }
 

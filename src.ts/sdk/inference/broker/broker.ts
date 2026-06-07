@@ -303,20 +303,28 @@ export class InferenceBroker extends ReadOnlyInferenceBroker {
      * 2. Model information for the provider service
      *
      * @param {string} providerAddress - The address of the provider.
+     * @param {string} [model] - Optional model id to use. For multi-model
+     *   providers, pass one of the ids from `getProviderModels()` to select a
+     *   specific model; the broker validates it against its allowlist and bills
+     *   that model's price. Omit to use the provider's on-chain default model
+     *   (the only model for single-model providers). Backward-compatible.
      *
-     * @returns { endpoint, model } - Object containing endpoint and model.
+     * @returns { endpoint, model } - Object containing endpoint and the
+     *   resolved model (the requested model when provided, else the default).
      *
      * @throws An error if errors occur during the processing of the request.
      */
     public getServiceMetadata = async (
-        providerAddress: string
+        providerAddress: string,
+        model?: string
     ): Promise<{
         endpoint: string
         model: string
     }> => {
         try {
             return await this.requestProcessor.getServiceMetadata(
-                providerAddress
+                providerAddress,
+                model
             )
         } catch (error) {
             throwFormattedError(error)

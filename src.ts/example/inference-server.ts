@@ -61,7 +61,12 @@ export async function runInferenceServer(options: InferenceServerOptions) {
                 : ''
         )
 
-        body.model = model
+        // Respect a caller-specified model (multi-model providers serve many);
+        // only fall back to the provider's default when the request omits one.
+        // The broker validates the model against its allowlist and bills it.
+        if (!body.model) {
+            body.model = model
+        }
         if (stream) {
             body.stream = true
         }

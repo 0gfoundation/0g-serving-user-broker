@@ -478,6 +478,7 @@ export class ReadOnlyModelProcessor {
                     const modelInfo = providerModels.find(
                         (m) => m.id === service.model
                     )
+                    const multi = parseMultiModelInfo(service.additionalInfo)
                     return {
                         provider: service.provider,
                         serviceType: service.serviceType,
@@ -506,11 +507,8 @@ export class ReadOnlyModelProcessor {
                         cacheTokenBilling:
                             parseCacheTokenBilling(service.additionalInfo) ??
                             parseCacheTokenBillingFromModelInfo(modelInfo),
-                        multiModel: parseMultiModelInfo(service.additionalInfo)
-                            .multiModel,
-                        priceDenomination: parseMultiModelInfo(
-                            service.additionalInfo
-                        ).priceDenomination,
+                        multiModel: multi.multiModel,
+                        priceDenomination: multi.priceDenomination,
                         models:
                             providerModels.length > 0
                                 ? providerModels
@@ -535,9 +533,15 @@ export class ReadOnlyModelProcessor {
      * with multiModel=false. The on-chain default model (used when a request
      * omits `model`) is returned as `defaultModel`.
      *
+     * Unlike {@link listServiceWithDetail} (which degrades silently when a
+     * provider is unreachable, since it lists many), this REJECTS if the
+     * provider is unreachable or returns an unexpected response shape — you
+     * asked about one specific provider, so an empty result must mean "serves
+     * no models", never "the fetch quietly failed". Callers should try/catch.
+     *
      * @param providerAddress - The provider's on-chain address.
      * @returns The provider's model catalog plus its multi-model flag.
-     * @throws If the on-chain service read or the /v1/models fetch fails.
+     * @throws If the on-chain read, the /v1/models fetch, or the response shape fails.
      */
     async getProviderModels(providerAddress: string): Promise<ProviderModels> {
         try {
@@ -546,10 +550,22 @@ export class ReadOnlyModelProcessor {
             const base = service.url.replace(/\/+$/, '')
             const resp = await axios.get(`${base}/v1/models`, {
                 timeout: 10000,
+                // Bound the response so a hostile/broken provider can't OOM the
+                // client by streaming a huge body within the timeout window.
+                maxContentLength: 5_000_000,
+                maxBodyLength: 5_000_000,
             })
-            const models: ProviderModelInfo[] = Array.isArray(resp.data?.data)
-                ? resp.data.data
-                : []
+            // A valid /v1/models response is { object: "list", data: [...] }.
+            // Treat a non-array `data` as a schema violation (throw) rather than
+            // coercing to [], so "no models" stays distinguishable from a garbage
+            // 200 (e.g. an HTML error page or { error: ... }).
+            const data = resp.data?.data
+            if (!Array.isArray(data)) {
+                throw new Error(
+                    'provider /v1/models returned an unexpected response shape (missing "data" array)'
+                )
+            }
+            const models: ProviderModelInfo[] = data
             return {
                 provider: service.provider,
                 url: service.url,

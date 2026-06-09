@@ -305,9 +305,11 @@ export class InferenceBroker extends ReadOnlyInferenceBroker {
      * @param {string} providerAddress - The address of the provider.
      * @param {string} [model] - Optional model id to use. For multi-model
      *   providers, pass one of the ids from `getProviderModels()` to select a
-     *   specific model; the broker validates it against its allowlist and bills
-     *   that model's price. Omit to use the provider's on-chain default model
-     *   (the only model for single-model providers). Backward-compatible.
+     *   specific model. The id is forwarded as-is (not validated locally); the
+     *   provider validates it against the models it serves and bills that
+     *   model's price, rejecting an unknown id server-side. Omit to use the
+     *   provider's on-chain default model (the only model for single-model
+     *   providers). Backward-compatible.
      *
      * @returns { endpoint, model } - Object containing endpoint and the
      *   resolved model (the requested model when provided, else the default).

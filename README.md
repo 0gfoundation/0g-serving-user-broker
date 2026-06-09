@@ -183,7 +183,7 @@ if (catalog.multiModel) {
     )
 }
 
-// Select a specific model (the broker validates it and bills that model's price)
+// Select a specific model (forwarded as-is; the provider validates it and bills that model's price)
 const { endpoint, model } = await broker.inference.getServiceMetadata(
     providerAddress,
     'zai-org/GLM-5.1-FP8' // one of catalog.models[].id

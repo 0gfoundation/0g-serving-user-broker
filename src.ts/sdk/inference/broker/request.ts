@@ -71,8 +71,9 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
         return {
             endpoint: `${service.url}/v1/proxy`,
             // Requested model (multi-model selection) wins; otherwise the
-            // on-chain default. The broker validates the model against its
-            // allowlist and bills the resolved model's price.
+            // on-chain default. This SDK does NOT validate the id locally — the
+            // provider validates the resolved model against the models it serves
+            // and bills that model's price; an unknown id fails provider-side.
             model: model ?? service.model,
         }
     }

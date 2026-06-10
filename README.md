@@ -99,7 +99,9 @@ await broker.ledger.depositFund(10)
 // Acknowledge provider
 await broker.inference.acknowledgeProviderSigner(providerAddress)
 
-// Get service metadata
+// Get service metadata. `model` here is the provider's DEFAULT model.
+// A provider may serve multiple models — see "Multi-model providers" below to
+// list them and select a specific one.
 const { endpoint, model } =
     await broker.inference.getServiceMetadata(providerAddress)
 
@@ -163,6 +165,43 @@ if (job.status === 'failed') throw new Error(job.errorMessage)
 
 // job.data — raw provider response, e.g. { data: [{ b64_json: "..." }] }
 ```
+
+### Multi-model providers
+
+A single provider can serve **multiple models** behind one address (each with
+its own pricing). `getServiceMetadata()` returns only the provider's *default*
+model; use `getProviderModels()` to discover the full catalog, then pass the
+chosen model id to `getServiceMetadata(addr, modelId)` (or set it as `model` in
+the request body).
+
+```typescript
+// Discover the models a provider serves (live, from its /v1/models endpoint)
+const catalog = await broker.inference.getProviderModels(providerAddress)
+if (catalog.multiModel) {
+    catalog.models.forEach((m) =>
+        console.log(m.id, m.canonical_id ?? '', m.type ?? '')
+    )
+}
+
+// Select a specific model (forwarded as-is; the provider validates it and bills that model's price)
+const { endpoint, model } = await broker.inference.getServiceMetadata(
+    providerAddress,
+    'zai-org/GLM-5.1-FP8' // one of catalog.models[].id
+)
+const headers = await broker.inference.getRequestHeaders(providerAddress)
+await fetch(`${endpoint}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({
+        model, // the selected model
+        messages: [{ role: 'user', content: 'Hello!' }],
+    }),
+})
+```
+
+The CLI mirrors this: `0g-compute-cli inference list-providers` marks multi-model
+providers, and `0g-compute-cli inference get-models --provider <addr>` lists a
+provider's models.
 
 ## Direct API Access
 

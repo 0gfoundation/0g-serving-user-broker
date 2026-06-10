@@ -60,14 +60,21 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
         this.automata = new Automata()
     }
 
-    async getServiceMetadata(providerAddress: string): Promise<{
+    async getServiceMetadata(
+        providerAddress: string,
+        model?: string
+    ): Promise<{
         endpoint: string
         model: string
     }> {
         const service = await this.getService(providerAddress)
         return {
             endpoint: `${service.url}/v1/proxy`,
-            model: service.model,
+            // Requested model (multi-model selection) wins; otherwise the
+            // on-chain default. This SDK does NOT validate the id locally — the
+            // provider validates the resolved model against the models it serves
+            // and bills that model's price; an unknown id fails provider-side.
+            model: model ?? service.model,
         }
     }
 

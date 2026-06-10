@@ -4,11 +4,11 @@ import { JsonRpcProvider as JsonRpcProviderClass } from 'ethers'
 import type { ServiceStructOutput } from '../contract'
 import { ReadOnlyInferenceServingContract } from '../contract'
 import { ReadOnlyModelProcessor } from './read-only-model'
-import type { ServiceWithDetail } from './read-only-model'
+import type { ServiceWithDetail, ProviderModels } from './read-only-model'
 import { CONTRACT_ADDRESSES, TESTNET_CHAIN_ID, MAINNET_CHAIN_ID, HARDHAT_CHAIN_ID, isDevMode } from '../../constants'
 
 // Re-export types for convenience
-export type { ServiceWithDetail } from './read-only-model'
+export type { ServiceWithDetail, ProviderModels } from './read-only-model'
 
 /**
  * Read-only inference broker with operations that don't require authentication
@@ -81,6 +81,30 @@ export class ReadOnlyInferenceBroker {
         includeUnacknowledged: boolean = false
     ): Promise<ServiceWithDetail[]> {
         return this.modelProcessor.listServiceWithDetail(offset, limit, includeUnacknowledged)
+    }
+
+    /**
+     * Fetch the models a specific provider serves, live from its public
+     * /v1/models endpoint. Works for both single-model and multi-model
+     * providers; no authentication required.
+     *
+     * @param {string} providerAddress - The provider's on-chain address.
+     * @returns {Promise<ProviderModels>} The provider's model catalog plus its
+     *   multi-model flag and on-chain default model.
+     * @throws An error if the on-chain read or the /v1/models fetch fails.
+     *
+     * @example
+     * ```typescript
+     * const { multiModel, models } = await broker.getProviderModels(addr);
+     * if (multiModel) {
+     *   models.forEach(m => console.log(m.id, m.canonical_id));
+     * }
+     * ```
+     */
+    public async getProviderModels(
+        providerAddress: string
+    ): Promise<ProviderModels> {
+        return this.modelProcessor.getProviderModels(providerAddress)
     }
 }
 

@@ -11,8 +11,8 @@ import axios from 'axios'
 import fs from 'fs'
 import { ethers } from 'ethers'
 import { formatError } from '../sdk/common/utils/error-handler'
-import { parseTieredPricing, parseCacheTokenBilling } from '../sdk/inference'
-import type { TieredPricingInfo, CacheTokenBillingInfo } from '../sdk/inference'
+import { parseTieredPricing, parseCacheTokenBilling, parseMultiModelInfo } from '../sdk/inference'
+import type { TieredPricingInfo, CacheTokenBillingInfo, ProviderModelInfo, ServiceHealthMetric } from '../sdk/inference'
 
 /**
  * Format a token count for display (e.g., 256000 -> "256k", 1000000 -> "1M")
@@ -73,6 +73,135 @@ function pushTieredPricingRows(
             prevLabel = formatTokenCount(tier.maxInputTokens)
         }
     }
+}
+
+/**
+ * Render a numeric price for display, dropping float artifacts. Returns '-' for
+ * missing/non-finite values.
+ */
+function fmtPrice(value: number | undefined): string {
+    if (value === undefined || !Number.isFinite(value)) return '-'
+    return value.toLocaleString('en-US', {
+        maximumFractionDigits: 20,
+        useGrouping: false,
+    })
+}
+
+/**
+ * Build the multi-line pricing cell for a model in `get-models`. Shows the base
+ * per-token (or per-image / per-second) price plus any tiered pricing and
+ * cache-hit discount the provider advertises in /v1/models, mirroring the
+ * tiered/cache rows `list-providers` shows so the two views stay consistent.
+ *
+ * @param m - The model entry from /v1/models.
+ * @param useUsd - When true, base prices come from `pricing_usd` (decimal USD,
+ *   used as-is). Otherwise from native `pricing`, whose values are in neuron and
+ *   are converted to 0G for display (mirroring `list-providers`). Tiered
+ *   multipliers and the cache divisor are unit-independent, so they're sourced
+ *   from whichever object carries them (a provider commonly attaches them to
+ *   native `pricing` only) and applied to the displayed base prices.
+ */
+function formatModelPricing(m: ProviderModelInfo, useUsd: boolean): string {
+    const base = useUsd ? m.pricing_usd : m.pricing
+    const alt = useUsd ? m.pricing : m.pricing_usd
+    if (!base) return 'N/A'
+
+    // USD prices are decimal strings; native prices are neuron integers that
+    // must be converted to 0G for a human-readable per-token figure.
+    const toDisplay = (v?: string): number | undefined => {
+        if (v === undefined || v === null) return undefined
+        if (useUsd) {
+            const n = Number(v)
+            return Number.isFinite(n) ? n : undefined
+        }
+        try {
+            return neuronToA0gi(BigInt(v))
+        } catch {
+            const n = Number(v)
+            return Number.isFinite(n) ? n : undefined
+        }
+    }
+
+    if (base.video !== undefined) return `${fmtPrice(toDisplay(base.video))} / sec`
+    if (base.image !== undefined) return `${fmtPrice(toDisplay(base.image))} / image`
+
+    const inBase = toDisplay(base.prompt)
+    const outBase = toDisplay(base.completion)
+    if (inBase === undefined && outBase === undefined) return 'N/A'
+
+    const lines = [`in ${fmtPrice(inBase)} / out ${fmtPrice(outBase)} per token`]
+
+    const cache = base.cache_token_billing ?? alt?.cache_token_billing
+    if (cache && cache.divisor > 0 && inBase !== undefined) {
+        lines.push(`cache-hit in: ${fmtPrice(inBase / cache.divisor)}`)
+    }
+
+    const tiers = base.tiered_pricing ?? alt?.tiered_pricing
+    if (Array.isArray(tiers) && tiers.length > 0) {
+        lines.push('tiered by input tokens:')
+        let prevLabel = '0'
+        for (const tier of tiers) {
+            const rangeLabel =
+                tier.max_input_tokens === 0
+                    ? `>${prevLabel}`
+                    : `${prevLabel}-${formatTokenCount(tier.max_input_tokens)}`
+            const tin =
+                inBase !== undefined
+                    ? fmtPrice(inBase * tier.input_multiplier)
+                    : '-'
+            const tout =
+                outBase !== undefined
+                    ? fmtPrice(outBase * tier.output_multiplier)
+                    : '-'
+            lines.push(`  ${rangeLabel}: in ${tin} / out ${tout}`)
+            if (tier.max_input_tokens !== 0) {
+                prevLabel = formatTokenCount(tier.max_input_tokens)
+            }
+        }
+    }
+
+    return lines.join('\n')
+}
+
+/**
+ * Build the per-model Health cell for `get-models` from the status-API metric
+ * merged onto the model. Shows status, uptime, and average response latency.
+ * Returns '-' when the status API has no metric for this (provider, model).
+ */
+function formatModelHealth(health?: ServiceHealthMetric): string {
+    if (!health) return '-'
+
+    let statusLine: string
+    if (health.status === 'healthy') {
+        statusLine = chalk.green('✓ healthy')
+    } else if (health.status === 'warning') {
+        statusLine = chalk.yellow('⚠ warning')
+    } else if (health.status === 'critical') {
+        statusLine = chalk.red('✗ critical')
+    } else {
+        statusLine = chalk.gray('? unknown')
+    }
+
+    const lines = [statusLine]
+
+    const uptime = health.checks?.uptime
+    if (typeof uptime === 'number') {
+        const pct = `${uptime}% up`
+        lines.push(
+            uptime >= 85
+                ? chalk.green(pct)
+                : uptime >= 70
+                    ? chalk.yellow(pct)
+                    : chalk.red(pct)
+        )
+    }
+
+    const resp = health.performance?.response_time
+    if (resp && typeof resp.avg === 'number') {
+        lines.push(`${Math.round(resp.avg)}${resp.unit || 'ms'} resp`)
+    }
+
+    return lines.join('\n')
 }
 
 async function promptDurationSelection(): Promise<number> {
@@ -144,6 +273,7 @@ export default function inference(program: Command) {
         .action(async (options: any) => {
             const table = new Table({
                 colWidths: [40, 60],
+                wordWrap: true,
             })
             await withROBroker(options, async (broker) => {
                 const services = await broker.inference.listService(
@@ -156,7 +286,21 @@ export default function inference(program: Command) {
                         chalk.blue(`Provider ${index + 1}`),
                         chalk.blue(service.provider),
                     ])
-                    table.push(['Model', service.model || 'N/A'])
+                    // Multi-model providers serve N models behind one address;
+                    // the on-chain `model` is only the default. Surface the flag
+                    // and point to `get-models` for the full catalog.
+                    const multi = parseMultiModelInfo(service.additionalInfo)
+                    if (multi.multiModel) {
+                        table.push([
+                            'Models',
+                            chalk.green(
+                                `multi-model${multi.priceDenomination ? ` (${multi.priceDenomination})` : ''}`
+                            ) +
+                                `\nRun: 0g-compute-cli inference get-models --provider ${service.provider}`,
+                        ])
+                    } else {
+                        table.push(['Model', service.model || 'N/A'])
+                    }
 
 
                     // Check for tiered pricing and cache billing in additionalInfo
@@ -231,6 +375,62 @@ export default function inference(program: Command) {
         })
 
     program
+        .command('get-models')
+        .description(
+            "Get the models a provider serves (live from its /v1/models endpoint)"
+        )
+        .requiredOption('--provider <address>', 'Provider address')
+        .option('--rpc <url>', '0G Chain RPC endpoint')
+        .option('--ledger-ca <address>', 'Account (ledger) contract address')
+        .option('--inference-ca <address>', 'Inference contract address')
+        .action(async (options: any) => {
+            await withROBroker(options, async (broker) => {
+                const result = await broker.inference.getProviderModels(
+                    options.provider
+                )
+                console.log(chalk.blue(`Provider:      ${result.provider}`))
+                console.log(
+                    `Multi-model:   ${result.multiModel ? chalk.green('yes') : 'no'}` +
+                        (result.priceDenomination
+                            ? ` (${result.priceDenomination})`
+                            : '')
+                )
+                console.log(`Default model: ${result.defaultModel || 'N/A'}`)
+
+                if (result.models.length === 0) {
+                    console.log(
+                        chalk.yellow(
+                            'No models returned by the provider /v1/models endpoint.'
+                        )
+                    )
+                    return
+                }
+
+                // Mirror the denomination shown by `list-providers`: a provider
+                // priced in USD advertises priceDenomination "USD" on-chain, so
+                // surface its USD prices; otherwise fall back to native-token (0G)
+                // prices. Keeping the unit consistent across both commands avoids
+                // the "is this USD or 0G?" ambiguity the bare numbers caused.
+                const useUsd = result.priceDenomination === 'USD'
+                const priceUnit = useUsd ? 'USD' : '0G'
+                const table = new Table({
+                    head: ['Model', 'Type', `Pricing (${priceUnit})`, 'Health'],
+                    colWidths: [24, 10, 44, 20],
+                    wordWrap: true,
+                })
+                for (const m of result.models) {
+                    table.push([
+                        m.id,
+                        m.type ?? '-',
+                        formatModelPricing(m, useUsd),
+                        formatModelHealth(m.healthMetrics),
+                    ])
+                }
+                console.log(table.toString())
+            })
+        })
+
+    program
         .command('list-providers-detail')
         .description(
             'List inference providers with health metrics'
@@ -245,6 +445,7 @@ export default function inference(program: Command) {
         .action(async (options: any) => {
             const table = new Table({
                 colWidths: [40, 60],
+                wordWrap: true,
             })
             await withROBroker(options, async (broker) => {
                 const services = await broker.inference.listServiceWithDetail(
@@ -260,7 +461,21 @@ export default function inference(program: Command) {
                         chalk.blue(`Provider ${index + 1}`),
                         chalk.blue(service.provider),
                     ])
-                    table.push(['Model', service.model || 'N/A'])
+                    // Multi-model providers serve N models behind one address;
+                    // the on-chain `model` is only the default. Surface the flag
+                    // and point to `get-models` for the full catalog (mirrors
+                    // `list-providers`).
+                    if (service.multiModel) {
+                        table.push([
+                            'Models',
+                            chalk.green(
+                                `multi-model${service.priceDenomination ? ` (${service.priceDenomination})` : ''}`
+                            ) +
+                                `\nRun: 0g-compute-cli inference get-models --provider ${service.provider}`,
+                        ])
+                    } else {
+                        table.push(['Model', service.model || 'N/A'])
+                    }
 
                     // Human-readable model name and description from /v1/models
                     if (modelInfo?.name) {
@@ -310,15 +525,7 @@ export default function inference(program: Command) {
                     const isSpeechService =
                         service.serviceType === 'speech-to-text'
 
-                    if (service.tieredPricing && !isImageService && !isSpeechService) {
-                        pushTieredPricingRows(
-                            table,
-                            BigInt(service.inputPrice),
-                            BigInt(service.outputPrice),
-                            service.tieredPricing,
-                            service.cacheTokenBilling
-                        )
-                    } else if (isSpeechService) {
+                    if (isSpeechService) {
                         // Speech-to-text is billed per second of audio against inputPrice
                         table.push([
                             'Price Per Second (0G)',
@@ -328,52 +535,77 @@ export default function inference(program: Command) {
                                 ).toFixed(18)
                                 : 'N/A',
                         ])
+                    } else if (service.priceDenomination === 'USD' && modelInfo?.pricing_usd) {
+                        // USD-denominated provider: show USD prices (incl. tiered
+                        // and cache) in one consolidated cell, consistent with
+                        // `list-providers` (which flags "(USD)") and `get-models`.
+                        // Tiered multipliers / cache divisor are unit-independent
+                        // and fall back to the native `pricing` object inside
+                        // formatModelPricing.
+                        table.push([
+                            'Pricing (USD)',
+                            formatModelPricing(modelInfo, true),
+                        ])
                     } else {
-                        if (!isImageService) {
+                        // Native (0G) display. Also the fallback for a USD provider
+                        // whose per-model USD pricing the status API didn't carry —
+                        // the multi-model header already flags USD and points to
+                        // `get-models` for authoritative per-model USD prices.
+                        if (service.tieredPricing && !isImageService) {
+                            pushTieredPricingRows(
+                                table,
+                                BigInt(service.inputPrice),
+                                BigInt(service.outputPrice),
+                                service.tieredPricing,
+                                service.cacheTokenBilling
+                            )
+                        } else {
+                            if (!isImageService) {
+                                table.push([
+                                    'Input Price Per Token (0G)',
+                                    service.inputPrice
+                                        ? neuronToA0gi(
+                                            BigInt(service.inputPrice)
+                                        ).toFixed(18)
+                                        : 'N/A',
+                                ])
+                            }
+
+                            const outputPriceLabel = isImageService
+                                ? 'Price Per Image (OG)'
+                                : 'Output Price Per Token (0G)'
+
                             table.push([
-                                'Input Price Per Token (0G)',
-                                service.inputPrice
+                                outputPriceLabel,
+                                service.outputPrice
                                     ? neuronToA0gi(
-                                        BigInt(service.inputPrice)
+                                        BigInt(service.outputPrice)
                                     ).toFixed(18)
                                     : 'N/A',
                             ])
-                        }
 
-                        const outputPriceLabel = isImageService
-                            ? 'Price Per Image (OG)'
-                            : 'Output Price Per Token (0G)'
-
-                        table.push([
-                            outputPriceLabel,
-                            service.outputPrice
-                                ? neuronToA0gi(
-                                    BigInt(service.outputPrice)
+                            // Show cache hit price for flat pricing (non-image services)
+                            if (service.cacheTokenBilling && !isImageService && service.inputPrice) {
+                                const cacheHitPrice = neuronToA0gi(
+                                    BigInt(service.inputPrice) / BigInt(service.cacheTokenBilling.divisor)
                                 ).toFixed(18)
-                                : 'N/A',
-                        ])
-
-                        // Show cache hit price for flat pricing (non-image services)
-                        if (service.cacheTokenBilling && !isImageService && service.inputPrice) {
-                            const cacheHitPrice = neuronToA0gi(
-                                BigInt(service.inputPrice) / BigInt(service.cacheTokenBilling.divisor)
-                            ).toFixed(18)
-                            table.push(['Cache Hit Price Per Token (0G)', cacheHitPrice])
+                                table.push(['Cache Hit Price Per Token (0G)', cacheHitPrice])
+                            }
                         }
-                    }
 
-                    const pricingUSD = modelInfo?.pricing_usd
-                    if (pricingUSD) {
-                        if (!isImageService && pricingUSD.prompt) {
-                            table.push(['Input Price Per Token (USD)', pricingUSD.prompt])
-                        }
-                        if (pricingUSD.image) {
-                            table.push(['Price Per Image (USD)', pricingUSD.image])
-                        } else if (pricingUSD.completion) {
-                            const usdLabel = isImageService
-                                ? 'Price Per Image (USD)'
-                                : 'Output Price Per Token (USD)'
-                            table.push([usdLabel, pricingUSD.completion])
+                        const pricingUSD = modelInfo?.pricing_usd
+                        if (pricingUSD) {
+                            if (!isImageService && pricingUSD.prompt) {
+                                table.push(['Input Price Per Token (USD)', pricingUSD.prompt])
+                            }
+                            if (pricingUSD.image) {
+                                table.push(['Price Per Image (USD)', pricingUSD.image])
+                            } else if (pricingUSD.completion) {
+                                const usdLabel = isImageService
+                                    ? 'Price Per Image (USD)'
+                                    : 'Output Price Per Token (USD)'
+                                table.push([usdLabel, pricingUSD.completion])
+                            }
                         }
                     }
 

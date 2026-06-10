@@ -21,5 +21,13 @@ export type {
     PricingTier,
     TieredPricingInfo,
     CacheTokenBillingInfo,
+    MultiModelInfo,
+    ProviderModels,
+    ServiceHealthMetric,
+    HealthStatus,
 } from './broker'
-export { parseTieredPricing, parseCacheTokenBilling } from './broker'
+export {
+    parseTieredPricing,
+    parseCacheTokenBilling,
+    parseMultiModelInfo,
+} from './broker'

@@ -23,6 +23,16 @@ function formatTokenCount(tokens: number): string {
     return `${tokens}`
 }
 
+// Multiply a bigint wei price by a fractional multiplier (e.g. 1.333) without
+// losing precision. Scales the multiplier to a 6-decimal fixed-point integer
+// before BigInt multiplication, then divides back out with round-half-up.
+const MULTIPLIER_SCALE = 1_000_000n
+function applyMultiplier(base: bigint, mul: number): bigint {
+    const scaled = BigInt(Math.round(mul * Number(MULTIPLIER_SCALE)))
+    const product = base * scaled
+    return (product + MULTIPLIER_SCALE / 2n) / MULTIPLIER_SCALE
+}
+
 /**
  * Format a price value, trimming unnecessary trailing zeros while keeping
  * enough precision to distinguish non-zero values.
@@ -50,9 +60,9 @@ function pushTieredPricingRows(
         const rangeLabel = tier.maxInputTokens === 0
             ? `>${prevLabel}`
             : `${prevLabel}-${formatTokenCount(tier.maxInputTokens)}`
-        const effectiveInputPrice = baseInputPrice * BigInt(tier.inputMultiplier)
+        const effectiveInputPrice = applyMultiplier(baseInputPrice, tier.inputMultiplier)
         const inPrice = formatPrice(effectiveInputPrice)
-        const outPrice = formatPrice(baseOutputPrice * BigInt(tier.outputMultiplier))
+        const outPrice = formatPrice(applyMultiplier(baseOutputPrice, tier.outputMultiplier))
         let priceStr = `In: ${inPrice} / Out: ${outPrice}`
         if (cacheBilling) {
             const cachePrice = formatPrice(effectiveInputPrice / BigInt(cacheBilling.divisor))

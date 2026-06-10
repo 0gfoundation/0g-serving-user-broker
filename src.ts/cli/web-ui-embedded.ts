@@ -40,6 +40,15 @@ export async function startEmbeddedWebUI(
     port = 3090,
     host = 'localhost'
 ): Promise<void> {
+    console.log(
+        '✨ A new and improved web experience is now available at:'
+    )
+    console.log('   👉 https://pc.0g.ai/sdk')
+    console.log(
+        '   This embedded web UI is in maintenance mode and will not receive new features.'
+    )
+    console.log()
+
     const packageRoot = getPackageRoot()
     console.log(`📦 Package root: ${packageRoot}`)
 

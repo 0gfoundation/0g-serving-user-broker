@@ -268,6 +268,18 @@ export function ProviderCard({
                                                         0G/image
                                                     </span>
                                                 </div>
+                                            ) : isSpeechService ? (
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-muted-foreground">
+                                                        Price:
+                                                    </span>
+                                                    <span className="font-semibold text-foreground">
+                                                        {provider.inputPrice?.toFixed(
+                                                            6
+                                                        )}{' '}
+                                                        0G/second
+                                                    </span>
+                                                </div>
                                             ) : provider.tieredPricing ? (
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-muted-foreground">
@@ -355,6 +367,14 @@ export function ProviderCard({
                                                     Cost per generated image:{' '}
                                                     {provider.outputPrice?.toFixed(
                                                         4
+                                                    )}{' '}
+                                                    0G
+                                                </p>
+                                            ) : isSpeechService ? (
+                                                <p>
+                                                    Cost per second of audio:{' '}
+                                                    {provider.inputPrice?.toFixed(
+                                                        6
                                                     )}{' '}
                                                     0G
                                                 </p>

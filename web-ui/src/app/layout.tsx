@@ -6,6 +6,7 @@ import { Providers } from "../../Providers";
 import { Navbar } from "../shared/components/layout/Navbar";
 import { Sidebar } from "../shared/components/layout/Sidebar";
 import { LayoutContent } from "../shared/components/layout/LayoutContent";
+import { DeprecationBanner } from "../shared/components/layout/DeprecationBanner";
 import { Toaster } from "@/components/ui/toaster";
 
 // Space Grotesk as primary font (similar to Regola Pro - geometric sans-serif)
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Providers>
           <div className="flex min-h-screen w-full flex-col bg-background">
+            <DeprecationBanner />
             <Sidebar />
             <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
               <Navbar />

@@ -62,10 +62,12 @@ export function transformBrokerServiceToProvider(service: unknown): Provider {
 
   // Convert prices from neuron to 0G
   // For image services (text-to-image, image-editing), prices are per image, not per million tokens
+  // For speech-to-text, prices are per second of audio (duration billing), not per million tokens
   const isImageService = serviceObj.serviceType === 'text-to-image' ||
                          serviceObj.serviceType === 'image-editing' ||
                          serviceObj.serviceType?.includes('image');
-  const priceMultiplier = isImageService ? BigInt(1) : BigInt(1000000);
+  const isSpeechService = serviceObj.serviceType === 'speech-to-text';
+  const priceMultiplier = isImageService || isSpeechService ? BigInt(1) : BigInt(1000000);
   const inputPrice = serviceObj.inputPrice
     ? neuronToA0gi(serviceObj.inputPrice * priceMultiplier)
     : undefined;

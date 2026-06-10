@@ -16,6 +16,53 @@ export type Verifiability =
 
 export type HealthStatus = 'healthy' | 'warning' | 'critical' | 'unknown'
 
+/**
+ * Attach per-model health (from the status API `/health`) onto each served
+ * model, in place. The status API reports health per (provider, model), so this
+ * preserves multi-model granularity that a provider-only map would lose.
+ *
+ * Matching is, in order:
+ *   1. exact model id  (`metric.model === model.id`)
+ *   2. canonical id    (`metric.model === model.canonical_id`)
+ *   3. single-model fallback — if this provider advertises exactly one model and
+ *      the status API has exactly one health entry for it, they must describe the
+ *      same model, so attach it even when the ids drift (observed in practice:
+ *      `/health` and a provider's `/v1/models` can report different ids for the
+ *      same single-model provider).
+ *
+ * Models with no resolvable metric are left untouched (healthMetrics undefined).
+ */
+function attachModelHealth(
+    provider: string,
+    models: ProviderModelInfo[],
+    metrics: ServiceHealthMetric[]
+): void {
+    const providerKey = provider.toLowerCase()
+    const forProvider = metrics.filter(
+        (m) => m.provider && m.provider.toLowerCase() === providerKey && m.model
+    )
+    if (forProvider.length === 0) return
+
+    const byModel = new Map<string, ServiceHealthMetric>()
+    for (const m of forProvider) {
+        byModel.set(m.model, m)
+    }
+
+    for (const model of models) {
+        let health =
+            byModel.get(model.id) ??
+            (model.canonical_id
+                ? byModel.get(model.canonical_id)
+                : undefined)
+        if (!health && models.length === 1 && forProvider.length === 1) {
+            health = forProvider[0]
+        }
+        if (health) {
+            model.healthMetrics = health
+        }
+    }
+}
+
 export interface ServiceHealthMetric {
     serviceType: string
     model: string
@@ -131,6 +178,18 @@ export interface ProviderModelInfo {
     tee_attested?: boolean
     tee_type?: string
     tee_verifier?: string
+    /**
+     * Per-model health/uptime metrics merged from the status API `/health`
+     * endpoint (NOT part of the raw /v1/models payload). Populated by
+     * {@link ReadOnlyModelProcessor.getProviderModels} and
+     * {@link ReadOnlyModelProcessor.listServiceWithDetail} when the status API
+     * has a metric for this exact (provider, model) pair; omitted otherwise.
+     *
+     * This is per-(provider, model), so multi-model providers expose distinct
+     * uptime/latency per served model — unlike the provider-level
+     * {@link ServiceWithDetail.healthMetrics}, which collapses to one entry.
+     */
+    healthMetrics?: ServiceHealthMetric
 }
 
 /**
@@ -467,6 +526,14 @@ export class ReadOnlyModelProcessor {
                 providerModelsMap.set(key, list)
             }
 
+            // Attach per-(provider, model) health so consumers (e.g. the router)
+            // get per-model uptime/latency even for multi-model providers — the
+            // provider-level `healthMetrics` below collapses to a single entry and
+            // would lose that granularity.
+            for (const [providerKey, providerModels] of providerModelsMap) {
+                attachModelHealth(providerKey, providerModels, healthMetrics)
+            }
+
             // Merge health metrics and model info with services
             // Note: Explicitly construct clean objects to avoid numeric indices from ethers Result type
             const servicesWithDetail: ServiceWithDetail[] = services.map(
@@ -548,13 +615,31 @@ export class ReadOnlyModelProcessor {
             const service = await this.contract.getService(providerAddress)
             const meta = parseMultiModelInfo(service.additionalInfo)
             const base = service.url.replace(/\/+$/, '')
-            const resp = await axios.get(`${base}/v1/models`, {
-                timeout: 10000,
-                // Bound the response so a hostile/broken provider can't OOM the
-                // client by streaming a huge body within the timeout window.
-                maxContentLength: 5_000_000,
-                maxBodyLength: 5_000_000,
-            })
+            const chainId = await this.contract.getChainId()
+            const statusApiEndpoint = this.getStatusApiEndpoint(chainId)
+
+            // The provider's own /v1/models is authoritative (and REQUIRED — its
+            // failure rejects). The status API /health is best-effort metrics
+            // enrichment: a .catch keeps a down/slow status API from failing the
+            // whole call, since the model catalog is still valid without it.
+            let healthMetrics: ServiceHealthMetric[] = []
+            const [resp] = await Promise.all([
+                axios.get(`${base}/v1/models`, {
+                    timeout: 10000,
+                    // Bound the response so a hostile/broken provider can't OOM
+                    // the client by streaming a huge body within the timeout.
+                    maxContentLength: 5_000_000,
+                    maxBodyLength: 5_000_000,
+                }),
+                axios
+                    .get(`${statusApiEndpoint}/health`, { timeout: 10000 })
+                    .then((r) => {
+                        healthMetrics = Array.isArray(r.data?.services)
+                            ? r.data.services
+                            : []
+                    })
+                    .catch(() => {}),
+            ])
             // A valid /v1/models response is { object: "list", data: [...] }.
             // Treat a non-array `data` as a schema violation (throw) rather than
             // coercing to [], so "no models" stays distinguishable from a garbage
@@ -566,6 +651,11 @@ export class ReadOnlyModelProcessor {
                 )
             }
             const models: ProviderModelInfo[] = data
+
+            // Attach per-(provider, model) health from the status API so each
+            // served model carries its own uptime/latency (multi-model granularity).
+            attachModelHealth(service.provider, models, healthMetrics)
+
             return {
                 provider: service.provider,
                 url: service.url,

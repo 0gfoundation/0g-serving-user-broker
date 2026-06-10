@@ -23,6 +23,8 @@ export type {
     CacheTokenBillingInfo,
     MultiModelInfo,
     ProviderModels,
+    ServiceHealthMetric,
+    HealthStatus,
 } from './broker'
 export {
     parseTieredPricing,

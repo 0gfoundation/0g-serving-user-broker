@@ -25,7 +25,7 @@ export class ResponseProcessor extends ZGServingUserBrokerBase {
     async processResponse(
         providerAddress: string,
         chatID?: string,
-        content?: string // For chatbot/speech-to-text: usage JSON string with input_tokens/output_tokens; For text-to-image: empty/undefined
+        content?: string // For chatbot: usage JSON with input_tokens/output_tokens; For speech-to-text: usage JSON, duration-billed ({"type":"duration","seconds":N}) or token-billed ({"type":"tokens",...}); For text-to-image: empty/undefined
     ): Promise<boolean | null> {
         try {
             const extractor = await this.getExtractor(providerAddress)

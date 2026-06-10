@@ -165,8 +165,10 @@ export default function inference(program: Command) {
                     const isImageService =
                         service.serviceType === 'text-to-image' ||
                         service.serviceType === 'image-editing'
+                    const isSpeechService =
+                        service.serviceType === 'speech-to-text'
 
-                    if (tiered && !isImageService) {
+                    if (tiered && !isImageService && !isSpeechService) {
                         // Display tiered pricing with optional cache hit prices
                         pushTieredPricingRows(
                             table,
@@ -175,6 +177,16 @@ export default function inference(program: Command) {
                             tiered,
                             cacheBilling
                         )
+                    } else if (isSpeechService) {
+                        // Speech-to-text is billed per second of audio against inputPrice
+                        table.push([
+                            'Price Per Second (0G)',
+                            service.inputPrice
+                                ? neuronToA0gi(
+                                    BigInt(service.inputPrice)
+                                ).toFixed(18)
+                                : 'N/A',
+                        ])
                     } else {
                         // Original flat pricing display
                         if (!isImageService) {
@@ -295,8 +307,10 @@ export default function inference(program: Command) {
                     const isImageService =
                         service.serviceType === 'text-to-image' ||
                         service.serviceType === 'image-editing'
+                    const isSpeechService =
+                        service.serviceType === 'speech-to-text'
 
-                    if (service.tieredPricing && !isImageService) {
+                    if (service.tieredPricing && !isImageService && !isSpeechService) {
                         pushTieredPricingRows(
                             table,
                             BigInt(service.inputPrice),
@@ -304,6 +318,16 @@ export default function inference(program: Command) {
                             service.tieredPricing,
                             service.cacheTokenBilling
                         )
+                    } else if (isSpeechService) {
+                        // Speech-to-text is billed per second of audio against inputPrice
+                        table.push([
+                            'Price Per Second (0G)',
+                            service.inputPrice
+                                ? neuronToA0gi(
+                                    BigInt(service.inputPrice)
+                                ).toFixed(18)
+                                : 'N/A',
+                        ])
                     } else {
                         if (!isImageService) {
                             table.push([

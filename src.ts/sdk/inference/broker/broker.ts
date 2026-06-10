@@ -452,8 +452,11 @@ export class InferenceBroker extends ReadOnlyInferenceBroker {
      * in the `ZG-Res-Key` HTTP response header. Extract this header from the provider's response and pass
      * it here for signature verification. For providers that don't include this header, fall back to using
      * the completion ID. Example: `const chatID = response.headers.get('ZG-Res-Key') || completion.id`
-     * @param {string} content - Usage data from the response. For chatbot/speech-to-text: JSON string with
-     * token usage; For text-to-image: can be empty. This is used to calculate and cache estimated fees.
+     * @param {string} content - Usage data from the response. For chatbot: JSON string with token usage;
+     * For speech-to-text: the usage JSON from the response, either duration-billed
+     * (`{"type":"duration","seconds":N}`, billed per second against inputPrice) or token-billed
+     * (`{"type":"tokens","input_tokens":N,"output_tokens":N}`); For text-to-image: can be empty.
+     * This is used to calculate and cache estimated fees.
      *
      * @returns A boolean value. True indicates the returned content is valid, otherwise it is invalid.
      * null if no chatID provided (verification skipped).

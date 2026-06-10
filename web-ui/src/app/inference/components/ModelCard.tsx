@@ -27,24 +27,38 @@ const SERVICE_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementTy
     'speech-to-text': { label: 'Speech to Text', icon: Mic, color: 'bg-amber-100 text-amber-700', hoverColor: 'hover:bg-amber-100 hover:text-amber-700' },
 }
 
+function formatPrice(value: number): string {
+    // Per-second prices (speech-to-text) can be far below 0.01 0G;
+    // fall back to more decimals so they don't render as "0.00"
+    if (value > 0 && value < 0.01) {
+        return parseFloat(value.toFixed(6)).toString()
+    }
+    return value.toFixed(2)
+}
+
 function formatPriceRange(range: { min: number; max: number } | null): string | null {
     if (!range) return null
     if (range.min === range.max) {
-        return range.min.toFixed(2)
+        return formatPrice(range.min)
     }
-    return `${range.min.toFixed(2)} - ${range.max.toFixed(2)}`
+    return `${formatPrice(range.min)} - ${formatPrice(range.max)}`
 }
 
 export function ModelCard({ model, onClick }: ModelCardProps) {
     const typeConfig = SERVICE_TYPE_CONFIG[model.serviceType] || SERVICE_TYPE_CONFIG.chatbot
     const TypeIcon = typeConfig.icon
     const isImageService = model.serviceType === 'text-to-image' || model.serviceType === 'image-editing'
+    const isSpeechService = model.serviceType === 'speech-to-text'
 
     const priceDisplay = isImageService
         ? formatPriceRange(model.outputPriceRange)
         : formatPriceRange(model.inputPriceRange)
 
-    const priceUnit = isImageService ? '0G/image' : '0G/1M tokens'
+    const priceUnit = isImageService
+        ? '0G/image'
+        : isSpeechService
+          ? '0G/second'
+          : '0G/1M tokens'
 
     return (
         <Card

@@ -109,7 +109,12 @@ export class RequestProcessor extends ZGServingUserBrokerBase {
             // If no background auto-funding timer is active for this provider,
             // run an inline check-and-fund to preserve backward compatibility.
             // Users who call startAutoFunding() skip this (zero extra latency).
-            if (!this.hasAutoFunding(providerAddress)) {
+            // Credit users skip it entirely: they hold no on-chain sub-account
+            // balance, so a transfer would fail; their funds live off-chain.
+            if (
+                !this.creditMode.skipAutoFunding &&
+                !this.hasAutoFunding(providerAddress)
+            ) {
                 await this.checkAndFund(providerAddress, 2)
             }
             return await this.getHeader(providerAddress)

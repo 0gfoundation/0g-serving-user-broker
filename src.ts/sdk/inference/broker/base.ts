@@ -113,10 +113,37 @@ export interface AutoFundingConfig {
     bufferMultiplier?: number
 }
 
+/**
+ * Credit mode lets a provider that bills via an off-chain USD credit service
+ * (instead of on-chain settlement) be used through this SDK. The user still
+ * authenticates with their wallet (session tokens, on-chain identity/revocation
+ * unchanged); these flags only skip the on-chain funding/acknowledgement steps
+ * that are meaningless when billing is off-chain. See the credit-billing design
+ * doc in the broker repo.
+ */
+export interface CreditModeOptions {
+    /**
+     * Skip the inline on-chain auto-funding (checkAndFund) before each request.
+     * Required for credit users — they hold no on-chain sub-account balance, so
+     * the transfer would fail with "Insufficient balance in ledger".
+     */
+    skipAutoFunding?: boolean
+    /**
+     * Skip the userAcknowledged() gate. On-chain acknowledgement is meaningless
+     * when settlement is off-chain; enabling this lets credit users transact
+     * with only a wallet + (optional) on-chain account for revocation.
+     */
+    skipAcknowledgement?: boolean
+}
+
 export abstract class ZGServingUserBrokerBase {
     protected contract: InferenceServingContract
     protected metadata: Metadata
     protected cache: Cache
+
+    // Off-chain credit billing mode. Empty (all false) by default so on-chain
+    // users are completely unaffected.
+    protected creditMode: CreditModeOptions = {}
 
     // Minimum locked balance required by provider broker proxy (1 0G in neuron).
     // Matches MinimumLockedBalance in api/inference/const/const.go.
@@ -137,6 +164,14 @@ export abstract class ZGServingUserBrokerBase {
         this.ledger = ledger
         this.metadata = metadata
         this.cache = cache
+    }
+
+    /**
+     * Enable/configure off-chain credit billing mode. Merges with existing
+     * flags. No-op for normal on-chain usage.
+     */
+    setCreditMode(options: CreditModeOptions): void {
+        this.creditMode = { ...this.creditMode, ...options }
     }
 
     protected async getService(
@@ -562,8 +597,12 @@ export abstract class ZGServingUserBrokerBase {
      * @returns Headers with Authorization
      */
     async getHeader(providerAddress: string): Promise<ServingRequestHeaders> {
-        // Check if provider is acknowledged - this is still necessary
-        if (!(await this.userAcknowledged(providerAddress))) {
+        // Check if provider is acknowledged - this is still necessary, except in
+        // credit mode where on-chain acknowledgement is not used.
+        if (
+            !this.creditMode.skipAcknowledgement &&
+            !(await this.userAcknowledged(providerAddress))
+        ) {
             throw new Error('Provider signer is not acknowledged')
         }
 

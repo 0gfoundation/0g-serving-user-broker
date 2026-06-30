@@ -21,7 +21,7 @@ import { Cache, Metadata } from '../../common/storage'
 import type { LedgerBroker } from '../../ledger'
 import { throwFormattedError } from '../../common/utils'
 import { ReadOnlyInferenceBroker } from './read-only-broker'
-import type { AutoFundingConfig } from './base'
+import type { AutoFundingConfig, CreditModeOptions } from './base'
 
 /**
  * Full-featured inference broker with authentication required
@@ -48,6 +48,19 @@ export class InferenceBroker extends ReadOnlyInferenceBroker {
         super(signer, contractAddress)
         this.signer = signer
         this.ledger = ledger
+    }
+
+    /**
+     * Configure off-chain credit billing mode for providers that settle via a
+     * centralized USD credit service instead of on-chain. Must be called after
+     * initialize(). No-op for normal on-chain providers.
+     *
+     * @example
+     * await broker.inference.initialize?.()
+     * broker.inference.setCreditMode({ skipAutoFunding: true, skipAcknowledgement: true })
+     */
+    public setCreditMode(options: CreditModeOptions): void {
+        this.requestProcessor.setCreditMode(options)
     }
 
     async initialize(): Promise<void> {

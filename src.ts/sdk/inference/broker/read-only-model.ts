@@ -222,7 +222,10 @@ export interface PricingTier {
  * omits the denominator for integer multiples), so legacy integer configs are
  * unchanged.
  */
-function effectiveMultiplier(numerator: number, denominator?: number): number {
+export function effectiveMultiplier(
+    numerator: number,
+    denominator?: number
+): number {
     return denominator && denominator > 0 ? numerator / denominator : numerator
 }
 

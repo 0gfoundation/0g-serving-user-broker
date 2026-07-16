@@ -51,9 +51,7 @@ function attachModelHealth(
     for (const model of models) {
         let health =
             byModel.get(model.id) ??
-            (model.canonical_id
-                ? byModel.get(model.canonical_id)
-                : undefined)
+            (model.canonical_id ? byModel.get(model.canonical_id) : undefined)
         if (!health && models.length === 1 && forProvider.length === 1) {
             health = forProvider[0]
         }
@@ -142,6 +140,11 @@ export interface ProviderModelInfo {
             max_input_tokens: number
             input_multiplier: number
             output_multiplier: number
+            /** Multiplier denominators. The effective multiplier is the
+             * numerator over the denominator (e.g. 3 / 2 = 1.5x). Omitted by the
+             * broker when 1 (integer multiple); treat a missing value as 1. */
+            input_multiplier_denominator?: number
+            output_multiplier_denominator?: number
         }>
         /** Cache token billing configuration */
         cache_token_billing?: {
@@ -166,6 +169,11 @@ export interface ProviderModelInfo {
             max_input_tokens: number
             input_multiplier: number
             output_multiplier: number
+            /** Multiplier denominators. The effective multiplier is the
+             * numerator over the denominator (e.g. 3 / 2 = 1.5x). Omitted by the
+             * broker when 1 (integer multiple); treat a missing value as 1. */
+            input_multiplier_denominator?: number
+            output_multiplier_denominator?: number
         }>
         /** Cache token billing configuration */
         cache_token_billing?: {
@@ -196,11 +204,26 @@ export interface ProviderModelInfo {
  * A single pricing tier for input-length-based tiered pricing.
  * Tiers are ordered by maxInputTokens ascending.
  * maxInputTokens: 0 means unlimited (the highest tier).
+ *
+ * inputMultiplier/outputMultiplier are the EFFECTIVE multipliers: the broker may
+ * express a tier as a numerator/denominator fraction (e.g. 3/2 = 1.5x), which the
+ * parsers below fold into a single decimal here (1.5). Consumers multiply the base
+ * price by this value directly — no denominator handling needed downstream.
  */
 export interface PricingTier {
     maxInputTokens: number
     inputMultiplier: number
     outputMultiplier: number
+}
+
+/**
+ * Fold a broker multiplier numerator/denominator pair into a single effective
+ * decimal multiplier. A missing/zero/negative denominator means 1 (the broker
+ * omits the denominator for integer multiples), so legacy integer configs are
+ * unchanged.
+ */
+function effectiveMultiplier(numerator: number, denominator?: number): number {
+    return denominator && denominator > 0 ? numerator / denominator : numerator
 }
 
 /**
@@ -232,8 +255,14 @@ export function parseTieredPricing(
                 )
                 .map((t: any) => ({
                     maxInputTokens: t.maxInputTokens,
-                    inputMultiplier: t.inputMultiplier,
-                    outputMultiplier: t.outputMultiplier,
+                    inputMultiplier: effectiveMultiplier(
+                        t.inputMultiplier,
+                        t.inputMultiplierDenominator
+                    ),
+                    outputMultiplier: effectiveMultiplier(
+                        t.outputMultiplier,
+                        t.outputMultiplierDenominator
+                    ),
                 }))
             if (tiers.length > 0) {
                 return { tiers }
@@ -265,8 +294,14 @@ export function parseTieredPricingFromModelInfo(
         )
         .map((t) => ({
             maxInputTokens: t.max_input_tokens,
-            inputMultiplier: t.input_multiplier,
-            outputMultiplier: t.output_multiplier,
+            inputMultiplier: effectiveMultiplier(
+                t.input_multiplier,
+                t.input_multiplier_denominator
+            ),
+            outputMultiplier: effectiveMultiplier(
+                t.output_multiplier,
+                t.output_multiplier_denominator
+            ),
         }))
     if (tiers.length > 0) {
         return { tiers }
@@ -560,12 +595,13 @@ export class ReadOnlyModelProcessor {
                         teeSignerAcknowledged: service.teeSignerAcknowledged,
                         healthMetrics: health
                             ? {
-                                status: health.status,
-                                uptime: health.checks.uptime,
-                                avgResponseTime:
-                                    health.performance.response_time?.avg ?? 0,
-                                lastCheck: health.lastCheck,
-                            }
+                                  status: health.status,
+                                  uptime: health.checks.uptime,
+                                  avgResponseTime:
+                                      health.performance.response_time?.avg ??
+                                      0,
+                                  lastCheck: health.lastCheck,
+                              }
                             : undefined,
                         modelInfo,
                         tieredPricing:

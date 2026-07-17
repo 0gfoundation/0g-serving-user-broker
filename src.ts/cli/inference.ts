@@ -1,7 +1,13 @@
 #!/usr/bin/env ts-node
 
 import type { Command } from 'commander'
-import { withBroker, withROBroker, neuronToA0gi, a0giToNeuron, initBroker } from './util'
+import {
+    withBroker,
+    withROBroker,
+    neuronToA0gi,
+    a0giToNeuron,
+    initBroker,
+} from './util'
 import { getRpcEndpoint } from './network-setup'
 import { ensurePrivateKeyConfiguration } from './private-key-setup'
 import { interactiveSelect, textInput } from './interactive-selection'
@@ -11,8 +17,18 @@ import axios from 'axios'
 import fs from 'fs'
 import { ethers } from 'ethers'
 import { formatError } from '../sdk/common/utils/error-handler'
-import { parseTieredPricing, parseCacheTokenBilling, parseMultiModelInfo } from '../sdk/inference'
-import type { TieredPricingInfo, CacheTokenBillingInfo, ProviderModelInfo, ServiceHealthMetric } from '../sdk/inference'
+import {
+    parseTieredPricing,
+    parseCacheTokenBilling,
+    parseMultiModelInfo,
+    effectiveMultiplier,
+} from '../sdk/inference'
+import type {
+    TieredPricingInfo,
+    CacheTokenBillingInfo,
+    ProviderModelInfo,
+    ServiceHealthMetric,
+} from '../sdk/inference'
 
 /**
  * Format a token count for display (e.g., 256000 -> "256k", 1000000 -> "1M")
@@ -54,18 +70,29 @@ function pushTieredPricingRows(
     tieredPricing: TieredPricingInfo,
     cacheBilling?: CacheTokenBillingInfo
 ) {
-    table.push([chalk.yellow('Tiered Pricing (0G/Token)'), chalk.yellow('Enabled')])
+    table.push([
+        chalk.yellow('Tiered Pricing (0G/Token)'),
+        chalk.yellow('Enabled'),
+    ])
     let prevLabel = '0'
     for (const tier of tieredPricing.tiers) {
-        const rangeLabel = tier.maxInputTokens === 0
-            ? `>${prevLabel}`
-            : `${prevLabel}-${formatTokenCount(tier.maxInputTokens)}`
-        const effectiveInputPrice = applyMultiplier(baseInputPrice, tier.inputMultiplier)
+        const rangeLabel =
+            tier.maxInputTokens === 0
+                ? `>${prevLabel}`
+                : `${prevLabel}-${formatTokenCount(tier.maxInputTokens)}`
+        const effectiveInputPrice = applyMultiplier(
+            baseInputPrice,
+            tier.inputMultiplier
+        )
         const inPrice = formatPrice(effectiveInputPrice)
-        const outPrice = formatPrice(applyMultiplier(baseOutputPrice, tier.outputMultiplier))
+        const outPrice = formatPrice(
+            applyMultiplier(baseOutputPrice, tier.outputMultiplier)
+        )
         let priceStr = `In: ${inPrice} / Out: ${outPrice}`
         if (cacheBilling) {
-            const cachePrice = formatPrice(effectiveInputPrice / BigInt(cacheBilling.divisor))
+            const cachePrice = formatPrice(
+                effectiveInputPrice / BigInt(cacheBilling.divisor)
+            )
             priceStr += ` / Cache: ${cachePrice}`
         }
         table.push([`  Input ${rangeLabel} tokens`, priceStr])
@@ -122,14 +149,18 @@ function formatModelPricing(m: ProviderModelInfo, useUsd: boolean): string {
         }
     }
 
-    if (base.video !== undefined) return `${fmtPrice(toDisplay(base.video))} / sec`
-    if (base.image !== undefined) return `${fmtPrice(toDisplay(base.image))} / image`
+    if (base.video !== undefined)
+        return `${fmtPrice(toDisplay(base.video))} / sec`
+    if (base.image !== undefined)
+        return `${fmtPrice(toDisplay(base.image))} / image`
 
     const inBase = toDisplay(base.prompt)
     const outBase = toDisplay(base.completion)
     if (inBase === undefined && outBase === undefined) return 'N/A'
 
-    const lines = [`in ${fmtPrice(inBase)} / out ${fmtPrice(outBase)} per token`]
+    const lines = [
+        `in ${fmtPrice(inBase)} / out ${fmtPrice(outBase)} per token`,
+    ]
 
     const cache = base.cache_token_billing ?? alt?.cache_token_billing
     if (cache && cache.divisor > 0 && inBase !== undefined) {
@@ -147,11 +178,23 @@ function formatModelPricing(m: ProviderModelInfo, useUsd: boolean): string {
                     : `${prevLabel}-${formatTokenCount(tier.max_input_tokens)}`
             const tin =
                 inBase !== undefined
-                    ? fmtPrice(inBase * tier.input_multiplier)
+                    ? fmtPrice(
+                          inBase *
+                              effectiveMultiplier(
+                                  tier.input_multiplier,
+                                  tier.input_multiplier_denominator
+                              )
+                      )
                     : '-'
             const tout =
                 outBase !== undefined
-                    ? fmtPrice(outBase * tier.output_multiplier)
+                    ? fmtPrice(
+                          outBase *
+                              effectiveMultiplier(
+                                  tier.output_multiplier,
+                                  tier.output_multiplier_denominator
+                              )
+                      )
                     : '-'
             lines.push(`  ${rangeLabel}: in ${tin} / out ${tout}`)
             if (tier.max_input_tokens !== 0) {
@@ -191,8 +234,8 @@ function formatModelHealth(health?: ServiceHealthMetric): string {
             uptime >= 85
                 ? chalk.green(pct)
                 : uptime >= 70
-                    ? chalk.yellow(pct)
-                    : chalk.red(pct)
+                ? chalk.yellow(pct)
+                : chalk.red(pct)
         )
     }
 
@@ -294,7 +337,11 @@ export default function inference(program: Command) {
                         table.push([
                             'Models',
                             chalk.green(
-                                `multi-model${multi.priceDenomination ? ` (${multi.priceDenomination})` : ''}`
+                                `multi-model${
+                                    multi.priceDenomination
+                                        ? ` (${multi.priceDenomination})`
+                                        : ''
+                                }`
                             ) +
                                 `\nRun: 0g-compute-cli inference get-models --provider ${service.provider}`,
                         ])
@@ -302,10 +349,11 @@ export default function inference(program: Command) {
                         table.push(['Model', service.model || 'N/A'])
                     }
 
-
                     // Check for tiered pricing and cache billing in additionalInfo
                     const tiered = parseTieredPricing(service.additionalInfo)
-                    const cacheBilling = parseCacheTokenBilling(service.additionalInfo)
+                    const cacheBilling = parseCacheTokenBilling(
+                        service.additionalInfo
+                    )
                     const isImageService =
                         service.serviceType === 'text-to-image' ||
                         service.serviceType === 'image-editing'
@@ -327,8 +375,8 @@ export default function inference(program: Command) {
                             'Price Per Second (0G)',
                             service.inputPrice
                                 ? neuronToA0gi(
-                                    BigInt(service.inputPrice)
-                                ).toFixed(18)
+                                      BigInt(service.inputPrice)
+                                  ).toFixed(18)
                                 : 'N/A',
                         ])
                     } else {
@@ -338,8 +386,8 @@ export default function inference(program: Command) {
                                 'Input Price Per Token (0G)',
                                 service.inputPrice
                                     ? neuronToA0gi(
-                                        BigInt(service.inputPrice)
-                                    ).toFixed(18)
+                                          BigInt(service.inputPrice)
+                                      ).toFixed(18)
                                     : 'N/A',
                             ])
                         }
@@ -352,17 +400,25 @@ export default function inference(program: Command) {
                             outputPriceLabel,
                             service.outputPrice
                                 ? neuronToA0gi(
-                                    BigInt(service.outputPrice)
-                                ).toFixed(18)
+                                      BigInt(service.outputPrice)
+                                  ).toFixed(18)
                                 : 'N/A',
                         ])
 
                         // Show cache hit price for flat pricing (non-image services)
-                        if (cacheBilling && !isImageService && service.inputPrice) {
+                        if (
+                            cacheBilling &&
+                            !isImageService &&
+                            service.inputPrice
+                        ) {
                             const cacheHitPrice = neuronToA0gi(
-                                BigInt(service.inputPrice) / BigInt(cacheBilling.divisor)
+                                BigInt(service.inputPrice) /
+                                    BigInt(cacheBilling.divisor)
                             ).toFixed(18)
-                            table.push(['Cache Hit Price Per Token (0G)', cacheHitPrice])
+                            table.push([
+                                'Cache Hit Price Per Token (0G)',
+                                cacheHitPrice,
+                            ])
                         }
                     }
                     table.push([
@@ -377,7 +433,7 @@ export default function inference(program: Command) {
     program
         .command('get-models')
         .description(
-            "Get the models a provider serves (live from its /v1/models endpoint)"
+            'Get the models a provider serves (live from its /v1/models endpoint)'
         )
         .requiredOption('--provider <address>', 'Provider address')
         .option('--rpc <url>', '0G Chain RPC endpoint')
@@ -390,7 +446,9 @@ export default function inference(program: Command) {
                 )
                 console.log(chalk.blue(`Provider:      ${result.provider}`))
                 console.log(
-                    `Multi-model:   ${result.multiModel ? chalk.green('yes') : 'no'}` +
+                    `Multi-model:   ${
+                        result.multiModel ? chalk.green('yes') : 'no'
+                    }` +
                         (result.priceDenomination
                             ? ` (${result.priceDenomination})`
                             : '')
@@ -432,9 +490,7 @@ export default function inference(program: Command) {
 
     program
         .command('list-providers-detail')
-        .description(
-            'List inference providers with health metrics'
-        )
+        .description('List inference providers with health metrics')
         .option('--rpc <url>', '0G Chain RPC endpoint')
         .option('--ledger-ca <address>', 'Account (ledger) contract address')
         .option('--inference-ca <address>', 'Inference contract address')
@@ -469,7 +525,11 @@ export default function inference(program: Command) {
                         table.push([
                             'Models',
                             chalk.green(
-                                `multi-model${service.priceDenomination ? ` (${service.priceDenomination})` : ''}`
+                                `multi-model${
+                                    service.priceDenomination
+                                        ? ` (${service.priceDenomination})`
+                                        : ''
+                                }`
                             ) +
                                 `\nRun: 0g-compute-cli inference get-models --provider ${service.provider}`,
                         ])
@@ -482,25 +542,31 @@ export default function inference(program: Command) {
                         table.push(['Model Name', modelInfo.name])
                     }
                     if (modelInfo?.description) {
-                        const desc = modelInfo.description.length > 80
-                            ? modelInfo.description.slice(0, 77) + '...'
-                            : modelInfo.description
+                        const desc =
+                            modelInfo.description.length > 80
+                                ? modelInfo.description.slice(0, 77) + '...'
+                                : modelInfo.description
                         table.push(['Description', desc])
                     }
                     if (modelInfo?.context_length) {
                         table.push([
                             'Context Length',
-                            modelInfo.context_length.toLocaleString() + ' tokens',
+                            modelInfo.context_length.toLocaleString() +
+                                ' tokens',
                         ])
                     }
                     if (modelInfo?.max_completion_tokens) {
                         table.push([
                             'Max Completion Tokens',
-                            modelInfo.max_completion_tokens.toLocaleString() + ' tokens',
+                            modelInfo.max_completion_tokens.toLocaleString() +
+                                ' tokens',
                         ])
                     }
                     if (modelInfo?.architecture?.tokenizer) {
-                        table.push(['Tokenizer', modelInfo.architecture.tokenizer])
+                        table.push([
+                            'Tokenizer',
+                            modelInfo.architecture.tokenizer,
+                        ])
                     }
                     if (modelInfo?.owned_by) {
                         table.push(['Owned By', modelInfo.owned_by])
@@ -531,11 +597,14 @@ export default function inference(program: Command) {
                             'Price Per Second (0G)',
                             service.inputPrice
                                 ? neuronToA0gi(
-                                    BigInt(service.inputPrice)
-                                ).toFixed(18)
+                                      BigInt(service.inputPrice)
+                                  ).toFixed(18)
                                 : 'N/A',
                         ])
-                    } else if (service.priceDenomination === 'USD' && modelInfo?.pricing_usd) {
+                    } else if (
+                        service.priceDenomination === 'USD' &&
+                        modelInfo?.pricing_usd
+                    ) {
                         // USD-denominated provider: show USD prices (incl. tiered
                         // and cache) in one consolidated cell, consistent with
                         // `list-providers` (which flags "(USD)") and `get-models`.
@@ -565,8 +634,8 @@ export default function inference(program: Command) {
                                     'Input Price Per Token (0G)',
                                     service.inputPrice
                                         ? neuronToA0gi(
-                                            BigInt(service.inputPrice)
-                                        ).toFixed(18)
+                                              BigInt(service.inputPrice)
+                                          ).toFixed(18)
                                         : 'N/A',
                                 ])
                             }
@@ -579,27 +648,43 @@ export default function inference(program: Command) {
                                 outputPriceLabel,
                                 service.outputPrice
                                     ? neuronToA0gi(
-                                        BigInt(service.outputPrice)
-                                    ).toFixed(18)
+                                          BigInt(service.outputPrice)
+                                      ).toFixed(18)
                                     : 'N/A',
                             ])
 
                             // Show cache hit price for flat pricing (non-image services)
-                            if (service.cacheTokenBilling && !isImageService && service.inputPrice) {
+                            if (
+                                service.cacheTokenBilling &&
+                                !isImageService &&
+                                service.inputPrice
+                            ) {
                                 const cacheHitPrice = neuronToA0gi(
-                                    BigInt(service.inputPrice) / BigInt(service.cacheTokenBilling.divisor)
+                                    BigInt(service.inputPrice) /
+                                        BigInt(
+                                            service.cacheTokenBilling.divisor
+                                        )
                                 ).toFixed(18)
-                                table.push(['Cache Hit Price Per Token (0G)', cacheHitPrice])
+                                table.push([
+                                    'Cache Hit Price Per Token (0G)',
+                                    cacheHitPrice,
+                                ])
                             }
                         }
 
                         const pricingUSD = modelInfo?.pricing_usd
                         if (pricingUSD) {
                             if (!isImageService && pricingUSD.prompt) {
-                                table.push(['Input Price Per Token (USD)', pricingUSD.prompt])
+                                table.push([
+                                    'Input Price Per Token (USD)',
+                                    pricingUSD.prompt,
+                                ])
                             }
                             if (pricingUSD.image) {
-                                table.push(['Price Per Image (USD)', pricingUSD.image])
+                                table.push([
+                                    'Price Per Image (USD)',
+                                    pricingUSD.image,
+                                ])
                             } else if (pricingUSD.completion) {
                                 const usdLabel = isImageService
                                     ? 'Price Per Image (USD)'
@@ -631,8 +716,8 @@ export default function inference(program: Command) {
                                 health.uptime >= 85
                                     ? chalk.green(`${health.uptime}%`)
                                     : health.uptime >= 70
-                                        ? chalk.yellow(`${health.uptime}%`)
-                                        : chalk.red(`${health.uptime}%`)
+                                    ? chalk.yellow(`${health.uptime}%`)
+                                    : chalk.red(`${health.uptime}%`)
                             table.push(['Uptime', uptimeDisplay])
                         }
                     } else {
@@ -646,8 +731,8 @@ export default function inference(program: Command) {
                 console.log(
                     chalk.gray(
                         '\nNote: Health metrics are fetched from the monitoring API. ' +
-                        'Services without metrics may be newly registered or temporarily unavailable. ' +
-                        'Model details are fetched from the status API.'
+                            'Services without metrics may be newly registered or temporarily unavailable. ' +
+                            'Model details are fetched from the status API.'
                     )
                 )
             })
@@ -1106,7 +1191,7 @@ export default function inference(program: Command) {
                         console.error(
                             'Error:',
                             axiosError.response.data?.error ||
-                            axiosError.response.statusText
+                                axiosError.response.statusText
                         )
                     } else if (error instanceof Error) {
                         console.error('Error:', error.message)
@@ -1207,7 +1292,7 @@ export default function inference(program: Command) {
                         console.error(
                             'Error:',
                             axiosError.response.data?.error ||
-                            axiosError.response.statusText
+                                axiosError.response.statusText
                         )
                     } else if (error instanceof Error) {
                         console.error('Error:', error.message)
@@ -1297,7 +1382,8 @@ export default function inference(program: Command) {
                     }
 
                     console.log(
-                        `\n${chalk.blue('Log file:')} ${options.component}/${options.filename
+                        `\n${chalk.blue('Log file:')} ${options.component}/${
+                            options.filename
                         }`
                     )
                     console.log(`${chalk.blue('Provider:')} ${userAddress}`)
@@ -1322,7 +1408,7 @@ export default function inference(program: Command) {
                         console.error(
                             'Error:',
                             axiosError.response.data?.error ||
-                            axiosError.response.statusText
+                                axiosError.response.statusText
                         )
                     } else if (error instanceof Error) {
                         console.error('Error:', error.message)

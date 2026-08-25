@@ -472,13 +472,20 @@ export default function inference(program: Command) {
                 const useUsd = result.priceDenomination === 'USD'
                 const priceUnit = useUsd ? 'USD' : '0G'
                 const table = new Table({
-                    head: ['Model', 'Type', `Pricing (${priceUnit})`, 'Health'],
-                    colWidths: [24, 10, 44, 20],
+                    head: [
+                        'Model',
+                        'Upstream',
+                        'Type',
+                        `Pricing (${priceUnit})`,
+                        'Health',
+                    ],
+                    colWidths: [22, 12, 8, 40, 18],
                     wordWrap: true,
                 })
                 for (const m of result.models) {
                     table.push([
                         m.id,
+                        m.provider_identity || '-',
                         m.type ?? '-',
                         formatModelPricing(m, useUsd),
                         formatModelHealth(m.healthMetrics),

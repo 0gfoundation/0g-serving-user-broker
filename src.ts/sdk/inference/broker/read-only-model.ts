@@ -187,6 +187,23 @@ export interface ProviderModelInfo {
     tee_type?: string
     tee_verifier?: string
     /**
+     * Machine key of the upstream that actually serves THIS model, published
+     * per-model by the broker. When one provider (one serving URL) fronts several
+     * upstreams (e.g. `aliyun` for one model and `minimax` for another), this
+     * distinguishes them per model rather than reporting one provider-level
+     * identity. Centralized providers only; omitted when the broker does not
+     * publish it. Informational — verification of a response is unaffected (it
+     * recovers the broker TEE signer, which is constant per provider).
+     */
+    provider_identity?: string
+    /**
+     * Hostname of the upstream serving THIS model (e.g. `dashscope.aliyuncs.com`),
+     * published per-model by the broker. Descriptive/display only; per-model so a
+     * multi-upstream provider reports the real host for each model. Omitted when
+     * the broker does not publish it.
+     */
+    serving_domain?: string
+    /**
      * Per-model health/uptime metrics merged from the status API `/health`
      * endpoint (NOT part of the raw /v1/models payload). Populated by
      * {@link ReadOnlyModelProcessor.getProviderModels} and

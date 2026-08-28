@@ -1,0 +1,4 @@
+FROM node:20-alpine
+ARG VERSION=latest
+RUN npm install -g @0glabs/0g-serving-broker@${VERSION}
+ENTRYPOINT ["0g-compute-cli"]

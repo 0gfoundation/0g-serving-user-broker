@@ -9,6 +9,7 @@ import network from './network'
 import auth from './auth'
 import controller from './controller'
 import completion from './completion'
+import { showCompletionHintIfNeeded } from './tips'
 import packageJson from '../../package.json'
 
 export const program = new Command()
@@ -115,6 +116,8 @@ function showUpdateNotification(updateInfo: {
     } catch {
         // Silently fail - don't block CLI usage (e.g., in Yarn PnP environments)
     }
+
+    showCompletionHintIfNeeded(program.name())
 
     program.parse(process.argv)
 })()
